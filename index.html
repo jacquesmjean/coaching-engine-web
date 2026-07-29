@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>BCA Leadership · Coaching Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#05090F;
+  --navy:#0B1426;
+  --navy-2:#0F1A2E;
+  --navy-3:#13203A;
+  --line:#1D2B47;
+  --line-soft:#16223A;
+  --gold:#C9A227;
+  --gold-lt:#E6CB74;
+  --gold-dim:rgba(201,162,39,.16);
+  --parch:#F2EDE3;
+  --parch-2:#CFC9BD;
+  --mute:#7E889E;
+  --mute-2:#5A6478;
+  --sage:#89A67F;
+  --rust:#C06A4E;
+  --amber:#D6A34A;
+  --r:3px;
+  --ease:cubic-bezier(.16,.84,.44,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--ink);
+  color:var(--parch);
+  font-family:'Archivo',sans-serif;
+  font-size:14px;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+/* material: grain + a slow navy wash so the dark never reads flat */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(1200px 700px at 78% -12%, rgba(201,162,39,.07), transparent 62%),
+    radial-gradient(900px 600px at 8% 108%, rgba(29,43,71,.55), transparent 60%);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.shell{position:relative;z-index:2;display:grid;grid-template-columns:264px 1fr;height:100vh}
+
+/* ─────────────────────────── rail ─────────────────────────── */
+.rail{
+  background:linear-gradient(180deg,var(--navy) 0%,#080F1D 100%);
+  border-right:1px solid var(--line-soft);
+  display:flex;flex-direction:column;padding:26px 0 18px;
+}
+.brand{padding:0 24px 24px;border-bottom:1px solid var(--line-soft)}
+.brand-row{display:flex;align-items:center;gap:12px}
+.mark{
+  width:38px;height:38px;flex:none;border-radius:50%;
+  border:1px solid var(--gold);
+  display:grid;place-items:center;
+  font-family:'Instrument Serif',serif;font-size:17px;color:var(--gold-lt);
+  background:radial-gradient(circle at 30% 25%,rgba(201,162,39,.22),transparent 70%);
+  letter-spacing:.02em;
+}
+.brand-name{font-family:'Instrument Serif',serif;font-size:19px;line-height:1.1;letter-spacing:.01em}
+.brand-sub{
+  font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--mute-2);
+  letter-spacing:.04em;margin-top:5px;word-break:break-all;
+}
+.tier{
+  display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+  font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
+  border:1px solid var(--gold-dim);background:rgba(201,162,39,.06);
+  padding:4px 9px;border-radius:2px;
+}
+.tier i{width:4px;height:4px;border-radius:50%;background:var(--gold);font-style:normal}
+
+nav{padding:18px 12px;flex:1;overflow-y:auto}
+.nav-label{
+  font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute-2);
+  padding:14px 12px 8px;
+}
+.nav-item{
+  position:relative;display:flex;align-items:center;gap:11px;
+  padding:9px 12px;border-radius:var(--r);cursor:pointer;
+  color:var(--parch-2);font-size:13.5px;font-weight:500;
+  transition:background .18s var(--ease),color .18s var(--ease);
+  user-select:none;
+}
+.nav-item svg{width:15px;height:15px;flex:none;opacity:.62;transition:opacity .18s}
+.nav-item:hover{background:rgba(255,255,255,.035);color:var(--parch)}
+.nav-item:hover svg{opacity:.9}
+.nav-item.on{background:rgba(201,162,39,.075);color:var(--gold-lt)}
+.nav-item.on svg{opacity:1}
+.nav-item.on::before{
+  content:'';position:absolute;left:-12px;top:8px;bottom:8px;width:2px;background:var(--gold);
+}
+.nav-item.locked{opacity:.4;cursor:default}
+.nav-item.locked:hover{background:transparent;color:var(--parch-2)}
+.lock{margin-left:auto;font-size:8.5px;letter-spacing:.12em;color:var(--gold);
+  border:1px solid var(--gold-dim);padding:2px 5px;border-radius:2px}
+
+.rail-foot{padding:16px 24px 0;border-top:1px solid var(--line-soft);margin-top:8px}
+.pw{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--mute-2);letter-spacing:.05em}
+.pw b{color:var(--parch-2);font-weight:600}
+.pw-dot{width:3px;height:3px;border-radius:50%;background:var(--gold);flex:none}
+
+/* ─────────────────────────── main ─────────────────────────── */
+.main{overflow-y:auto;position:relative}
+.main::-webkit-scrollbar,nav::-webkit-scrollbar{width:8px}
+.main::-webkit-scrollbar-thumb,nav::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
+
+.topbar{
+  position:sticky;top:0;z-index:10;
+  display:flex;align-items:center;gap:18px;
+  padding:0 44px;height:62px;
+  background:rgba(5,9,15,.82);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line-soft);
+}
+.clock{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--parch-2);letter-spacing:.02em}
+.clock span{color:var(--mute-2)}
+.spacer{flex:1}
+.lang{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+.lang button{
+  background:none;border:0;color:var(--mute);cursor:pointer;
+  font-family:'Archivo',sans-serif;font-size:10.5px;font-weight:600;
+  letter-spacing:.12em;padding:6px 12px;transition:.18s var(--ease);
+}
+.lang button.on{background:var(--gold);color:var(--ink)}
+.lang button:not(.on):hover{color:var(--parch)}
+.avatar{
+  width:31px;height:31px;border-radius:50%;border:1px solid var(--line);
+  display:grid;place-items:center;font-size:10.5px;font-weight:600;
+  color:var(--gold-lt);background:var(--navy-2);letter-spacing:.03em;
+}
+
+.view{padding:40px 44px 72px;max-width:1420px;display:none}
+.view.on{display:block;animation:rise .5s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{
+  font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);
+  display:flex;align-items:center;gap:10px;
+}
+.eyebrow::after{content:'';height:1px;flex:1;max-width:80px;
+  background:linear-gradient(90deg,var(--gold-dim),transparent)}
+h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:42px;
+  line-height:1.06;letter-spacing:-.01em;margin:14px 0 8px}
+h1 em{font-style:italic;color:var(--gold-lt)}
+.lede{color:var(--mute);font-size:14px;max-width:62ch;line-height:1.65}
+
+.rule{height:1px;background:linear-gradient(90deg,var(--gold-dim),var(--line-soft) 30%,transparent);margin:34px 0 30px}
+
+/* stats — deliberately asymmetric */
+.stats{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:1px;background:var(--line-soft);
+  border:1px solid var(--line-soft);border-radius:var(--r);overflow:hidden}
+.stat{background:var(--navy);padding:24px 26px;position:relative;transition:background .25s var(--ease)}
+.stat:hover{background:var(--navy-2)}
+.stat:first-child{background:linear-gradient(145deg,var(--navy-2),var(--navy))}
+.stat-k{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute-2)}
+.stat-v{font-family:'Instrument Serif',serif;font-size:44px;line-height:1;margin:14px 0 6px;
+  letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+.stat:first-child .stat-v{font-size:60px;color:var(--gold-lt)}
+.stat-n{font-size:11.5px;color:var(--mute)}
+.stat-n b{font-weight:600}
+.up{color:var(--sage)} .down{color:var(--rust)}
+
+.grid2{display:grid;grid-template-columns:1.32fr 1fr;gap:26px;margin-top:34px}
+.panel{border:1px solid var(--line-soft);border-radius:var(--r);background:rgba(11,20,38,.55);overflow:hidden}
+.panel-h{display:flex;align-items:baseline;gap:12px;padding:18px 24px;border-bottom:1px solid var(--line-soft)}
+.panel-t{font-family:'Instrument Serif',serif;font-size:19px;letter-spacing:.005em}
+.panel-m{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mute-2);margin-left:auto;letter-spacing:.03em}
+
+/* session rail */
+.sess{display:flex;gap:18px;padding:15px 24px;border-bottom:1px solid var(--line-soft);
+  transition:background .2s var(--ease);cursor:pointer}
+.sess:last-child{border-bottom:0}
+.sess:hover{background:rgba(255,255,255,.022)}
+.sess-t{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold-lt);
+  padding-top:2px;width:52px;flex:none;font-variant-numeric:tabular-nums}
+.sess-b{flex:1;min-width:0}
+.sess-n{font-size:13.5px;font-weight:500}
+.sess-d{font-size:11.5px;color:var(--mute);margin-top:3px}
+.pill{font-size:9px;letter-spacing:.13em;text-transform:uppercase;padding:3px 8px;
+  border-radius:2px;border:1px solid;white-space:nowrap;align-self:flex-start;margin-top:2px}
+.p-live{color:var(--gold);border-color:var(--gold-dim);background:rgba(201,162,39,.08)}
+.p-done{color:var(--sage);border-color:rgba(137,166,127,.3)}
+.p-next{color:var(--mute);border-color:var(--line)}
+
+/* receivables */
+.money{padding:22px 24px}
+.money-v{font-family:'Instrument Serif',serif;font-size:46px;line-height:1;
+  font-variant-numeric:tabular-nums;letter-spacing:-.015em}
+.money-l{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute-2);margin-bottom:12px}
+.bar{height:5px;background:var(--navy-3);border-radius:3px;overflow:hidden;margin:20px 0 10px;display:flex}
+.bar i{display:block;height:100%;font-style:normal}
+.bar .cur{background:var(--sage)} .bar .d30{background:var(--amber)} .bar .d60{background:var(--rust)}
+.leg{display:flex;gap:16px;font-size:10.5px;color:var(--mute)}
+.leg span{display:flex;align-items:center;gap:6px}
+.leg i{width:7px;height:2px;font-style:normal}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{
+  text-align:left;font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--mute-2);font-weight:600;padding:13px 24px;border-bottom:1px solid var(--line-soft);
+  background:rgba(8,14,26,.5);position:sticky;top:0;
+}
+.tbl td{padding:14px 24px;border-bottom:1px solid var(--line-soft);font-size:13px;vertical-align:middle}
+.tbl tr{transition:background .18s var(--ease)}
+.tbl tbody tr:hover{background:rgba(255,255,255,.025)}
+.tbl tbody tr{opacity:0;animation:fadein .45s var(--ease) forwards}
+@keyframes fadein{to{opacity:1}}
+.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px}
+.who{display:flex;align-items:center;gap:11px}
+.ini{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;
+  font-size:10.5px;font-weight:600;background:var(--navy-3);color:var(--gold-lt);
+  border:1px solid var(--line);letter-spacing:.03em}
+.who-n{font-weight:500}
+.who-s{font-size:11px;color:var(--mute-2);margin-top:2px}
+.tag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--parch-2);
+  border:1px solid var(--line);padding:3px 8px;border-radius:2px;background:var(--navy-2)}
+.dot{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--parch-2)}
+.dot i{width:5px;height:5px;border-radius:50%;font-style:normal}
+.s-act i{background:var(--sage)} .s-lap i{background:var(--rust)} .s-pau i{background:var(--amber)}
+.s-alu i{background:var(--mute-2)}
+.flag{font-size:11px;color:var(--mute-2);font-family:'IBM Plex Mono',monospace}
+
+.locked-view{text-align:center;padding:96px 24px}
+.locked-view .mark{margin:0 auto 26px;width:56px;height:56px;font-size:22px}
+.locked-view h2{font-family:'Instrument Serif',serif;font-size:32px;font-weight:400;margin-bottom:12px}
+.locked-view p{color:var(--mute);max-width:46ch;margin:0 auto 28px;line-height:1.7}
+.cta{display:inline-block;border:1px solid var(--gold);color:var(--gold-lt);background:rgba(201,162,39,.07);
+  padding:11px 26px;border-radius:2px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  font-weight:600;cursor:pointer;transition:.22s var(--ease)}
+.cta:hover{background:var(--gold);color:var(--ink)}
+
+.foot{margin-top:52px;padding-top:20px;border-top:1px solid var(--line-soft);
+  display:flex;gap:20px;font-size:10.5px;color:var(--mute-2);flex-wrap:wrap}
+.foot b{color:var(--parch-2);font-weight:600}
+
+
+.demo{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;
+  justify-content:center;gap:10px;height:30px;background:#3A2A08;
+  border-bottom:1px solid rgba(201,162,39,.35);
+  font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#E6CB74}
+.demo b{color:#F2EDE3;font-weight:600;letter-spacing:.1em}
+.demo i{width:5px;height:5px;border-radius:50%;background:var(--gold);font-style:normal}
+body.has-demo .shell{height:calc(100vh - 30px);margin-top:30px}
+body.has-demo .topbar{top:0}
+
+@media(max-width:1080px){
+  .shell{grid-template-columns:1fr}.rail{display:none}
+  .stats{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}
+  .view{padding:28px 22px 60px}.topbar{padding:0 22px}
+}
+</style>
+</head>
+<body class="has-demo">
+<div class="demo"><i></i><b>Preview</b> · sample data, not BCA records</div>
+<div class="shell">
+
+  <!-- ══════════════════ rail ══════════════════ -->
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-row">
+        <div class="mark">B</div>
+        <div>
+          <div class="brand-name">BCA Leadership</div>
+        </div>
+      </div>
+      <div class="brand-sub">servicedesk.bcaleadership.com</div>
+      <div class="tier"><i></i>Professional</div>
+    </div>
+
+    <nav>
+      <div class="nav-label" data-i="ops">Operations</div>
+      <div class="nav-item on" data-v="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h6l2-7 3 14 2-7h5"/></svg>
+        <span data-i="overview">Overview</span></div>
+      <div class="nav-item" data-v="members">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6 6 0 0 0-2-4.4"/></svg>
+        <span data-i="members">Members</span></div>
+      <div class="nav-item" data-v="bench">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.1 5.6L12 15.8 7.1 18.5l1.1-5.6L4 9l5.6-.7z"/></svg>
+        <span data-i="bench">The Bench</span></div>
+      <div class="nav-item" data-v="sessions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        <span data-i="sessions">Sessions</span></div>
+
+      <div class="nav-label" data-i="fin">Finance</div>
+      <div class="nav-item" data-v="billing">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+        <span data-i="billing">Billing</span></div>
+
+      <div class="nav-label" data-i="gov">Governance</div>
+      <div class="nav-item" data-v="board">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3.5v5c0 5-3.4 8.9-8 9.9-4.6-1-8-4.9-8-9.9v-5z"/></svg>
+        <span data-i="board">Board Room</span></div>
+      <div class="nav-item locked" data-v="intel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+        <span data-i="intel">Intelligence</span>
+        <span class="lock">TIER</span></div>
+    </nav>
+
+    <div class="rail-foot">
+      <div class="pw"><span class="pw-dot"></span>Powered by <b>TechFides</b></div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════ main ══════════════════ -->
+  <main class="main">
+    <div class="topbar">
+      <div class="clock"><span id="tz">Africa/Lagos</span> · <span id="now">—</span></div>
+      <div class="spacer"></div>
+      <div class="lang">
+        <button class="on" data-l="en">EN</button>
+        <button data-l="fr">FR</button>
+      </div>
+      <div class="avatar">MT</div>
+    </div>
+
+    <!-- ───────── overview ───────── -->
+    <section class="view on" id="v-overview">
+      <div class="eyebrow" data-i="today">Tuesday · 28 July 2026</div>
+      <h1><span id="greet">Good morning</span>, <em>Modupe</em></h1>
+      <p class="lede" data-i="lede">Seven sessions on the calendar today, four across three time zones. Two members lapsed this week and both have open invoices.</p>
+
+      <div class="rule"></div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-k" data-i="activeMembers">Active Members</div>
+          <div class="stat-v">218</div>
+          <div class="stat-n"><b class="up">+14</b> <span data-i="thisQ">this quarter</span> · <b>9</b> <span data-i="corp">corporate accounts</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-k" data-i="bench">The Bench</div>
+          <div class="stat-v">34</div>
+          <div class="stat-n"><b>31</b> <span data-i="assigned">assigned</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-k" data-i="sessM">Sessions · July</div>
+          <div class="stat-v">186</div>
+          <div class="stat-n"><b class="up">94%</b> <span data-i="held">held</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat-k" data-i="outst">Outstanding</div>
+          <div class="stat-v">84.2<span style="font-size:24px;color:var(--mute)">k</span></div>
+          <div class="stat-n"><b class="down">$18.4k</b> <span data-i="over60">over 60 days</span></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-h">
+            <div class="panel-t" data-i="todaySched">Today's Schedule</div>
+            <div class="panel-m">WAT · UTC+1</div>
+          </div>
+          <div id="sessList"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h">
+            <div class="panel-t" data-i="recv">Receivables</div>
+            <div class="panel-m">USD</div>
+          </div>
+          <div class="money">
+            <div class="money-l" data-i="outstTotal">Outstanding total</div>
+            <div class="money-v">$84,200</div>
+            <div class="bar">
+              <i class="cur" style="width:53%"></i><i class="d30" style="width:25%"></i><i class="d60" style="width:22%"></i>
+            </div>
+            <div class="leg">
+              <span><i class="cur" style="background:var(--sage)"></i><span data-i="current">Current</span> $44.6k</span>
+              <span><i class="d30" style="background:var(--amber)"></i>30–60 $21.2k</span>
+              <span><i class="d60" style="background:var(--rust)"></i>60+ $18.4k</span>
+            </div>
+          </div>
+          <div class="panel-h" style="border-top:1px solid var(--line-soft)">
+            <div class="panel-t" data-i="collected">Collected · July</div>
+          </div>
+          <div class="money" style="padding-bottom:18px">
+            <div class="money-v" style="color:var(--sage)">$41,900</div>
+            <div class="stat-n" style="margin-top:8px"><b class="up">+11%</b> <span data-i="vsJune">against June</span></div>
+          </div>
+
+          <div class="panel-h" style="border-top:1px solid var(--line-soft)">
+            <div class="panel-t" data-i="attention">Needs Attention</div>
+            <div class="panel-m">3</div>
+          </div>
+          <div id="attnList"></div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <span><b>Tenant</b> bca · shared</span>
+        <span><b>Lexicon</b> EN / FR</span>
+        <span><b>Currency</b> USD</span>
+        <span><b>Modules</b> 9 of 10</span>
+      </div>
+    </section>
+
+    <!-- ───────── members ───────── -->
+    <section class="view" id="v-members">
+      <div class="eyebrow" data-i="directory">Directory</div>
+      <h1 data-i="membersT">Members</h1>
+      <p class="lede" data-i="membersL">Two hundred and eighteen active. Filter by cohort, corporate account, or standing.</p>
+      <div class="rule"></div>
+      <div class="panel">
+        <div class="panel-h"><div class="panel-t" data-i="allMembers">All Members</div><div class="panel-m">218 · page 1</div></div>
+        <table class="tbl"><thead><tr>
+          <th data-i="name">Name</th><th data-i="account">Corporate Account</th><th data-i="programme">Programme</th>
+          <th data-i="coach">Coach</th><th data-i="standing">Standing</th><th data-i="loc">Location</th>
+        </tr></thead><tbody id="memBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ───────── bench ───────── -->
+    <section class="view" id="v-bench">
+      <div class="eyebrow" data-i="faculty">Faculty</div>
+      <h1>The <em>Bench</em></h1>
+      <p class="lede" data-i="benchL">Thirty-four coaches. Load, languages, and current assignments.</p>
+      <div class="rule"></div>
+      <div class="panel">
+        <div class="panel-h"><div class="panel-t" data-i="coaches">Coaches</div><div class="panel-m">34 active</div></div>
+        <table class="tbl"><thead><tr>
+          <th data-i="coach">Coach</th><th data-i="langs">Languages</th><th data-i="load">Load</th>
+          <th data-i="sessM2">Sessions · July</th><th data-i="payout">Payout · July</th><th data-i="loc">Location</th>
+        </tr></thead><tbody id="benBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ───────── sessions ───────── -->
+    <section class="view" id="v-sessions">
+      <div class="eyebrow" data-i="calendar">Calendar</div>
+      <h1 data-i="sessionsT">Sessions</h1>
+      <p class="lede" data-i="sessionsL">Every session is stored as an absolute instant alongside the zone it was agreed in. Nothing shifts when a country changes its offset.</p>
+      <div class="rule"></div>
+      <div class="panel">
+        <div class="panel-h"><div class="panel-t" data-i="thisWeek">This Week</div><div class="panel-m">27 scheduled</div></div>
+        <table class="tbl"><thead><tr>
+          <th data-i="when">When</th><th data-i="member">Member</th><th data-i="coach">Coach</th>
+          <th data-i="programme">Programme</th><th data-i="zone">Zone</th><th data-i="status">Status</th>
+        </tr></thead><tbody id="sesBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ───────── billing ───────── -->
+    <section class="view" id="v-billing">
+      <div class="eyebrow" data-i="finance">Finance</div>
+      <h1 data-i="billingT">Billing</h1>
+      <p class="lede" data-i="billingL">Reminders send in each payer's own language on a 3, 7, 14 and 21 day cadence. Terms are 14 days.</p>
+      <div class="rule"></div>
+      <div class="panel">
+        <div class="panel-h"><div class="panel-t" data-i="openInv">Open Invoices</div><div class="panel-m" id="invMeta">$84,200 outstanding</div></div>
+        <table class="tbl"><thead><tr>
+          <th data-i="invoice">Invoice</th><th data-i="payer">Payer</th><th data-i="amount">Amount</th>
+          <th data-i="due">Due</th><th data-i="age">Age</th><th data-i="remind">Reminders</th><th data-i="status">Status</th>
+        </tr></thead><tbody id="invBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ───────── board ───────── -->
+    <section class="view" id="v-board">
+      <div class="eyebrow" data-i="governance">Governance</div>
+      <h1 data-i="boardT">Board Room</h1>
+      <p class="lede" data-i="boardL">Resolutions and votes are written to an append-only trail. No administrator can edit or delete an entry — that is what makes the record defensible.</p>
+      <div class="rule"></div>
+      <div class="panel">
+        <div class="panel-h"><div class="panel-t" data-i="mandates">Strategic Mandates</div><div class="panel-m" data-i="q3">Q3 2026</div></div>
+        <table class="tbl"><thead><tr>
+          <th data-i="mandate">Mandate</th><th data-i="owner">Owner</th><th data-i="dueQ">Due</th><th data-i="status">Status</th>
+        </tr></thead><tbody id="brdBody"></tbody></table>
+      </div>
+    </section>
+
+    <!-- ───────── intelligence (locked) ───────── -->
+    <section class="view" id="v-intel">
+      <div class="locked-view">
+        <div class="mark">✦</div>
+        <h2 data-i="intelT">Intelligence</h2>
+        <p data-i="intelL">Semantic search across every coaching note, pre-call briefing agents, the alumni impact graph, and voice. Available on the Sovereign tier.</p>
+        <div class="cta" data-i="talk">Talk to TechFides</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ─── data ─── */
+const members=[
+ ["Adaeze Okonkwo","Zenith Bank","Executive Circle","Dr. Ngozi Eze","act","Lagos, NG"],
+ ["Kwame Mensah","MTN Ghana","Board Ready","Samuel Adjei","act","Accra, GH"],
+ ["Fatou Diallo","Sonatel","Executive Circle","Aminata Sow","act","Dakar, SN"],
+ ["Thabo Molefe","Standard Bank","Senior Leaders","Dr. Ngozi Eze","act","Johannesburg, ZA"],
+ ["Amina Yusuf","Dangote Group","Board Ready","Chidi Nwosu","pau","Kano, NG"],
+ ["Jean-Baptiste Kouassi","Ecobank CI","Cercle Exécutif","Aminata Sow","act","Abidjan, CI"],
+ ["Grace Wanjiru","Safaricom","Senior Leaders","Peter Kimani","act","Nairobi, KE"],
+ ["Olusegun Adeyemi","Access Holdings","Executive Circle","Chidi Nwosu","lap","Lagos, NG"],
+ ["Marie-Claire Nguema","BGFIBank","Cercle Exécutif","Aminata Sow","act","Libreville, GA"],
+ ["Tendai Chikwanha","Econet","Board Ready","Peter Kimani","lap","Harare, ZW"],
+ ["Nadia Benali","Attijariwafa","Cercle Exécutif","Youssef Alami","act","Casablanca, MA"],
+ ["Emeka Obi","Flutterwave","Founders Track","Samuel Adjei","alu","Lagos, NG"]];
+
+const bench=[
+ ["Dr. Ngozi Eze","EN · FR","12 / 15","24","$4,800","Lagos, NG"],
+ ["Aminata Sow","FR · EN · WO","14 / 15","28","$5,600","Dakar, SN"],
+ ["Samuel Adjei","EN · TW","9 / 12","18","$3,600","Accra, GH"],
+ ["Chidi Nwosu","EN · IG","11 / 12","22","$4,400","Abuja, NG"],
+ ["Peter Kimani","EN · SW","13 / 15","26","$5,200","Nairobi, KE"],
+ ["Youssef Alami","FR · AR · EN","8 / 12","16","$3,200","Casablanca, MA"],
+ ["Dr. Lindiwe Dube","EN · ZU","10 / 12","20","$4,000","Durban, ZA"],
+ ["Pascal Mbadinga","FR · EN","7 / 10","14","$2,800","Libreville, GA"]];
+
+const sessions=[
+ ["Tue 09:00","Adaeze Okonkwo","Dr. Ngozi Eze","Executive Circle","WAT","done"],
+ ["Tue 10:30","Fatou Diallo","Aminata Sow","Cercle Exécutif","GMT","live"],
+ ["Tue 12:00","Grace Wanjiru","Peter Kimani","Senior Leaders","EAT","next"],
+ ["Tue 14:00","Kwame Mensah","Samuel Adjei","Board Ready","GMT","next"],
+ ["Tue 15:30","Nadia Benali","Youssef Alami","Cercle Exécutif","WET","next"],
+ ["Tue 16:00","Thabo Molefe","Dr. Ngozi Eze","Senior Leaders","SAST","next"],
+ ["Tue 17:30","Marie-Claire Nguema","Aminata Sow","Cercle Exécutif","WAT","next"],
+ ["Wed 09:00","Amina Yusuf","Chidi Nwosu","Board Ready","WAT","next"],
+ ["Wed 11:00","Tendai Chikwanha","Peter Kimani","Board Ready","CAT","next"]];
+
+/* amounts as minor units, dates as ISO — the display layer localises both,
+   exactly as the schema stores them */
+const invoices=[
+ ["BCA-2026-0341","Zenith Bank",1250000,"2026-06-11",47,3,"60+"],
+ ["BCA-2026-0352","Dangote Group",840000,"2026-06-24",34,2,"30–60"],
+ ["BCA-2026-0358","Access Holdings",590000,"2026-07-02",26,2,"30–60"],
+ ["BCA-2026-0364","MTN Ghana",1500000,"2026-07-09",19,1,"30–60"],
+ ["BCA-2026-0371","Safaricom",1120000,"2026-07-17",11,1,"cur"],
+ ["BCA-2026-0377","Ecobank CI",980000,"2026-07-22",6,0,"cur"],
+ ["BCA-2026-0381","Sonatel",740000,"2026-07-26",2,0,"cur"],
+ ["BCA-2026-0384","Econet",1400000,"2026-07-28",0,0,"cur"]];
+
+const attention=[
+ ["Olusegun Adeyemi","Access Holdings","lapsed · $5,900 open","lap"],
+ ["Tendai Chikwanha","Econet","lapsed · 2 sessions missed","lap"],
+ ["Amina Yusuf","Dangote Group","paused · 34 days overdue","pau"]];
+
+const board=[
+ ["Pan-African Mentorship Initiative — launch","Modupe Taylor-Pearce","30 Sep 2026","live"],
+ ["Foundation set-up and registration","Claudia Tete","15 Aug 2026","live"],
+ ["Digital platform go-live","Jacques M. Jean","31 Jul 2026","live"],
+ ["2027 budget and sensitivity model","Finance Committee","31 Oct 2026","next"],
+ ["Cap-Haïtien partnership review","Board Chair","30 Nov 2026","next"]];
+
+/* ─── i18n ─── */
+const FR={ops:"Opérations",fin:"Finance",gov:"Gouvernance",overview:"Vue d'ensemble",members:"Membres",
+ bench:"Le Banc",sessions:"Séances",billing:"Facturation",board:"Salle du Conseil",intel:"Intelligence",
+ today:"Mardi · 28 juillet 2026",
+ lede:"Sept séances au calendrier aujourd'hui, dont quatre sur trois fuseaux horaires. Deux membres sont en défaut cette semaine et tous deux ont des factures ouvertes.",
+ activeMembers:"Membres actifs",thisQ:"ce trimestre",corp:"comptes entreprises",assigned:"affectés",
+ sessM:"Séances · juillet",held:"tenues",outst:"Encours",over60:"à plus de 60 jours",
+ todaySched:"Programme du jour",recv:"Créances",outstTotal:"Encours total",current:"À jour",
+ collected:"Encaissé · juillet",vsJune:"par rapport à juin",
+ directory:"Répertoire",membersT:"Membres",membersL:"Deux cent dix-huit actifs. Filtrer par cohorte, compte entreprise ou statut.",
+ allMembers:"Tous les membres",name:"Nom",account:"Compte entreprise",programme:"Programme",coach:"Coach",
+ standing:"Statut",loc:"Localisation",
+ faculty:"Corps professoral",benchL:"Trente-quatre coachs. Charge, langues et affectations en cours.",
+ coaches:"Coachs",langs:"Langues",load:"Charge",sessM2:"Séances · juillet",payout:"Rémunération · juillet",
+ calendar:"Calendrier",sessionsT:"Séances",
+ sessionsL:"Chaque séance est enregistrée comme un instant absolu, avec le fuseau dans lequel elle a été convenue. Rien ne bouge quand un pays change d'heure.",
+ thisWeek:"Cette semaine",when:"Quand",member:"Membre",zone:"Fuseau",status:"Statut",
+ finance:"Finance",billingT:"Facturation",
+ billingL:"Les relances partent dans la langue de chaque payeur, à 3, 7, 14 et 21 jours. Les délais sont de 14 jours.",
+ openInv:"Factures ouvertes",invoice:"Facture",payer:"Payeur",amount:"Montant",due:"Échéance",age:"Ancienneté",remind:"Relances",
+ governance:"Gouvernance",boardT:"Salle du Conseil",
+ boardL:"Les résolutions et les votes sont inscrits dans un journal inaltérable. Aucun administrateur ne peut modifier ou supprimer une entrée — c'est ce qui rend le registre opposable.",
+ mandates:"Mandats stratégiques",q3:"T3 2026",mandate:"Mandat",owner:"Responsable",dueQ:"Échéance",
+ intelT:"Intelligence",
+ intelL:"Recherche sémantique sur toutes les notes de coaching, agents de briefing avant séance, graphe d'impact des anciens, et la voix. Disponible en offre Souveraine.",
+ talk:"Parler à TechFides",attention:"À surveiller"};
+const EN={};document.querySelectorAll('[data-i]').forEach(e=>EN[e.dataset.i]=e.textContent);
+
+/* ─── formatting — locale is tenant config, so the display layer obeys it ─── */
+const money=minor=>new Intl.NumberFormat(L==='fr'?'fr-FR':'en-US',
+  {style:'currency',currency:'USD',minimumFractionDigits:0}).format(minor/100);
+const date=iso=>new Intl.DateTimeFormat(L==='fr'?'fr-FR':'en-GB',
+  {day:'2-digit',month:'short'}).format(new Date(iso+'T12:00:00'));
+
+/* ─── render ─── */
+const ini=n=>n.replace(/^(Dr\.|Mme)\s+/,'').split(/[\s-]/).filter(Boolean).slice(0,2).map(w=>w[0]).join('');
+const stMap={act:['s-act','Active','Actif'],lap:['s-lap','Lapsed','En défaut'],
+             pau:['s-pau','Paused','Suspendu'],alu:['s-alu','Alumni','Ancien']};
+const seMap={done:['p-done','Held','Tenue'],live:['p-live','In session','En cours'],next:['p-next','Scheduled','Prévue']};
+const agMap={cur:['s-act','Current','À jour'],'30–60':['s-pau','30–60','30–60'],'60+':['s-lap','60+','60+']};
+let L='en';
+
+function stagger(tb){[...tb.children].forEach((r,i)=>r.style.animationDelay=(i*32)+'ms')}
+
+function render(){
+  const t=k=>L==='fr'?(FR[k]??EN[k]):EN[k];
+
+  document.getElementById('sessList').innerHTML=sessions.slice(0,7).map((s,i)=>{
+    const[c,en,fr]=seMap[s[5]];
+    return `<div class="sess" style="animation:fadein .5s var(--ease) ${i*45}ms both">
+      <div class="sess-t">${s[0].split(' ')[1]}</div>
+      <div class="sess-b"><div class="sess-n">${s[1]}</div>
+      <div class="sess-d">${s[2]} · ${s[3]}</div></div>
+      <span class="pill ${c}">${L==='fr'?fr:en}</span></div>`;}).join('');
+
+  document.getElementById('memBody').innerHTML=members.map(m=>{
+    const[c,en,fr]=stMap[m[4]];
+    return `<tr><td><div class="who"><div class="ini">${ini(m[0])}</div>
+      <div><div class="who-n">${m[0]}</div><div class="who-s">${m[1]}</div></div></div></td>
+      <td>${m[1]}</td><td><span class="tag">${m[2]}</span></td><td>${m[3]}</td>
+      <td><span class="dot ${c}"><i></i>${L==='fr'?fr:en}</span></td>
+      <td class="flag">${m[5]}</td></tr>`;}).join('');
+
+  document.getElementById('benBody').innerHTML=bench.map(b=>
+    `<tr><td><div class="who"><div class="ini">${ini(b[0])}</div>
+      <div><div class="who-n">${b[0]}</div></div></div></td>
+      <td class="flag">${b[1]}</td><td class="num">${b[2]}</td><td class="num">${b[3]}</td>
+      <td class="num" style="color:var(--gold-lt)">${b[4]}</td><td class="flag">${b[5]}</td></tr>`).join('');
+
+  document.getElementById('sesBody').innerHTML=sessions.map(s=>{
+    const[c,en,fr]=seMap[s[5]];
+    return `<tr><td class="num" style="color:var(--gold-lt)">${s[0]}</td><td>${s[1]}</td><td>${s[2]}</td>
+      <td><span class="tag">${s[3]}</span></td><td class="flag">${s[4]}</td>
+      <td><span class="pill ${c}">${L==='fr'?fr:en}</span></td></tr>`;}).join('');
+
+  document.getElementById('invBody').innerHTML=invoices.map(v=>{
+    const[c,en,fr]=agMap[v[6]];
+    return `<tr><td class="num">${v[0]}</td><td>${v[1]}</td>
+      <td class="num" style="color:var(--gold-lt)">${money(v[2])}</td><td class="flag">${date(v[3])}</td>
+      <td class="num">${v[4]}${L==='fr'?' j':'d'}</td><td class="num">${v[5]}</td>
+      <td><span class="dot ${c}"><i></i>${L==='fr'?fr:en}</span></td></tr>`;}).join('');
+
+  document.getElementById('attnList').innerHTML=attention.map((a,i)=>{
+    const[c]=stMap[a[3]];
+    return `<div class="sess" style="animation:fadein .5s var(--ease) ${i*60}ms both">
+      <div class="ini" style="width:26px;height:26px;font-size:9.5px">${ini(a[0])}</div>
+      <div class="sess-b"><div class="sess-n" style="font-size:12.5px">${a[0]}</div>
+      <div class="sess-d" style="font-size:10.5px">${a[1]} · ${a[2]}</div></div>
+      <span class="dot ${c}" style="align-self:center"><i></i></span></div>`;}).join('');
+
+  document.getElementById('brdBody').innerHTML=board.map(b=>{
+    const[c,en,fr]=seMap[b[3]];
+    return `<tr><td>${b[0]}</td><td>${b[1]}</td><td class="flag">${b[2]}</td>
+      <td><span class="pill ${c}">${L==='fr'?(b[3]==='live'?'En cours':'À venir'):(b[3]==='live'?'In progress':'Upcoming')}</span></td></tr>`;}).join('');
+
+  document.getElementById('invMeta').textContent =
+    money(invoices.reduce((a,v)=>a+v[2],0)) + (L==='fr'?' en souffrance':' outstanding');
+
+  ['memBody','benBody','sesBody','invBody','brdBody'].forEach(id=>stagger(document.getElementById(id)));
+}
+
+/* ─── language: the lexicon is data, so the whole console re-labels ─── */
+document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.lang button').forEach(x=>x.classList.toggle('on',x===b));
+  L=b.dataset.l;
+  document.documentElement.lang=L;
+  tick();
+  document.querySelectorAll('[data-i]').forEach(e=>{
+    const v=L==='fr'?(FR[e.dataset.i]??EN[e.dataset.i]):EN[e.dataset.i];
+    if(v)e.textContent=v;
+  });
+  render();
+});
+
+/* ─── nav ─── */
+document.querySelectorAll('.nav-item').forEach(n=>n.onclick=()=>{
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('on',x===n));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('v-'+n.dataset.v).classList.add('on');
+  document.querySelector('.main').scrollTop=0;
+});
+
+/* ─── Lagos clock, and a greeting that knows what time it is there ─── */
+function tick(){
+  const now=new Date();
+  document.getElementById('now').textContent=
+    now.toLocaleString('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const h=+now.toLocaleString('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hour12:false});
+  const g = h<12 ? ['Good morning','Bonjour']
+          : h<17 ? ['Good afternoon','Bon après-midi']
+                 : ['Good evening','Bonsoir'];
+  document.getElementById('greet').textContent = L==='fr'?g[1]:g[0];
+}
+tick();setInterval(tick,1000);
+render();
+</script>
+</body>
+</html>
