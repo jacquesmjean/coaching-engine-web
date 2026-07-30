@@ -9,686 +9,751 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{
-  --ink:#05090F;
-  --navy:#0B1426;
-  --navy-2:#0F1A2E;
-  --navy-3:#13203A;
-  --line:#1D2B47;
-  --line-soft:#16223A;
-  --gold:#C9A227;
-  --gold-lt:#E6CB74;
-  --gold-dim:rgba(201,162,39,.16);
-  --parch:#F2EDE3;
-  --parch-2:#CFC9BD;
-  --mute:#7E889E;
-  --mute-2:#5A6478;
-  --sage:#89A67F;
-  --rust:#C06A4E;
-  --amber:#D6A34A;
-  --r:3px;
-  --ease:cubic-bezier(.16,.84,.44,1);
-}
+:root{--ink:#05090F;--navy:#0B1426;--navy2:#0F1A2E;--navy3:#13203A;--line:#1D2B47;--soft:#16223A;
+--gold:#C9A227;--gold-lt:#E6CB74;--gold-dim:rgba(201,162,39,.16);--parch:#F2EDE3;--parch2:#CFC9BD;
+--mute:#7E889E;--mute2:#5A6478;--sage:#89A67F;--rust:#C06A4E;--amber:#D6A34A;--sky:#6E8FB5;
+--ease:cubic-bezier(.16,.84,.44,1)}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{
-  background:var(--ink);
-  color:var(--parch);
-  font-family:'Archivo',sans-serif;
-  font-size:14px;
-  -webkit-font-smoothing:antialiased;
-  overflow:hidden;
-}
-/* material: grain + a slow navy wash so the dark never reads flat */
-body::before{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:
-    radial-gradient(1200px 700px at 78% -12%, rgba(201,162,39,.07), transparent 62%),
-    radial-gradient(900px 600px at 8% 108%, rgba(29,43,71,.55), transparent 60%);
-}
-body::after{
-  content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-.shell{position:relative;z-index:2;display:grid;grid-template-columns:264px 1fr;height:100vh}
-
-/* ─────────────────────────── rail ─────────────────────────── */
-.rail{
-  background:linear-gradient(180deg,var(--navy) 0%,#080F1D 100%);
-  border-right:1px solid var(--line-soft);
-  display:flex;flex-direction:column;padding:26px 0 18px;
-}
-.brand{padding:0 24px 24px;border-bottom:1px solid var(--line-soft)}
-.brand-row{display:flex;align-items:center;gap:12px}
-.mark{
-  width:38px;height:38px;flex:none;border-radius:50%;
-  border:1px solid var(--gold);
-  display:grid;place-items:center;
-  font-family:'Instrument Serif',serif;font-size:17px;color:var(--gold-lt);
-  background:radial-gradient(circle at 30% 25%,rgba(201,162,39,.22),transparent 70%);
-  letter-spacing:.02em;
-}
-.brand-name{font-family:'Instrument Serif',serif;font-size:19px;line-height:1.1;letter-spacing:.01em}
-.brand-sub{
-  font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--mute-2);
-  letter-spacing:.04em;margin-top:5px;word-break:break-all;
-}
-.tier{
-  display:inline-flex;align-items:center;gap:6px;margin-top:14px;
-  font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
-  border:1px solid var(--gold-dim);background:rgba(201,162,39,.06);
-  padding:4px 9px;border-radius:2px;
-}
+body{background:var(--ink);color:var(--parch);font-family:'Archivo',sans-serif;font-size:14px;
+-webkit-font-smoothing:antialiased;overflow:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:
+radial-gradient(1200px 700px at 80% -12%,rgba(201,162,39,.07),transparent 62%),
+radial-gradient(900px 600px at 6% 108%,rgba(29,43,71,.5),transparent 60%)}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+.demo{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;justify-content:center;
+gap:10px;height:30px;background:#3A2A08;border-bottom:1px solid rgba(201,162,39,.35);
+font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-lt)}
+.demo b{color:var(--parch);font-weight:600;letter-spacing:.1em}
+.demo i{width:5px;height:5px;border-radius:50%;background:var(--gold);font-style:normal}
+.shell{position:relative;z-index:2;display:grid;grid-template-columns:250px 1fr;height:calc(100vh - 30px);margin-top:30px}
+.rail{background:linear-gradient(180deg,var(--navy),#080F1D);border-right:1px solid var(--soft);
+display:flex;flex-direction:column;padding:22px 0 14px}
+.brand{padding:0 22px 18px;border-bottom:1px solid var(--soft)}
+.brow{display:flex;align-items:center;gap:11px}
+.mark{width:36px;height:36px;flex:none;border-radius:50%;border:1px solid var(--gold);display:grid;place-items:center;
+font-family:'Instrument Serif',serif;font-size:16px;color:var(--gold-lt);
+background:radial-gradient(circle at 30% 25%,rgba(201,162,39,.22),transparent 70%)}
+.bname{font-family:'Instrument Serif',serif;font-size:18px;line-height:1.1}
+.bsub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mute2);letter-spacing:.04em;margin-top:5px;word-break:break-all}
+.tier{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:9px;letter-spacing:.16em;
+text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-dim);background:rgba(201,162,39,.06);
+padding:3px 8px;border-radius:2px}
 .tier i{width:4px;height:4px;border-radius:50%;background:var(--gold);font-style:normal}
-
-nav{padding:18px 12px;flex:1;overflow-y:auto}
-.nav-label{
-  font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute-2);
-  padding:14px 12px 8px;
-}
-.nav-item{
-  position:relative;display:flex;align-items:center;gap:11px;
-  padding:9px 12px;border-radius:var(--r);cursor:pointer;
-  color:var(--parch-2);font-size:13.5px;font-weight:500;
-  transition:background .18s var(--ease),color .18s var(--ease);
-  user-select:none;
-}
-.nav-item svg{width:15px;height:15px;flex:none;opacity:.62;transition:opacity .18s}
-.nav-item:hover{background:rgba(255,255,255,.035);color:var(--parch)}
-.nav-item:hover svg{opacity:.9}
-.nav-item.on{background:rgba(201,162,39,.075);color:var(--gold-lt)}
-.nav-item.on svg{opacity:1}
-.nav-item.on::before{
-  content:'';position:absolute;left:-12px;top:8px;bottom:8px;width:2px;background:var(--gold);
-}
-.nav-item.locked{opacity:.4;cursor:default}
-.nav-item.locked:hover{background:transparent;color:var(--parch-2)}
-.lock{margin-left:auto;font-size:8.5px;letter-spacing:.12em;color:var(--gold);
-  border:1px solid var(--gold-dim);padding:2px 5px;border-radius:2px}
-
-.rail-foot{padding:16px 24px 0;border-top:1px solid var(--line-soft);margin-top:8px}
-.pw{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--mute-2);letter-spacing:.05em}
-.pw b{color:var(--parch-2);font-weight:600}
-.pw-dot{width:3px;height:3px;border-radius:50%;background:var(--gold);flex:none}
-
-/* ─────────────────────────── main ─────────────────────────── */
-.main{overflow-y:auto;position:relative}
+nav{padding:12px 10px;flex:1;overflow-y:auto}
+.nlab{font-size:8.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute2);padding:13px 12px 6px}
+.ni{position:relative;display:flex;align-items:center;gap:10px;padding:7.5px 12px;border-radius:3px;cursor:pointer;
+color:var(--parch2);font-size:13px;font-weight:500;transition:background .18s var(--ease),color .18s var(--ease);user-select:none}
+.ni:hover{background:rgba(255,255,255,.035);color:var(--parch)}
+.ni.on{background:rgba(201,162,39,.075);color:var(--gold-lt)}
+.ni.on::before{content:'';position:absolute;left:-10px;top:7px;bottom:7px;width:2px;background:var(--gold)}
+.ni.locked{opacity:.38}
+.badge{margin-left:auto;min-width:19px;height:17px;padding:0 5px;border-radius:9px;display:grid;place-items:center;
+font-size:9.5px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.b-hot{background:var(--rust);color:#fff}.b-warm{background:var(--gold);color:var(--ink)}
+.b-cool{background:var(--navy3);color:var(--parch2);border:1px solid var(--line)}
+.lock{margin-left:auto;font-size:8px;letter-spacing:.12em;color:var(--gold);border:1px solid var(--gold-dim);padding:2px 5px;border-radius:2px}
+.rfoot{padding:13px 22px 0;border-top:1px solid var(--soft);margin-top:6px}
+.pw{display:flex;align-items:center;gap:7px;font-size:9.5px;color:var(--mute2);letter-spacing:.05em}
+.pw b{color:var(--parch2);font-weight:600}
+.pwd{width:3px;height:3px;border-radius:50%;background:var(--gold);flex:none}
+.main{overflow-y:auto}
 .main::-webkit-scrollbar,nav::-webkit-scrollbar{width:8px}
 .main::-webkit-scrollbar-thumb,nav::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
-
-.topbar{
-  position:sticky;top:0;z-index:10;
-  display:flex;align-items:center;gap:18px;
-  padding:0 44px;height:62px;
-  background:rgba(5,9,15,.82);backdrop-filter:blur(14px);
-  border-bottom:1px solid var(--line-soft);
-}
-.clock{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--parch-2);letter-spacing:.02em}
-.clock span{color:var(--mute-2)}
-.spacer{flex:1}
+.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:16px;padding:0 38px;height:56px;
+background:rgba(5,9,15,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--soft)}
+.clock{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--parch2)}
+.clock span{color:var(--mute2)}
+.sp{flex:1}
 .lang{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
-.lang button{
-  background:none;border:0;color:var(--mute);cursor:pointer;
-  font-family:'Archivo',sans-serif;font-size:10.5px;font-weight:600;
-  letter-spacing:.12em;padding:6px 12px;transition:.18s var(--ease);
-}
+.lang button{background:none;border:0;color:var(--mute);cursor:pointer;font-family:'Archivo';font-size:10px;
+font-weight:600;letter-spacing:.1em;padding:5px 9px;transition:.18s var(--ease)}
 .lang button.on{background:var(--gold);color:var(--ink)}
 .lang button:not(.on):hover{color:var(--parch)}
-.avatar{
-  width:31px;height:31px;border-radius:50%;border:1px solid var(--line);
-  display:grid;place-items:center;font-size:10.5px;font-weight:600;
-  color:var(--gold-lt);background:var(--navy-2);letter-spacing:.03em;
-}
-
-.view{padding:40px 44px 72px;max-width:1420px;display:none}
-.view.on{display:block;animation:rise .5s var(--ease) both}
-@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-
-.eyebrow{
-  font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);
-  display:flex;align-items:center;gap:10px;
-}
-.eyebrow::after{content:'';height:1px;flex:1;max-width:80px;
-  background:linear-gradient(90deg,var(--gold-dim),transparent)}
-h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:42px;
-  line-height:1.06;letter-spacing:-.01em;margin:14px 0 8px}
+.av{width:29px;height:29px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;
+font-size:10px;font-weight:600;color:var(--gold-lt);background:var(--navy2)}
+.view{padding:32px 38px 64px;max-width:1560px;display:none}
+.view.on{display:block;animation:rise .45s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+.eyebrow{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:10px}
+.eyebrow::after{content:'';height:1px;flex:1;max-width:70px;background:linear-gradient(90deg,var(--gold-dim),transparent)}
+h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:38px;line-height:1.06;letter-spacing:-.01em;margin:12px 0 7px}
 h1 em{font-style:italic;color:var(--gold-lt)}
-.lede{color:var(--mute);font-size:14px;max-width:62ch;line-height:1.65}
-
-.rule{height:1px;background:linear-gradient(90deg,var(--gold-dim),var(--line-soft) 30%,transparent);margin:34px 0 30px}
-
-/* stats — deliberately asymmetric */
-.stats{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:1px;background:var(--line-soft);
-  border:1px solid var(--line-soft);border-radius:var(--r);overflow:hidden}
-.stat{background:var(--navy);padding:24px 26px;position:relative;transition:background .25s var(--ease)}
-.stat:hover{background:var(--navy-2)}
-.stat:first-child{background:linear-gradient(145deg,var(--navy-2),var(--navy))}
-.stat-k{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute-2)}
-.stat-v{font-family:'Instrument Serif',serif;font-size:44px;line-height:1;margin:14px 0 6px;
-  letter-spacing:-.015em;font-variant-numeric:tabular-nums}
-.stat:first-child .stat-v{font-size:60px;color:var(--gold-lt)}
-.stat-n{font-size:11.5px;color:var(--mute)}
-.stat-n b{font-weight:600}
-.up{color:var(--sage)} .down{color:var(--rust)}
-
-.grid2{display:grid;grid-template-columns:1.32fr 1fr;gap:26px;margin-top:34px}
-.panel{border:1px solid var(--line-soft);border-radius:var(--r);background:rgba(11,20,38,.55);overflow:hidden}
-.panel-h{display:flex;align-items:baseline;gap:12px;padding:18px 24px;border-bottom:1px solid var(--line-soft)}
-.panel-t{font-family:'Instrument Serif',serif;font-size:19px;letter-spacing:.005em}
-.panel-m{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--mute-2);margin-left:auto;letter-spacing:.03em}
-
-/* session rail */
-.sess{display:flex;gap:18px;padding:15px 24px;border-bottom:1px solid var(--line-soft);
-  transition:background .2s var(--ease);cursor:pointer}
-.sess:last-child{border-bottom:0}
-.sess:hover{background:rgba(255,255,255,.022)}
-.sess-t{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold-lt);
-  padding-top:2px;width:52px;flex:none;font-variant-numeric:tabular-nums}
-.sess-b{flex:1;min-width:0}
-.sess-n{font-size:13.5px;font-weight:500}
-.sess-d{font-size:11.5px;color:var(--mute);margin-top:3px}
-.pill{font-size:9px;letter-spacing:.13em;text-transform:uppercase;padding:3px 8px;
-  border-radius:2px;border:1px solid;white-space:nowrap;align-self:flex-start;margin-top:2px}
-.p-live{color:var(--gold);border-color:var(--gold-dim);background:rgba(201,162,39,.08)}
-.p-done{color:var(--sage);border-color:rgba(137,166,127,.3)}
-.p-next{color:var(--mute);border-color:var(--line)}
-
-/* receivables */
-.money{padding:22px 24px}
-.money-v{font-family:'Instrument Serif',serif;font-size:46px;line-height:1;
-  font-variant-numeric:tabular-nums;letter-spacing:-.015em}
-.money-l{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute-2);margin-bottom:12px}
-.bar{height:5px;background:var(--navy-3);border-radius:3px;overflow:hidden;margin:20px 0 10px;display:flex}
-.bar i{display:block;height:100%;font-style:normal}
-.bar .cur{background:var(--sage)} .bar .d30{background:var(--amber)} .bar .d60{background:var(--rust)}
-.leg{display:flex;gap:16px;font-size:10.5px;color:var(--mute)}
-.leg span{display:flex;align-items:center;gap:6px}
-.leg i{width:7px;height:2px;font-style:normal}
-
-/* tables */
+.lede{color:var(--mute);font-size:13.5px;max-width:66ch;line-height:1.62}
+.rule{height:1px;background:linear-gradient(90deg,var(--gold-dim),var(--soft) 30%,transparent);margin:28px 0 24px}
+.queue{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:1px;background:var(--soft);
+border:1px solid var(--soft);border-radius:3px;overflow:hidden;margin-bottom:24px}
+.q{background:var(--navy);padding:18px 20px;cursor:pointer;transition:background .22s var(--ease);position:relative}
+.q:hover{background:var(--navy2)}
+.q.urgent{background:linear-gradient(150deg,rgba(192,106,78,.13),var(--navy))}
+.q.urgent::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--rust)}
+.qk{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute2)}
+.qv{font-family:'Instrument Serif',serif;font-size:38px;line-height:1;margin:10px 0 5px;font-variant-numeric:tabular-nums}
+.q.urgent .qv{color:#E08A6B}
+.qn{font-size:11px;color:var(--mute)}
+.qn b{font-weight:600;color:var(--parch2)}
+.money{color:var(--gold-lt)}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:22px}
+.panel{border:1px solid var(--soft);border-radius:3px;background:rgba(11,20,38,.55);overflow:hidden;margin-bottom:22px}
+.ph{display:flex;align-items:baseline;gap:11px;padding:15px 20px;border-bottom:1px solid var(--soft)}
+.pt{font-family:'Instrument Serif',serif;font-size:18px}
+.pm{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--mute2);margin-left:auto}
 .tbl{width:100%;border-collapse:collapse}
-.tbl th{
-  text-align:left;font-size:9px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--mute-2);font-weight:600;padding:13px 24px;border-bottom:1px solid var(--line-soft);
-  background:rgba(8,14,26,.5);position:sticky;top:0;
-}
-.tbl td{padding:14px 24px;border-bottom:1px solid var(--line-soft);font-size:13px;vertical-align:middle}
-.tbl tr{transition:background .18s var(--ease)}
+.tbl th{text-align:left;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute2);
+font-weight:600;padding:11px 20px;border-bottom:1px solid var(--soft);background:rgba(8,14,26,.5)}
+.tbl td:last-child{padding-right:24px}
+.tbl td{padding:12px 20px;border-bottom:1px solid var(--soft);font-size:12.5px;vertical-align:middle}
+.tbl tbody tr{transition:background .16s var(--ease);opacity:0;animation:fi .4s var(--ease) forwards}
 .tbl tbody tr:hover{background:rgba(255,255,255,.025)}
-.tbl tbody tr{opacity:0;animation:fadein .45s var(--ease) forwards}
-@keyframes fadein{to{opacity:1}}
-.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12.5px}
-.who{display:flex;align-items:center;gap:11px}
-.ini{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;
-  font-size:10.5px;font-weight:600;background:var(--navy-3);color:var(--gold-lt);
-  border:1px solid var(--line);letter-spacing:.03em}
-.who-n{font-weight:500}
-.who-s{font-size:11px;color:var(--mute-2);margin-top:2px}
-.tag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--parch-2);
-  border:1px solid var(--line);padding:3px 8px;border-radius:2px;background:var(--navy-2)}
-.dot{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--parch-2)}
-.dot i{width:5px;height:5px;border-radius:50%;font-style:normal}
-.s-act i{background:var(--sage)} .s-lap i{background:var(--rust)} .s-pau i{background:var(--amber)}
-.s-alu i{background:var(--mute-2)}
-.flag{font-size:11px;color:var(--mute-2);font-family:'IBM Plex Mono',monospace}
-
-.locked-view{text-align:center;padding:96px 24px}
-.locked-view .mark{margin:0 auto 26px;width:56px;height:56px;font-size:22px}
-.locked-view h2{font-family:'Instrument Serif',serif;font-size:32px;font-weight:400;margin-bottom:12px}
-.locked-view p{color:var(--mute);max-width:46ch;margin:0 auto 28px;line-height:1.7}
+@keyframes fi{to{opacity:1}}
+.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
+.who{display:flex;align-items:center;gap:10px}
+.ini{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:9.5px;
+font-weight:600;background:var(--navy3);color:var(--gold-lt);border:1px solid var(--line)}
+.wn{font-weight:500;white-space:nowrap}.ws{font-size:10.5px;color:var(--mute2);margin-top:2px}
+.tag{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--parch2);border:1px solid var(--line);
+padding:3px 7px;border-radius:2px;background:var(--navy2);white-space:nowrap}
+.tag.plat{color:var(--gold-lt);border-color:var(--gold-dim);background:rgba(201,162,39,.08)}
+.tag.exec{color:var(--sky);border-color:rgba(110,143,181,.3)}
+.dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--parch2);white-space:nowrap}
+.dot i{width:5px;height:5px;border-radius:50%;flex:none;font-style:normal}
+.s-ok i{background:var(--sage)}.s-bad i{background:var(--rust)}.s-warn i{background:var(--amber)}
+.s-idle i{background:var(--mute2)}.s-new i{background:var(--gold)}
+.flag{font-size:10.5px;color:var(--mute2);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.act{border:1px solid var(--gold);color:var(--gold-lt);background:rgba(201,162,39,.07);padding:5px 12px;
+border-radius:2px;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:600;cursor:pointer;
+font-family:'Archivo';transition:.2s var(--ease);white-space:nowrap}
+.act:hover{background:var(--gold);color:var(--ink)}
+.act.done{border-color:rgba(137,166,127,.4);color:var(--sage);background:rgba(137,166,127,.08);cursor:default}
+.act.done:hover{background:rgba(137,166,127,.08);color:var(--sage)}
+.bar{height:4px;background:var(--navy3);border-radius:3px;overflow:hidden;display:flex;width:78px}
+.bar i{height:100%;font-style:normal;background:var(--gold)}
+.age{font-family:'IBM Plex Mono',monospace;font-size:11px}
+.age.hot{color:var(--rust)}.age.warm{color:var(--amber)}
+.locked-view{text-align:center;padding:88px 24px}
+.locked-view .mark{margin:0 auto 22px;width:52px;height:52px;font-size:20px}
+.locked-view h2{font-family:'Instrument Serif',serif;font-size:29px;font-weight:400;margin-bottom:11px}
+.locked-view p{color:var(--mute);max-width:46ch;margin:0 auto 24px;line-height:1.7}
 .cta{display:inline-block;border:1px solid var(--gold);color:var(--gold-lt);background:rgba(201,162,39,.07);
-  padding:11px 26px;border-radius:2px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
-  font-weight:600;cursor:pointer;transition:.22s var(--ease)}
+padding:10px 24px;border-radius:2px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+font-weight:600;cursor:pointer;transition:.22s var(--ease)}
 .cta:hover{background:var(--gold);color:var(--ink)}
-
-.foot{margin-top:52px;padding-top:20px;border-top:1px solid var(--line-soft);
-  display:flex;gap:20px;font-size:10.5px;color:var(--mute-2);flex-wrap:wrap}
-.foot b{color:var(--parch-2);font-weight:600}
-
-
-.demo{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;
-  justify-content:center;gap:10px;height:30px;background:#3A2A08;
-  border-bottom:1px solid rgba(201,162,39,.35);
-  font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#E6CB74}
-.demo b{color:#F2EDE3;font-weight:600;letter-spacing:.1em}
-.demo i{width:5px;height:5px;border-radius:50%;background:var(--gold);font-style:normal}
-body.has-demo .shell{height:calc(100vh - 30px);margin-top:30px}
-body.has-demo .topbar{top:0}
-
-@media(max-width:1080px){
-  .shell{grid-template-columns:1fr}.rail{display:none}
-  .stats{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}
-  .view{padding:28px 22px 60px}.topbar{padding:0 22px}
-}
+.foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--soft);display:flex;gap:18px;
+font-size:10px;color:var(--mute2);flex-wrap:wrap}
+.foot b{color:var(--parch2);font-weight:600}
+@media(max-width:1180px){.shell{grid-template-columns:1fr}.rail{display:none}.grid2{grid-template-columns:1fr}
+.view{padding:24px 18px 56px}.top{padding:0 18px}}
 </style>
 </head>
-<body class="has-demo">
+<body>
 <div class="demo"><i></i><b>Preview</b> · sample data, not BCA records</div>
 <div class="shell">
+<aside class="rail">
+  <div class="brand">
+    <div class="brow"><div class="mark">B</div><div><div class="bname">BCA Leadership</div></div></div>
+    <div class="bsub">servicedesk.bcaleadership.com</div>
+    <div class="tier"><i></i>Professional</div>
+  </div>
+  <nav>
+    <div class="nlab" data-i="lToday">Desk</div>
+    <div class="ni on" data-v="today"><span data-i="today">Today</span><span class="badge b-hot">14</span></div>
+    <div class="nlab" data-i="lRev">Revenue</div>
+    <div class="ni" data-v="authorise"><span data-i="authorise">Authorise &amp; Invoice</span><span class="badge b-hot">6</span></div>
+    <div class="ni" data-v="members"><span data-i="members">Members</span><span class="badge b-cool">218</span></div>
+    <div class="ni" data-v="corporate"><span data-i="corporate">Corporate</span><span class="badge b-cool">9</span></div>
+    <div class="ni" data-v="coaching"><span data-i="coaching">Coaching</span><span class="badge b-cool">47</span></div>
+    <div class="ni" data-v="requests"><span data-i="requests">Requests</span><span class="badge b-warm">8</span></div>
+    <div class="nlab" data-i="lOps">Operations</div>
+    <div class="ni" data-v="bench"><span data-i="bench">The Bench</span><span class="badge b-cool">42</span></div>
+    <div class="ni" data-v="sessions"><span data-i="sessions">Sessions</span></div>
+    <div class="ni" data-v="consults"><span data-i="consults">Consultations</span><span class="badge b-warm">5</span></div>
+    <div class="ni" data-v="mialc"><span data-i="mialc">MIALC</span></div>
+    <div class="nlab" data-i="lComm">Community</div>
+    <div class="ni" data-v="needs"><span data-i="needs">Needs &amp; Leads</span><span class="badge b-cool">23</span></div>
+    <div class="ni" data-v="outcomes"><span data-i="outcomes">Outcomes</span></div>
+    <div class="ni" data-v="shop"><span data-i="shop">Shop</span></div>
+    <div class="nlab" data-i="lGov">Governance</div>
+    <div class="ni" data-v="board"><span data-i="board">Board Room</span></div>
+    <div class="ni locked" data-v="intel"><span data-i="intel">Intelligence</span><span class="lock">TIER</span></div>
+  </nav>
+  <div class="rfoot"><div class="pw"><span class="pwd"></span>Powered by <b>TechFides</b></div></div>
+</aside>
 
-  <!-- ══════════════════ rail ══════════════════ -->
-  <aside class="rail">
-    <div class="brand">
-      <div class="brand-row">
-        <div class="mark">B</div>
-        <div>
-          <div class="brand-name">BCA Leadership</div>
-        </div>
+<main class="main">
+  <div class="top">
+    <div class="clock"><span>Mauritius</span> · <span id="now">—</span></div>
+    <div class="sp"></div>
+    <div class="lang"><button class="on" data-l="en">EN</button><button data-l="fr">FR</button>
+      <button data-l="es">ES</button><button data-l="pt">PT</button></div>
+    <div class="av">MT</div>
+  </div>
+
+  <section class="view on" id="v-today">
+    <div class="eyebrow" data-i="ebToday">The desk · Wednesday 29 July 2026</div>
+    <h1><span id="greet">Good morning</span>, <em>Modupe</em></h1>
+    <p class="lede" data-i="ldToday">Six signed contracts are waiting on your authorisation before an invoice can go out. That is the only queue on this page where waiting costs money.</p>
+    <div class="rule"></div>
+    <div class="queue" id="qRow"></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="ph"><div class="pt" data-i="pAwait">Awaiting Authorisation</div><div class="pm" id="awaitTotal">—</div></div>
+        <table class="tbl"><thead><tr><th data-i="hContract">Contract</th><th data-i="hWho">Signatory</th>
+          <th data-i="hProduct">Product</th><th data-i="hValue">Value</th><th data-i="hSigned">Signed</th><th></th>
+        </tr></thead><tbody id="authBody"></tbody></table>
       </div>
-      <div class="brand-sub">servicedesk.bcaleadership.com</div>
-      <div class="tier"><i></i>Professional</div>
+      <div class="panel">
+        <div class="ph"><div class="pt" data-i="pAging">Unanswered Requests</div><div class="pm">first response</div></div>
+        <div id="ageWrap"></div>
+      </div>
     </div>
-
-    <nav>
-      <div class="nav-label" data-i="ops">Operations</div>
-      <div class="nav-item on" data-v="overview">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h6l2-7 3 14 2-7h5"/></svg>
-        <span data-i="overview">Overview</span></div>
-      <div class="nav-item" data-v="members">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6 6 0 0 0-2-4.4"/></svg>
-        <span data-i="members">Members</span></div>
-      <div class="nav-item" data-v="bench">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.1 5.6L12 15.8 7.1 18.5l1.1-5.6L4 9l5.6-.7z"/></svg>
-        <span data-i="bench">The Bench</span></div>
-      <div class="nav-item" data-v="sessions">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-        <span data-i="sessions">Sessions</span></div>
-
-      <div class="nav-label" data-i="fin">Finance</div>
-      <div class="nav-item" data-v="billing">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
-        <span data-i="billing">Billing</span></div>
-
-      <div class="nav-label" data-i="gov">Governance</div>
-      <div class="nav-item" data-v="board">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 3.5v5c0 5-3.4 8.9-8 9.9-4.6-1-8-4.9-8-9.9v-5z"/></svg>
-        <span data-i="board">Board Room</span></div>
-      <div class="nav-item locked" data-v="intel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-        <span data-i="intel">Intelligence</span>
-        <span class="lock">TIER</span></div>
-    </nav>
-
-    <div class="rail-foot">
-      <div class="pw"><span class="pw-dot"></span>Powered by <b>TechFides</b></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pToday">Today's Sessions</div><div class="pm">4 regions</div></div>
+      <table class="tbl"><thead><tr><th data-i="hTime">Time</th><th data-i="hMember">Member</th>
+        <th data-i="hCoach">Coach</th><th data-i="hTier">Tier</th><th data-i="hCredits">Credits left</th>
+        <th data-i="hZone">Zone</th><th data-i="hStatus">Status</th></tr></thead><tbody id="sessBody"></tbody></table>
     </div>
-  </aside>
+    <div class="foot"><span><b>Entity</b> C/O FFG (Mauritius) Ltd</span><span><b>Languages</b> EN · FR · ES · PT</span>
+      <span><b>Regions</b> 5 + diaspora</span><span><b>Revenue lines</b> 7</span><span><b>Modules</b> 9 of 10</span></div>
+  </section>
 
-  <!-- ══════════════════ main ══════════════════ -->
-  <main class="main">
-    <div class="topbar">
-      <div class="clock"><span id="tz">Africa/Lagos</span> · <span id="now">—</span></div>
-      <div class="spacer"></div>
-      <div class="lang">
-        <button class="on" data-l="en">EN</button>
-        <button data-l="fr">FR</button>
-      </div>
-      <div class="avatar">MT</div>
+  <section class="view" id="v-authorise">
+    <div class="eyebrow" data-i="ebFin">Finance</div>
+    <h1 data-i="tAuth">Authorise &amp; Invoice</h1>
+    <p class="lede" data-i="ldAuth">The website tells every buyer that BCA will authorise and issue their invoice. This is where that happens. A signed contract with no invoice is a client who committed and was never billed.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pSigned">Signed, awaiting authorisation</div><div class="pm" id="authTotal2">—</div></div>
+      <table class="tbl"><thead><tr><th data-i="hContract">Contract</th><th data-i="hWho">Signatory</th>
+        <th data-i="hProduct">Product</th><th data-i="hValue">Value</th><th data-i="hBilling">Billing</th>
+        <th data-i="hSigned">Signed</th><th data-i="hLang">Lang</th><th></th></tr></thead><tbody id="authBody2"></tbody></table>
     </div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pIssued">Issued this month</div><div class="pm">USD</div></div>
+      <table class="tbl"><thead><tr><th data-i="hInvoice">Invoice</th><th data-i="hPayer">Payer</th>
+        <th data-i="hAmount">Amount</th><th data-i="hDue">Due</th><th data-i="hAge">Age</th>
+        <th data-i="hRem">Reminders</th><th data-i="hStatus">Status</th></tr></thead><tbody id="invBody"></tbody></table>
+    </div>
+  </section>
 
-    <!-- ───────── overview ───────── -->
-    <section class="view on" id="v-overview">
-      <div class="eyebrow" data-i="today">Tuesday · 28 July 2026</div>
-      <h1><span id="greet">Good morning</span>, <em>Modupe</em></h1>
-      <p class="lede" data-i="lede">Seven sessions on the calendar today, four across three time zones. Two members lapsed this week and both have open invoices.</p>
+  <section class="view" id="v-members">
+    <div class="eyebrow" data-i="ebDir">Directory</div>
+    <h1 data-i="tMembers">Members</h1>
+    <p class="lede" data-i="ldMembers">Three individual tiers. Coaching credits are an entitlement, not a schedule — the balance shown is what each member can still draw down this term.</p>
+    <div class="rule"></div>
+    <div class="queue" id="tierRow"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pAll">All members</div><div class="pm">218 · page 1</div></div>
+      <table class="tbl"><thead><tr><th data-i="hName">Name</th><th data-i="hTier">Tier</th>
+        <th data-i="hCohort">Cohort</th><th data-i="hCoach">Coach</th><th data-i="hCredits">Credits</th>
+        <th data-i="hRenews">Renews</th><th data-i="hStanding">Standing</th><th data-i="hLoc">Location</th>
+      </tr></thead><tbody id="memBody"></tbody></table>
+    </div>
+  </section>
 
-      <div class="rule"></div>
+  <section class="view" id="v-corporate">
+    <div class="eyebrow" data-i="ebCorp">New for 2026</div>
+    <h1 data-i="tCorp">Corporate Membership</h1>
+    <p class="lede" data-i="ldCorp">Seat-based. The question that matters every week is not who bought, it is how many seats are sitting empty — an unused seat is a renewal that will not happen.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pAccounts">Corporate accounts</div><div class="pm" id="seatSummary">—</div></div>
+      <table class="tbl"><thead><tr><th data-i="hOrg">Organisation</th><th data-i="hPlan">Plan</th>
+        <th data-i="hSeats">Seats used</th><th></th><th data-i="hValue">Value</th><th data-i="hRenews">Renews</th>
+        <th data-i="hStatus">Status</th><th data-i="hLoc">Location</th></tr></thead><tbody id="corpBody"></tbody></table>
+    </div>
+  </section>
 
-      <div class="stats">
-        <div class="stat">
-          <div class="stat-k" data-i="activeMembers">Active Members</div>
-          <div class="stat-v">218</div>
-          <div class="stat-n"><b class="up">+14</b> <span data-i="thisQ">this quarter</span> · <b>9</b> <span data-i="corp">corporate accounts</span></div>
-        </div>
-        <div class="stat">
-          <div class="stat-k" data-i="bench">The Bench</div>
-          <div class="stat-v">34</div>
-          <div class="stat-n"><b>31</b> <span data-i="assigned">assigned</span></div>
-        </div>
-        <div class="stat">
-          <div class="stat-k" data-i="sessM">Sessions · July</div>
-          <div class="stat-v">186</div>
-          <div class="stat-n"><b class="up">94%</b> <span data-i="held">held</span></div>
-        </div>
-        <div class="stat">
-          <div class="stat-k" data-i="outst">Outstanding</div>
-          <div class="stat-v">84.2<span style="font-size:24px;color:var(--mute)">k</span></div>
-          <div class="stat-n"><b class="down">$18.4k</b> <span data-i="over60">over 60 days</span></div>
-        </div>
-      </div>
+  <section class="view" id="v-coaching">
+    <div class="eyebrow" data-i="ebCoach">Sold separately from membership</div>
+    <h1 data-i="tCoaching">Coaching Packages</h1>
+    <p class="lede" data-i="ldCoaching">Starter, Focus and Momentum are session credits, not subscriptions. Every held session draws one down. The ledger is what makes a client's balance defensible when they ask.</p>
+    <div class="rule"></div>
+    <div class="queue" id="pkgRow"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pClients">Package clients</div><div class="pm" id="pkgTotal">—</div></div>
+      <table class="tbl"><thead><tr><th data-i="hName">Client</th><th data-i="hPackage">Package</th>
+        <th data-i="hCoach">Coach</th><th data-i="hUsed">Used</th><th></th><th data-i="hCredits">Left</th>
+        <th data-i="hPurchased">Purchased</th><th data-i="hStatus">Status</th></tr></thead><tbody id="pkgBody"></tbody></table>
+    </div>
+  </section>
 
-      <div class="grid2">
-        <div class="panel">
-          <div class="panel-h">
-            <div class="panel-t" data-i="todaySched">Today's Schedule</div>
-            <div class="panel-m">WAT · UTC+1</div>
-          </div>
-          <div id="sessList"></div>
-        </div>
+  <section class="view" id="v-requests">
+    <div class="eyebrow" data-i="ebPipe">Inbound</div>
+    <h1 data-i="tRequests">Requests</h1>
+    <p class="lede" data-i="ldRequests">Consulting, project management and business matching arrive already qualified — budget band, timeline, and whether the sender can actually decide. Sorted by how long they have waited, because that is the number that loses deals.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pOpen">Open requests</div><div class="pm" id="reqTotal">—</div></div>
+      <table class="tbl"><thead><tr><th data-i="hKind">Kind</th><th data-i="hWho">From</th>
+        <th data-i="hOrg">Organisation</th><th data-i="hBudget">Budget</th><th data-i="hTimeline">Timeline</th>
+        <th data-i="hAuthority">Authority</th><th data-i="hWaiting">Waiting</th><th data-i="hStatus">Status</th>
+      </tr></thead><tbody id="reqBody"></tbody></table>
+    </div>
+  </section>
 
-        <div class="panel">
-          <div class="panel-h">
-            <div class="panel-t" data-i="recv">Receivables</div>
-            <div class="panel-m">USD</div>
-          </div>
-          <div class="money">
-            <div class="money-l" data-i="outstTotal">Outstanding total</div>
-            <div class="money-v">$84,200</div>
-            <div class="bar">
-              <i class="cur" style="width:53%"></i><i class="d30" style="width:25%"></i><i class="d60" style="width:22%"></i>
-            </div>
-            <div class="leg">
-              <span><i class="cur" style="background:var(--sage)"></i><span data-i="current">Current</span> $44.6k</span>
-              <span><i class="d30" style="background:var(--amber)"></i>30–60 $21.2k</span>
-              <span><i class="d60" style="background:var(--rust)"></i>60+ $18.4k</span>
-            </div>
-          </div>
-          <div class="panel-h" style="border-top:1px solid var(--line-soft)">
-            <div class="panel-t" data-i="collected">Collected · July</div>
-          </div>
-          <div class="money" style="padding-bottom:18px">
-            <div class="money-v" style="color:var(--sage)">$41,900</div>
-            <div class="stat-n" style="margin-top:8px"><b class="up">+11%</b> <span data-i="vsJune">against June</span></div>
-          </div>
+  <section class="view" id="v-bench">
+    <div class="eyebrow" data-i="ebBench">Faculty</div>
+    <h1>The <em>Bench</em></h1>
+    <p class="lede" data-i="ldBench">Forty-two coaches, consultants, facilitators and trainers across all five African regions. Load is what to watch — an over-committed coach is how session quality quietly drops.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pBench">Bench roster</div><div class="pm">42 active</div></div>
+      <table class="tbl"><thead><tr><th data-i="hName">Name</th><th data-i="hType">Type</th>
+        <th data-i="hRegion">Region</th><th data-i="hDisc">Disciplines</th><th data-i="hLangs">Languages</th>
+        <th data-i="hLoad">Load</th><th></th><th data-i="hPayout">Payout · Jul</th></tr></thead><tbody id="benBody"></tbody></table>
+    </div>
+  </section>
 
-          <div class="panel-h" style="border-top:1px solid var(--line-soft)">
-            <div class="panel-t" data-i="attention">Needs Attention</div>
-            <div class="panel-m">3</div>
-          </div>
-          <div id="attnList"></div>
-        </div>
-      </div>
+  <section class="view" id="v-sessions">
+    <div class="eyebrow" data-i="ebCal">Calendar</div>
+    <h1 data-i="tSessions">Sessions</h1>
+    <p class="lede" data-i="ldSessions">Stored as an absolute instant alongside the zone it was agreed in. Marking a session held draws a credit from the member's balance — the two can never drift apart.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pWeek">This week</div><div class="pm">31 scheduled</div></div>
+      <table class="tbl"><thead><tr><th data-i="hWhen">When</th><th data-i="hMember">Member</th>
+        <th data-i="hCoach">Coach</th><th data-i="hSource">Drawn from</th><th data-i="hZone">Zone</th>
+        <th data-i="hStatus">Status</th></tr></thead><tbody id="allSessBody"></tbody></table>
+    </div>
+  </section>
 
-      <div class="foot">
-        <span><b>Tenant</b> bca · shared</span>
-        <span><b>Lexicon</b> EN / FR</span>
-        <span><b>Currency</b> USD</span>
-        <span><b>Modules</b> 9 of 10</span>
-      </div>
-    </section>
+  <section class="view" id="v-consults">
+    <div class="eyebrow" data-i="ebMatch">Matching</div>
+    <h1 data-i="tConsults">Consultations</h1>
+    <p class="lede" data-i="ldConsults">The thirty-minute call that turns a website visitor into a client. Booked in GMT, two to five business days out, and the matched coach has to be told — the site promises they will be.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pBookings">Bookings</div><div class="pm" id="consTotal">—</div></div>
+      <table class="tbl"><thead><tr><th data-i="hWho">Name</th><th data-i="hOrg">Organisation</th>
+        <th data-i="hSlot">Requested slot</th><th data-i="hCoach">Matched coach</th>
+        <th data-i="hNotified">Coach notified</th><th data-i="hStatus">Status</th><th></th></tr></thead><tbody id="consBody"></tbody></table>
+    </div>
+  </section>
 
-    <!-- ───────── members ───────── -->
-    <section class="view" id="v-members">
-      <div class="eyebrow" data-i="directory">Directory</div>
-      <h1 data-i="membersT">Members</h1>
-      <p class="lede" data-i="membersL">Two hundred and eighteen active. Filter by cohort, corporate account, or standing.</p>
-      <div class="rule"></div>
-      <div class="panel">
-        <div class="panel-h"><div class="panel-t" data-i="allMembers">All Members</div><div class="panel-m">218 · page 1</div></div>
-        <table class="tbl"><thead><tr>
-          <th data-i="name">Name</th><th data-i="account">Corporate Account</th><th data-i="programme">Programme</th>
-          <th data-i="coach">Coach</th><th data-i="standing">Standing</th><th data-i="loc">Location</th>
-        </tr></thead><tbody id="memBody"></tbody></table>
-      </div>
-    </section>
+  <section class="view" id="v-mialc">
+    <div class="eyebrow" data-i="ebConf">Conference</div>
+    <h1>Made in Africa <em>Leadership Conference</em></h1>
+    <p class="lede" data-i="ldMialc">Platinum includes a pass. Executive and Associate pay member rates. Everyone else pays full. Getting that right at registration is the difference between a clean invoice and an awkward email.</p>
+    <div class="rule"></div>
+    <div class="queue" id="confRow"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pRegs">Registrations</div><div class="pm">MIALC 2026 · Mauritius</div></div>
+      <table class="tbl"><thead><tr><th data-i="hName">Delegate</th><th data-i="hTier">Member tier</th>
+        <th data-i="hPass">Pass</th><th data-i="hAmount">Amount</th><th data-i="hStatus">Status</th>
+        <th data-i="hLoc">From</th></tr></thead><tbody id="confBody"></tbody></table>
+    </div>
+  </section>
 
-    <!-- ───────── bench ───────── -->
-    <section class="view" id="v-bench">
-      <div class="eyebrow" data-i="faculty">Faculty</div>
-      <h1>The <em>Bench</em></h1>
-      <p class="lede" data-i="benchL">Thirty-four coaches. Load, languages, and current assignments.</p>
-      <div class="rule"></div>
-      <div class="panel">
-        <div class="panel-h"><div class="panel-t" data-i="coaches">Coaches</div><div class="panel-m">34 active</div></div>
-        <table class="tbl"><thead><tr>
-          <th data-i="coach">Coach</th><th data-i="langs">Languages</th><th data-i="load">Load</th>
-          <th data-i="sessM2">Sessions · July</th><th data-i="payout">Payout · July</th><th data-i="loc">Location</th>
-        </tr></thead><tbody id="benBody"></tbody></table>
-      </div>
-    </section>
+  <section class="view" id="v-needs">
+    <div class="eyebrow" data-i="ebOnline">BCAOnline</div>
+    <h1>Needs &amp; <em>Leads</em></h1>
+    <p class="lede" data-i="ldNeeds">A member posts what they need; another posts what they have. Matching the two is the network doing work between meetings, and it is the single most quotable reason members renew.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pOpenItems">Open items</div><div class="pm" id="nlTotal">—</div></div>
+      <table class="tbl"><thead><tr><th data-i="hKind">Kind</th><th data-i="hTitle">Title</th>
+        <th data-i="hWho">Member</th><th data-i="hSector">Sector</th><th data-i="hRegion">Region</th>
+        <th data-i="hStatus">Status</th><th></th></tr></thead><tbody id="nlBody"></tbody></table>
+    </div>
+  </section>
 
-    <!-- ───────── sessions ───────── -->
-    <section class="view" id="v-sessions">
-      <div class="eyebrow" data-i="calendar">Calendar</div>
-      <h1 data-i="sessionsT">Sessions</h1>
-      <p class="lede" data-i="sessionsL">Every session is stored as an absolute instant alongside the zone it was agreed in. Nothing shifts when a country changes its offset.</p>
-      <div class="rule"></div>
-      <div class="panel">
-        <div class="panel-h"><div class="panel-t" data-i="thisWeek">This Week</div><div class="panel-m">27 scheduled</div></div>
-        <table class="tbl"><thead><tr>
-          <th data-i="when">When</th><th data-i="member">Member</th><th data-i="coach">Coach</th>
-          <th data-i="programme">Programme</th><th data-i="zone">Zone</th><th data-i="status">Status</th>
-        </tr></thead><tbody id="sesBody"></tbody></table>
-      </div>
-    </section>
+  <section class="view" id="v-outcomes">
+    <div class="eyebrow" data-i="ebProof">Proof</div>
+    <h1 data-i="tOutcomes">Member Outcomes</h1>
+    <p class="lede" data-i="ldOutcomes">The site claims 63% of member CEOs see revenue growth above 10%. A claim like that needs a table behind it. This is that table — and it is also the strongest renewal argument BCA owns.</p>
+    <div class="rule"></div>
+    <div class="queue" id="outRow"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pRecorded">Recorded outcomes</div><div class="pm">H1 2026</div></div>
+      <table class="tbl"><thead><tr><th data-i="hName">Member</th><th data-i="hTier">Tier</th>
+        <th data-i="hGrowth">Revenue growth</th><th data-i="hPromo">Promotion</th>
+        <th data-i="hBoard">Board seat</th><th data-i="hNps">NPS</th></tr></thead><tbody id="outBody"></tbody></table>
+    </div>
+  </section>
 
-    <!-- ───────── billing ───────── -->
-    <section class="view" id="v-billing">
-      <div class="eyebrow" data-i="finance">Finance</div>
-      <h1 data-i="billingT">Billing</h1>
-      <p class="lede" data-i="billingL">Reminders send in each payer's own language on a 3, 7, 14 and 21 day cadence. Terms are 14 days.</p>
-      <div class="rule"></div>
-      <div class="panel">
-        <div class="panel-h"><div class="panel-t" data-i="openInv">Open Invoices</div><div class="panel-m" id="invMeta">$84,200 outstanding</div></div>
-        <table class="tbl"><thead><tr>
-          <th data-i="invoice">Invoice</th><th data-i="payer">Payer</th><th data-i="amount">Amount</th>
-          <th data-i="due">Due</th><th data-i="age">Age</th><th data-i="remind">Reminders</th><th data-i="status">Status</th>
-        </tr></thead><tbody id="invBody"></tbody></table>
-      </div>
-    </section>
+  <section class="view" id="v-shop">
+    <div class="eyebrow" data-i="ebShop">Storefront</div>
+    <h1 data-i="tShop">Shop</h1>
+    <p class="lede" data-i="ldShop">Ebooks, recordings and merch — the entry point for leaders not ready for membership. The storefront is still in setup on the site; the catalogue and order plumbing are ready for it.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pCatalogue">Catalogue</div><div class="pm" data-i="pmSetup">storefront in setup</div></div>
+      <table class="tbl"><thead><tr><th data-i="hProduct">Product</th><th data-i="hLine">Line</th>
+        <th data-i="hFrom">From</th><th data-i="hStatus">Status</th></tr></thead><tbody id="shopBody"></tbody></table>
+    </div>
+  </section>
 
-    <!-- ───────── board ───────── -->
-    <section class="view" id="v-board">
-      <div class="eyebrow" data-i="governance">Governance</div>
-      <h1 data-i="boardT">Board Room</h1>
-      <p class="lede" data-i="boardL">Resolutions and votes are written to an append-only trail. No administrator can edit or delete an entry — that is what makes the record defensible.</p>
-      <div class="rule"></div>
-      <div class="panel">
-        <div class="panel-h"><div class="panel-t" data-i="mandates">Strategic Mandates</div><div class="panel-m" data-i="q3">Q3 2026</div></div>
-        <table class="tbl"><thead><tr>
-          <th data-i="mandate">Mandate</th><th data-i="owner">Owner</th><th data-i="dueQ">Due</th><th data-i="status">Status</th>
-        </tr></thead><tbody id="brdBody"></tbody></table>
-      </div>
-    </section>
+  <section class="view" id="v-board">
+    <div class="eyebrow" data-i="ebGov">Governance</div>
+    <h1 data-i="tBoard">Board Room</h1>
+    <p class="lede" data-i="ldBoard">Resolutions and votes write to an append-only trail. No administrator can edit or delete an entry — that is what makes the record defensible to a regulator or a donor.</p>
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt" data-i="pMandates">Strategic mandates</div><div class="pm">Q3 2026</div></div>
+      <table class="tbl"><thead><tr><th data-i="hMandate">Mandate</th><th data-i="hOwner">Owner</th>
+        <th data-i="hDue">Due</th><th data-i="hStatus">Status</th></tr></thead><tbody id="brdBody"></tbody></table>
+    </div>
+  </section>
 
-    <!-- ───────── intelligence (locked) ───────── -->
-    <section class="view" id="v-intel">
-      <div class="locked-view">
-        <div class="mark">✦</div>
-        <h2 data-i="intelT">Intelligence</h2>
-        <p data-i="intelL">Semantic search across every coaching note, pre-call briefing agents, the alumni impact graph, and voice. Available on the Sovereign tier.</p>
-        <div class="cta" data-i="talk">Talk to TechFides</div>
-      </div>
-    </section>
-  </main>
+  <section class="view" id="v-intel">
+    <div class="locked-view">
+      <div class="mark">✦</div>
+      <h2 data-i="tIntel">Intelligence</h2>
+      <p data-i="ldIntel">Semantic search across every coaching note, pre-call briefing agents, the alumni impact graph, and voice. Available on the Sovereign tier.</p>
+      <div class="cta" data-i="ctaTalk">Talk to TechFides</div>
+    </div>
+  </section>
+</main>
 </div>
 
 <script>
-/* ─── data ─── */
-const members=[
- ["Adaeze Okonkwo","Zenith Bank","Executive Circle","Dr. Ngozi Eze","act","Lagos, NG"],
- ["Kwame Mensah","MTN Ghana","Board Ready","Samuel Adjei","act","Accra, GH"],
- ["Fatou Diallo","Sonatel","Executive Circle","Aminata Sow","act","Dakar, SN"],
- ["Thabo Molefe","Standard Bank","Senior Leaders","Dr. Ngozi Eze","act","Johannesburg, ZA"],
- ["Amina Yusuf","Dangote Group","Board Ready","Chidi Nwosu","pau","Kano, NG"],
- ["Jean-Baptiste Kouassi","Ecobank CI","Cercle Exécutif","Aminata Sow","act","Abidjan, CI"],
- ["Grace Wanjiru","Safaricom","Senior Leaders","Peter Kimani","act","Nairobi, KE"],
- ["Olusegun Adeyemi","Access Holdings","Executive Circle","Chidi Nwosu","lap","Lagos, NG"],
- ["Marie-Claire Nguema","BGFIBank","Cercle Exécutif","Aminata Sow","act","Libreville, GA"],
- ["Tendai Chikwanha","Econet","Board Ready","Peter Kimani","lap","Harare, ZW"],
- ["Nadia Benali","Attijariwafa","Cercle Exécutif","Youssef Alami","act","Casablanca, MA"],
- ["Emeka Obi","Flutterwave","Founders Track","Samuel Adjei","alu","Lagos, NG"]];
+const CONTRACTS=[
+["BCA-C-2026-0412","Adaeze Okonkwo","Zenith Bank","Platinum",280000,"annual","2026-07-28","en"],
+["BCA-C-2026-0411","Kwame Mensah","MTN Ghana","Momentum · 12 sessions",250000,"one-time","2026-07-28","en"],
+["BCA-C-2026-0409","Nadia Benali","Attijariwafa","Executive",160000,"annual","2026-07-27","fr"],
+["BCA-C-2026-0407","Jean-Baptiste Kouassi","Ecobank CI","Platinum (monthly)",25000,"monthly","2026-07-27","fr"],
+["BCA-C-2026-0404","Ana Sofia Mendes","Sonangol","Focus · 6 sessions",140000,"one-time","2026-07-26","pt"],
+["BCA-C-2026-0401","Grace Wanjiru","Safaricom","Associate",60000,"annual","2026-07-25","en"]];
+const INVOICES=[["BCA-2026-0341","Zenith Bank",1250000,"11 Jun",47,3,"60+"],
+["BCA-2026-0352","Dangote Group",840000,"24 Jun",34,2,"30-60"],
+["BCA-2026-0364","MTN Ghana",1500000,"09 Jul",19,1,"30-60"],
+["BCA-2026-0371","Safaricom",1120000,"17 Jul",11,1,"cur"],
+["BCA-2026-0377","Ecobank CI",980000,"22 Jul",6,0,"cur"],
+["BCA-2026-0384","Econet",1400000,"28 Jul",0,0,"cur"]];
+const MEMBERS=[
+["Adaeze Okonkwo","Zenith Bank","plat","Lagos Circle 4","Dr. Ngozi Eze",9,12,"2027-03-14","ok","Lagos, NG"],
+["Kwame Mensah","MTN Ghana","exec","Accra Circle 2","Samuel Adjei",2,4,"2026-11-02","ok","Accra, GH"],
+["Fatou Diallo","Sonatel","plat","Dakar Circle 1","Aminata Sow",7,12,"2027-01-20","ok","Dakar, SN"],
+["Thabo Molefe","Standard Bank","exec","Jo'burg Circle 3","Dr. Lindiwe Dube",1,4,"2026-09-30","ok","Johannesburg, ZA"],
+["Amina Yusuf","Dangote Group","plat","Abuja Circle 1","Chidi Nwosu",4,12,"2026-08-15","warn","Kano, NG"],
+["Jean-Baptiste Kouassi","Ecobank CI","plat","Abidjan Circle 2","Aminata Sow",11,12,"2027-07-27","ok","Abidjan, CI"],
+["Grace Wanjiru","Safaricom","assoc","Nairobi Circle 5","—",0,0,"2027-07-25","ok","Nairobi, KE"],
+["Olusegun Adeyemi","Access Holdings","exec","Lagos Circle 2","Chidi Nwosu",4,4,"2026-08-03","bad","Lagos, NG"],
+["Marie-Claire Nguema","BGFIBank","plat","Libreville Circle 1","Pascal Mbadinga",6,12,"2027-02-11","ok","Libreville, GA"],
+["Nadia Benali","Attijariwafa","exec","Casablanca Circle 1","Youssef Alami",0,4,"2027-07-27","ok","Casablanca, MA"],
+["Ana Sofia Mendes","Sonangol","assoc","Luanda Circle 1","—",0,0,"2027-04-08","ok","Luanda, AO"],
+["Tendai Chikwanha","Econet","exec","Harare Circle 1","Peter Kimani",3,4,"2026-08-09","bad","Harare, ZW"]];
+const CORP=[["Zenith Bank","Enterprise — 20 seats",17,20,3000000,"2027-03-14","ok","Lagos, NG"],
+["MTN Ghana","Leadership — 10 seats",10,10,1800000,"2026-11-02","ok","Accra, GH"],
+["Standard Bank","Leadership — 10 seats",6,10,1800000,"2026-12-01","warn","Johannesburg, ZA"],
+["Safaricom","Team — 5 seats",5,5,1000000,"2027-01-15","ok","Nairobi, KE"],
+["Dangote Group","Enterprise — 20 seats",11,20,3000000,"2026-08-15","warn","Lagos, NG"],
+["Attijariwafa","Team — 5 seats",4,5,1000000,"2027-02-20","ok","Casablanca, MA"],
+["BGFIBank","Team — 5 seats",5,5,1000000,"2027-02-11","ok","Libreville, GA"],
+["Ecobank CI","Leadership — 10 seats",8,10,1800000,"2027-07-27","ok","Abidjan, CI"],
+["Sonangol","Team — 5 seats",2,5,1000000,"2027-04-08","bad","Luanda, AO"]];
+const PACKAGES=[["Alvin Emerson-Thomas","Momentum · 12","Norah Bwaya",8,12,"2026-03-11","ok"],
+["Maryam Darwich","Momentum · 12","Amal Hihi",11,12,"2026-01-22","warn"],
+["Sipho Ndlovu","Focus · 6","Sibongile Muwamba",3,6,"2026-05-30","ok"],
+["Chinwe Okafor","Starter · 4","Catherine Engmann",4,4,"2026-06-18","bad"],
+["Ibrahim Traoré","Focus · 6","Price Alan Mbida",1,6,"2026-07-14","ok"],
+["Zanele Mahlangu","Starter · 4","Nankhonde Kasonde",2,4,"2026-07-02","ok"],
+["Youssef Benkirane","Momentum · 12","Youssef Alami",5,12,"2026-04-09","ok"]];
+const REQUESTS=[
+["consulting","Dr. Emeka Nwachukwu","Federal Ministry of Finance, NG","$75k+","1–3 months","decision_maker",6,"new"],
+["business_matching","Lindiwe Mokoena","Kgosi Capital, ZA","$25k–$75k","Within 1 month","decision_maker",4,"triaging"],
+["project_management","Aicha Diop","Union Africaine, SN","$25k–$75k","3–6 months","part_of_decision",4,"new"],
+["consulting","Robert Achieng","Kenya Power","$10k–$25k","1–3 months","gathering_info",3,"triaging"],
+["corporate_proposal","Paulo Fernandes","Banco BAI, AO","20+ leaders","Within 1 month","decision_maker",2,"briefing_booked"],
+["sponsorship","Hanane El Fassi","Maroc Telecom","—","Exploring","part_of_decision",2,"new"],
+["business_matching","Kofi Boateng","Ashanti Gold Ventures","$75k+","1–3 months","decision_maker",1,"proposal_sent"],
+["bench_application","Dr. Josephine Kamau","Independent · Kenya","—","—","decision_maker",1,"new"]];
+const BENCH=[["Hugh Kweku Fraser","coach","west","Governance · Finance","EN",11,15,480000,"Sierra Leone"],
+["Catherine Engmann","consultant","west","Governance · Culture","EN",9,12,384000,"Ghana"],
+["Price Alan Mbida","coach","west","Exec retreats · Team perf.","FR · EN",12,15,520000,"Côte d'Ivoire"],
+["Amal Hihi","coach","north","Leadership · Balance","FR · AR · EN",8,12,352000,"Morocco"],
+["Norah Bwaya","coach","east","Facilitation · Training","EN · SW",14,15,600000,"Uganda"],
+["Sibongile Muwamba","consultant","southern","Board · Trusteeship","EN",10,12,420000,"Malawi"],
+["Nankhonde Kasonde van den Broek","coach","southern","Senior leadership","EN",13,15,540000,"Zambia"],
+["Dr. Ngozi Eze","coach","west","Executive · Finance","EN · FR",15,15,640000,"Nigeria"],
+["Aminata Sow","coach","west","Executive · Governance","FR · EN · WO",14,15,588000,"Senegal"],
+["Youssef Alami","consultant","north","Strategy · Growth","FR · AR · EN",7,12,308000,"Morocco"],
+["Dr. Lindiwe Dube","coach","southern","Culture · Change","EN · ZU",11,12,462000,"South Africa"],
+["Pascal Mbadinga","trainer","central","Workshops · Programs","FR · EN",6,10,252000,"Gabon"]];
+const SESSIONS=[["Wed 09:00","Adaeze Okonkwo","Dr. Ngozi Eze","plat","Platinum entitlement",3,"WAT","held"],
+["Wed 10:30","Fatou Diallo","Aminata Sow","plat","Platinum entitlement",5,"GMT","live"],
+["Wed 12:00","Alvin Emerson-Thomas","Norah Bwaya","pkg","Momentum package",4,"EAT","next"],
+["Wed 14:00","Kwame Mensah","Samuel Adjei","exec","Executive entitlement",2,"GMT","next"],
+["Wed 15:30","Nadia Benali","Youssef Alami","exec","Executive entitlement",4,"WET","next"],
+["Wed 16:00","Thabo Molefe","Dr. Lindiwe Dube","exec","Executive entitlement",3,"SAST","next"],
+["Wed 17:30","Marie-Claire Nguema","Pascal Mbadinga","plat","Platinum entitlement",6,"WAT","next"],
+["Thu 09:00","Sipho Ndlovu","Sibongile Muwamba","pkg","Focus package",3,"CAT","next"],
+["Thu 11:00","Maryam Darwich","Amal Hihi","pkg","Momentum package",1,"WET","next"]];
+const CONSULTS=[["Dr. Emeka Nwachukwu","Federal Ministry of Finance","Fri 01 Aug · 11:00","Dr. Ngozi Eze",true,"confirmed"],
+["Lindiwe Mokoena","Kgosi Capital","Fri 01 Aug · 14:00","Sibongile Muwamba",true,"confirmed"],
+["Paulo Fernandes","Banco BAI","Mon 04 Aug · 10:00","Pascal Mbadinga",false,"matched"],
+["Hanane El Fassi","Maroc Telecom","Mon 04 Aug · 15:00","—",false,"requested"],
+["Kofi Boateng","Ashanti Gold Ventures","Tue 05 Aug · 09:00","—",false,"requested"]];
+const CONF=[["Adaeze Okonkwo","plat","included",0,"registered","Lagos, NG"],
+["Fatou Diallo","plat","included",0,"registered","Dakar, SN"],
+["Kwame Mensah","exec","member_rate",95000,"paid","Accra, GH"],
+["Thabo Molefe","exec","member_rate",95000,"paid","Johannesburg, ZA"],
+["Grace Wanjiru","assoc","member_rate",95000,"registered","Nairobi, KE"],
+["Dr. Emeka Nwachukwu","—","full",165000,"registered","Abuja, NG"],
+["Maryam Darwich","—","full",165000,"paid","Beirut, LB"],
+["Catherine Engmann","—","speaker",0,"registered","Accra, GH"]];
+const NEEDS=[["need","Distributor for agri-processing equipment, West Africa","Kwame Mensah","Agriculture","west","open"],
+["lead","Series A capital available — fintech, $2–5M ticket","Lindiwe Mokoena","Financial services","southern","matched"],
+["need","Board-ready CFO, bilingual FR/EN","Marie-Claire Nguema","Financial services","central","open"],
+["lead","Manufacturing JV partner seeking East Africa entry","Grace Wanjiru","Manufacturing","east","open"],
+["need","Mediation support — shareholder dispute","Ibrahim Traoré","Mining","west","matched"],
+["lead","Warehouse capacity, Casablanca port","Nadia Benali","Logistics","north","open"]];
+const OUTCOMES=[["Adaeze Okonkwo","plat",18.4,true,true,10],["Kwame Mensah","exec",12.1,false,false,9],
+["Fatou Diallo","plat",22.7,true,false,10],["Thabo Molefe","exec",8.3,false,true,8],
+["Jean-Baptiste Kouassi","plat",14.9,true,false,9],["Marie-Claire Nguema","plat",11.2,false,true,10],
+["Grace Wanjiru","assoc",6.5,false,false,7],["Nadia Benali","exec",15.8,true,false,9]];
+const SHOP=[["Ebooks & toolkits","digital",1900],["Recordings & courses","digital",4900],["Branded merch","merch",2500]];
+const BOARD=[["Pan-African Mentorship Initiative — launch","Modupe Taylor-Pearce","30 Sep 2026","live"],
+["Foundation set-up and registration","Claudia Tete","15 Aug 2026","live"],
+["Digital platform go-live","Jacques M. Jean","31 Jul 2026","live"],
+["Corporate membership — first 10 accounts","Sales","31 Dec 2026","live"],
+["2027 budget and sensitivity model","Finance Committee","31 Oct 2026","next"]];
 
-const bench=[
- ["Dr. Ngozi Eze","EN · FR","12 / 15","24","$4,800","Lagos, NG"],
- ["Aminata Sow","FR · EN · WO","14 / 15","28","$5,600","Dakar, SN"],
- ["Samuel Adjei","EN · TW","9 / 12","18","$3,600","Accra, GH"],
- ["Chidi Nwosu","EN · IG","11 / 12","22","$4,400","Abuja, NG"],
- ["Peter Kimani","EN · SW","13 / 15","26","$5,200","Nairobi, KE"],
- ["Youssef Alami","FR · AR · EN","8 / 12","16","$3,200","Casablanca, MA"],
- ["Dr. Lindiwe Dube","EN · ZU","10 / 12","20","$4,000","Durban, ZA"],
- ["Pascal Mbadinga","FR · EN","7 / 10","14","$2,800","Libreville, GA"]];
-
-const sessions=[
- ["Tue 09:00","Adaeze Okonkwo","Dr. Ngozi Eze","Executive Circle","WAT","done"],
- ["Tue 10:30","Fatou Diallo","Aminata Sow","Cercle Exécutif","GMT","live"],
- ["Tue 12:00","Grace Wanjiru","Peter Kimani","Senior Leaders","EAT","next"],
- ["Tue 14:00","Kwame Mensah","Samuel Adjei","Board Ready","GMT","next"],
- ["Tue 15:30","Nadia Benali","Youssef Alami","Cercle Exécutif","WET","next"],
- ["Tue 16:00","Thabo Molefe","Dr. Ngozi Eze","Senior Leaders","SAST","next"],
- ["Tue 17:30","Marie-Claire Nguema","Aminata Sow","Cercle Exécutif","WAT","next"],
- ["Wed 09:00","Amina Yusuf","Chidi Nwosu","Board Ready","WAT","next"],
- ["Wed 11:00","Tendai Chikwanha","Peter Kimani","Board Ready","CAT","next"]];
-
-/* amounts as minor units, dates as ISO — the display layer localises both,
-   exactly as the schema stores them */
-const invoices=[
- ["BCA-2026-0341","Zenith Bank",1250000,"2026-06-11",47,3,"60+"],
- ["BCA-2026-0352","Dangote Group",840000,"2026-06-24",34,2,"30–60"],
- ["BCA-2026-0358","Access Holdings",590000,"2026-07-02",26,2,"30–60"],
- ["BCA-2026-0364","MTN Ghana",1500000,"2026-07-09",19,1,"30–60"],
- ["BCA-2026-0371","Safaricom",1120000,"2026-07-17",11,1,"cur"],
- ["BCA-2026-0377","Ecobank CI",980000,"2026-07-22",6,0,"cur"],
- ["BCA-2026-0381","Sonatel",740000,"2026-07-26",2,0,"cur"],
- ["BCA-2026-0384","Econet",1400000,"2026-07-28",0,0,"cur"]];
-
-const attention=[
- ["Olusegun Adeyemi","Access Holdings","lapsed · $5,900 open","lap"],
- ["Tendai Chikwanha","Econet","lapsed · 2 sessions missed","lap"],
- ["Amina Yusuf","Dangote Group","paused · 34 days overdue","pau"]];
-
-const board=[
- ["Pan-African Mentorship Initiative — launch","Modupe Taylor-Pearce","30 Sep 2026","live"],
- ["Foundation set-up and registration","Claudia Tete","15 Aug 2026","live"],
- ["Digital platform go-live","Jacques M. Jean","31 Jul 2026","live"],
- ["2027 budget and sensitivity model","Finance Committee","31 Oct 2026","next"],
- ["Cap-Haïtien partnership review","Board Chair","30 Nov 2026","next"]];
-
-/* ─── i18n ─── */
-const FR={ops:"Opérations",fin:"Finance",gov:"Gouvernance",overview:"Vue d'ensemble",members:"Membres",
- bench:"Le Banc",sessions:"Séances",billing:"Facturation",board:"Salle du Conseil",intel:"Intelligence",
- today:"Mardi · 28 juillet 2026",
- lede:"Sept séances au calendrier aujourd'hui, dont quatre sur trois fuseaux horaires. Deux membres sont en défaut cette semaine et tous deux ont des factures ouvertes.",
- activeMembers:"Membres actifs",thisQ:"ce trimestre",corp:"comptes entreprises",assigned:"affectés",
- sessM:"Séances · juillet",held:"tenues",outst:"Encours",over60:"à plus de 60 jours",
- todaySched:"Programme du jour",recv:"Créances",outstTotal:"Encours total",current:"À jour",
- collected:"Encaissé · juillet",vsJune:"par rapport à juin",
- directory:"Répertoire",membersT:"Membres",membersL:"Deux cent dix-huit actifs. Filtrer par cohorte, compte entreprise ou statut.",
- allMembers:"Tous les membres",name:"Nom",account:"Compte entreprise",programme:"Programme",coach:"Coach",
- standing:"Statut",loc:"Localisation",
- faculty:"Corps professoral",benchL:"Trente-quatre coachs. Charge, langues et affectations en cours.",
- coaches:"Coachs",langs:"Langues",load:"Charge",sessM2:"Séances · juillet",payout:"Rémunération · juillet",
- calendar:"Calendrier",sessionsT:"Séances",
- sessionsL:"Chaque séance est enregistrée comme un instant absolu, avec le fuseau dans lequel elle a été convenue. Rien ne bouge quand un pays change d'heure.",
- thisWeek:"Cette semaine",when:"Quand",member:"Membre",zone:"Fuseau",status:"Statut",
- finance:"Finance",billingT:"Facturation",
- billingL:"Les relances partent dans la langue de chaque payeur, à 3, 7, 14 et 21 jours. Les délais sont de 14 jours.",
- openInv:"Factures ouvertes",invoice:"Facture",payer:"Payeur",amount:"Montant",due:"Échéance",age:"Ancienneté",remind:"Relances",
- governance:"Gouvernance",boardT:"Salle du Conseil",
- boardL:"Les résolutions et les votes sont inscrits dans un journal inaltérable. Aucun administrateur ne peut modifier ou supprimer une entrée — c'est ce qui rend le registre opposable.",
- mandates:"Mandats stratégiques",q3:"T3 2026",mandate:"Mandat",owner:"Responsable",dueQ:"Échéance",
- intelT:"Intelligence",
- intelL:"Recherche sémantique sur toutes les notes de coaching, agents de briefing avant séance, graphe d'impact des anciens, et la voix. Disponible en offre Souveraine.",
- talk:"Parler à TechFides",attention:"À surveiller"};
+const FR={lToday:"Bureau",today:"Aujourd'hui",lRev:"Revenus",authorise:"Autoriser et facturer",members:"Membres",corporate:"Entreprises",coaching:"Coaching",requests:"Demandes",lOps:"Opérations",bench:"Le Banc",sessions:"Séances",consults:"Consultations",mialc:"MIALC",lComm:"Communauté",needs:"Besoins et Opportunités",outcomes:"Résultats",shop:"Boutique",lGov:"Gouvernance",board:"Salle du Conseil",intel:"Intelligence",ebToday:"Le bureau · mercredi 29 juillet 2026",ldToday:"Six contrats signés attendent votre autorisation avant l'émission d'une facture. C'est la seule file de cette page où attendre coûte de l'argent.",pAwait:"En attente d'autorisation",pAging:"Demandes sans réponse",pToday:"Séances du jour",hContract:"Contrat",hWho:"Signataire",hProduct:"Produit",hValue:"Valeur",hSigned:"Signé",hTime:"Heure",hMember:"Membre",hCoach:"Coach",hTier:"Formule",hCredits:"Crédits restants",hZone:"Fuseau",hStatus:"Statut",ebFin:"Finance",tAuth:"Autoriser et facturer",ldAuth:"Le site promet à chaque acheteur que BCA autorisera et émettra sa facture. C'est ici que cela se passe. Un contrat signé sans facture est un client engagé qui n'a jamais été facturé.",pSigned:"Signés, en attente d'autorisation",pIssued:"Émises ce mois",hBilling:"Facturation",hLang:"Langue",hInvoice:"Facture",hPayer:"Payeur",hAmount:"Montant",hDue:"Échéance",hAge:"Ancienneté",hRem:"Relances",ebDir:"Répertoire",tMembers:"Membres",ldMembers:"Trois formules individuelles. Les crédits de coaching sont un droit, pas un calendrier — le solde affiché est ce que chaque membre peut encore utiliser.",pAll:"Tous les membres",hName:"Nom",hCohort:"Cohorte",hRenews:"Renouvellement",hStanding:"Statut",hLoc:"Localisation",ebCorp:"Nouveau en 2026",tCorp:"Adhésion entreprise",ldCorp:"Par siège. La question qui compte chaque semaine n'est pas qui a acheté, mais combien de sièges restent vides — un siège inutilisé est un renouvellement qui n'aura pas lieu.",pAccounts:"Comptes entreprises",hOrg:"Organisation",hPlan:"Formule",hSeats:"Sièges utilisés",ebCoach:"Vendu séparément de l'adhésion",tCoaching:"Forfaits de coaching",ldCoaching:"Starter, Focus et Momentum sont des crédits de séances, pas des abonnements. Chaque séance tenue en consomme un. Le registre rend le solde du client incontestable.",pClients:"Clients forfaits",hPackage:"Forfait",hUsed:"Utilisés",hPurchased:"Acheté",ebPipe:"Entrant",tRequests:"Demandes",ldRequests:"Le conseil, la gestion de projet et le business matching arrivent déjà qualifiés — budget, délai, et pouvoir de décision. Triés par temps d'attente, car c'est ce chiffre qui fait perdre des affaires.",pOpen:"Demandes ouvertes",hKind:"Type",hBudget:"Budget",hTimeline:"Délai",hAuthority:"Décision",hWaiting:"Attente",ebBench:"Corps professoral",ldBench:"Quarante-deux coachs, consultants, facilitateurs et formateurs dans les cinq régions africaines. La charge est à surveiller — un coach surchargé est la cause discrète d'une baisse de qualité.",pBench:"Effectif du banc",hType:"Type",hRegion:"Région",hDisc:"Disciplines",hLangs:"Langues",hLoad:"Charge",hPayout:"Rémunération · juil.",ebCal:"Calendrier",tSessions:"Séances",ldSessions:"Enregistrées comme instant absolu avec le fuseau convenu. Marquer une séance tenue retire un crédit du solde du membre — les deux ne peuvent jamais divorcer.",pWeek:"Cette semaine",hWhen:"Quand",hSource:"Imputé sur",ebMatch:"Mise en relation",tConsults:"Consultations",ldConsults:"L'appel de trente minutes qui transforme un visiteur en client. Réservé en GMT, deux à cinq jours ouvrés à l'avance, et le coach assigné doit être prévenu — le site le promet.",pBookings:"Réservations",hSlot:"Créneau demandé",hNotified:"Coach prévenu",ebConf:"Conférence",ldMialc:"Platinum inclut un pass. Executive et Associate paient le tarif membre. Les autres paient plein tarif. Bien le déterminer à l'inscription évite un e-mail gênant.",pRegs:"Inscriptions",hPass:"Pass",ebOnline:"BCAOnline",ldNeeds:"Un membre publie son besoin ; un autre publie son opportunité. Les rapprocher, c'est le réseau qui travaille entre les réunions — et la raison la plus citée de renouveler.",pOpenItems:"Éléments ouverts",hTitle:"Intitulé",hSector:"Secteur",ebProof:"Preuve",tOutcomes:"Résultats des membres",ldOutcomes:"Le site affirme que 63% des membres PDG voient une croissance supérieure à 10%. Une telle affirmation exige un tableau derrière. Le voici — et c'est aussi le meilleur argument de renouvellement de BCA.",pRecorded:"Résultats enregistrés",hGrowth:"Croissance",hPromo:"Promotion",hBoard:"Siège au conseil",hNps:"NPS",ebShop:"Boutique",tShop:"Boutique",ldShop:"Ebooks, enregistrements et produits dérivés — la porte d'entrée pour les dirigeants pas encore prêts à adhérer. La boutique est en configuration ; le catalogue et les commandes sont prêts.",pCatalogue:"Catalogue",pmSetup:"boutique en configuration",hLine:"Ligne",hFrom:"À partir de",ebGov:"Gouvernance",tBoard:"Salle du Conseil",ldBoard:"Les résolutions et votes sont inscrits dans un journal inaltérable. Aucun administrateur ne peut modifier ni supprimer une entrée — c'est ce qui rend le registre opposable.",pMandates:"Mandats stratégiques",hMandate:"Mandat",hOwner:"Responsable",hDue:"Échéance",tIntel:"Intelligence",ldIntel:"Recherche sémantique sur toutes les notes de coaching, agents de briefing, graphe d'impact des anciens, et la voix. Offre Souveraine.",ctaTalk:"Parler à TechFides"};
+const ES={lToday:"Mesa",today:"Hoy",lRev:"Ingresos",authorise:"Autorizar y facturar",members:"Miembros",corporate:"Corporativo",coaching:"Coaching",requests:"Solicitudes",lOps:"Operaciones",bench:"El Banco",sessions:"Sesiones",consults:"Consultas",mialc:"MIALC",lComm:"Comunidad",needs:"Necesidades y Oportunidades",outcomes:"Resultados",shop:"Tienda",lGov:"Gobernanza",board:"Sala del Consejo",intel:"Inteligencia",ebToday:"La mesa · miércoles 29 de julio de 2026",ldToday:"Seis contratos firmados esperan su autorización antes de emitir una factura. Es la única cola de esta página donde esperar cuesta dinero.",pAwait:"Pendiente de autorización",pAging:"Solicitudes sin respuesta",pToday:"Sesiones de hoy",hContract:"Contrato",hWho:"Firmante",hProduct:"Producto",hValue:"Valor",hSigned:"Firmado",hTime:"Hora",hMember:"Miembro",hCoach:"Coach",hTier:"Nivel",hCredits:"Créditos",hZone:"Zona",hStatus:"Estado",ebFin:"Finanzas",tAuth:"Autorizar y facturar",ldAuth:"El sitio promete a cada comprador que BCA autorizará y emitirá su factura. Aquí ocurre. Un contrato firmado sin factura es un cliente comprometido al que nunca se le cobró.",pSigned:"Firmados, pendientes de autorización",pIssued:"Emitidas este mes",hBilling:"Facturación",hLang:"Idioma",hInvoice:"Factura",hPayer:"Pagador",hAmount:"Importe",hDue:"Vence",hAge:"Antigüedad",hRem:"Recordatorios",ebDir:"Directorio",tMembers:"Miembros",ldMembers:"Tres niveles individuales. Los créditos de coaching son un derecho, no un calendario — el saldo mostrado es lo que cada miembro aún puede usar.",pAll:"Todos los miembros",hName:"Nombre",hCohort:"Cohorte",hRenews:"Renueva",hStanding:"Situación",hLoc:"Ubicación",ebCorp:"Nuevo en 2026",tCorp:"Membresía corporativa",ldCorp:"Por asiento. La pregunta semanal no es quién compró, sino cuántos asientos están vacíos — un asiento sin usar es una renovación que no ocurrirá.",pAccounts:"Cuentas corporativas",hOrg:"Organización",hPlan:"Plan",hSeats:"Asientos usados",ebCoach:"Se vende aparte de la membresía",tCoaching:"Paquetes de coaching",ldCoaching:"Starter, Focus y Momentum son créditos de sesión, no suscripciones. Cada sesión celebrada consume uno. El libro mayor hace el saldo indiscutible.",pClients:"Clientes de paquete",hPackage:"Paquete",hUsed:"Usadas",hPurchased:"Comprado",ebPipe:"Entrante",tRequests:"Solicitudes",ldRequests:"Consultoría, gestión de proyectos y business matching llegan ya cualificados — presupuesto, plazo y capacidad de decidir. Ordenados por espera, porque ese número pierde negocios.",pOpen:"Solicitudes abiertas",hKind:"Tipo",hBudget:"Presupuesto",hTimeline:"Plazo",hAuthority:"Decisión",hWaiting:"Espera",ebBench:"Facultad",ldBench:"Cuarenta y dos coaches, consultores, facilitadores y formadores en las cinco regiones africanas. La carga es lo que hay que vigilar.",pBench:"Plantilla",hType:"Tipo",hRegion:"Región",hDisc:"Disciplinas",hLangs:"Idiomas",hLoad:"Carga",hPayout:"Pago · jul.",ebCal:"Calendario",tSessions:"Sesiones",ldSessions:"Guardadas como instante absoluto junto a la zona acordada. Marcar una sesión como celebrada retira un crédito del saldo.",pWeek:"Esta semana",hWhen:"Cuándo",hSource:"Cargado a",ebMatch:"Emparejamiento",tConsults:"Consultas",ldConsults:"La llamada de treinta minutos que convierte a un visitante en cliente. En GMT, de dos a cinco días hábiles, y hay que avisar al coach asignado.",pBookings:"Reservas",hSlot:"Franja solicitada",hNotified:"Coach avisado",ebConf:"Conferencia",ldMialc:"Platinum incluye pase. Executive y Associate pagan tarifa de miembro. El resto paga completa.",pRegs:"Inscripciones",hPass:"Pase",ebOnline:"BCAOnline",ldNeeds:"Un miembro publica lo que necesita; otro publica lo que tiene. Emparejarlos es la red trabajando entre reuniones.",pOpenItems:"Elementos abiertos",hTitle:"Título",hSector:"Sector",ebProof:"Prueba",tOutcomes:"Resultados de miembros",ldOutcomes:"El sitio afirma que 63% de los CEO miembros crecen más del 10%. Una afirmación así necesita una tabla detrás. Esta es esa tabla.",pRecorded:"Resultados registrados",hGrowth:"Crecimiento",hPromo:"Ascenso",hBoard:"Puesto en consejo",hNps:"NPS",ebShop:"Tienda",tShop:"Tienda",ldShop:"Ebooks, grabaciones y merchandising — la entrada para líderes que aún no están listos para la membresía.",pCatalogue:"Catálogo",pmSetup:"tienda en configuración",hLine:"Línea",hFrom:"Desde",ebGov:"Gobernanza",tBoard:"Sala del Consejo",ldBoard:"Las resoluciones y votos se escriben en un registro inalterable. Ningún administrador puede editarlo ni borrarlo.",pMandates:"Mandatos estratégicos",hMandate:"Mandato",hOwner:"Responsable",hDue:"Vence",tIntel:"Inteligencia",ldIntel:"Búsqueda semántica en todas las notas, agentes de briefing, grafo de impacto de alumni, y voz. Nivel Soberano.",ctaTalk:"Hablar con TechFides"};
+const PT={lToday:"Mesa",today:"Hoje",lRev:"Receita",authorise:"Autorizar e faturar",members:"Membros",corporate:"Corporativo",coaching:"Coaching",requests:"Pedidos",lOps:"Operações",bench:"O Banco",sessions:"Sessões",consults:"Consultas",mialc:"MIALC",lComm:"Comunidade",needs:"Necessidades e Oportunidades",outcomes:"Resultados",shop:"Loja",lGov:"Governança",board:"Sala do Conselho",intel:"Inteligência",ebToday:"A mesa · quarta-feira, 29 de julho de 2026",ldToday:"Seis contratos assinados aguardam a sua autorização antes da emissão de fatura. É a única fila desta página em que esperar custa dinheiro.",pAwait:"A aguardar autorização",pAging:"Pedidos sem resposta",pToday:"Sessões de hoje",hContract:"Contrato",hWho:"Signatário",hProduct:"Produto",hValue:"Valor",hSigned:"Assinado",hTime:"Hora",hMember:"Membro",hCoach:"Coach",hTier:"Nível",hCredits:"Créditos",hZone:"Fuso",hStatus:"Estado",ebFin:"Finanças",tAuth:"Autorizar e faturar",ldAuth:"O site promete a cada comprador que a BCA autorizará e emitirá a fatura. É aqui que isso acontece. Um contrato assinado sem fatura é um cliente comprometido que nunca foi cobrado.",pSigned:"Assinados, a aguardar autorização",pIssued:"Emitidas este mês",hBilling:"Faturação",hLang:"Idioma",hInvoice:"Fatura",hPayer:"Pagador",hAmount:"Montante",hDue:"Vencimento",hAge:"Antiguidade",hRem:"Lembretes",ebDir:"Diretório",tMembers:"Membros",ldMembers:"Três níveis individuais. Os créditos de coaching são um direito, não um calendário — o saldo é o que cada membro ainda pode usar.",pAll:"Todos os membros",hName:"Nome",hCohort:"Coorte",hRenews:"Renova",hStanding:"Situação",hLoc:"Localização",ebCorp:"Novo em 2026",tCorp:"Adesão corporativa",ldCorp:"Por lugar. A pergunta semanal não é quem comprou, é quantos lugares estão vazios — um lugar sem uso é uma renovação que não vai acontecer.",pAccounts:"Contas corporativas",hOrg:"Organização",hPlan:"Plano",hSeats:"Lugares usados",ebCoach:"Vendido separadamente da adesão",tCoaching:"Pacotes de coaching",ldCoaching:"Starter, Focus e Momentum são créditos de sessão, não subscrições. Cada sessão realizada consome um.",pClients:"Clientes de pacote",hPackage:"Pacote",hUsed:"Usadas",hPurchased:"Comprado",ebPipe:"Entrada",tRequests:"Pedidos",ldRequests:"Consultoria, gestão de projetos e business matching chegam já qualificados — orçamento, prazo e poder de decisão. Ordenados por espera.",pOpen:"Pedidos abertos",hKind:"Tipo",hBudget:"Orçamento",hTimeline:"Prazo",hAuthority:"Decisão",hWaiting:"Espera",ebBench:"Corpo docente",ldBench:"Quarenta e dois coaches, consultores, facilitadores e formadores nas cinco regiões africanas. A carga é o que vigiar.",pBench:"Quadro do banco",hType:"Tipo",hRegion:"Região",hDisc:"Disciplinas",hLangs:"Idiomas",hLoad:"Carga",hPayout:"Pagamento · jul.",ebCal:"Calendário",tSessions:"Sessões",ldSessions:"Guardadas como instante absoluto com o fuso acordado. Marcar uma sessão como realizada retira um crédito do saldo.",pWeek:"Esta semana",hWhen:"Quando",hSource:"Imputado a",ebMatch:"Correspondência",tConsults:"Consultas",ldConsults:"A chamada de trinta minutos que transforma um visitante em cliente. Em GMT, dois a cinco dias úteis, e o coach designado tem de ser avisado.",pBookings:"Marcações",hSlot:"Horário pedido",hNotified:"Coach avisado",ebConf:"Conferência",ldMialc:"Platinum inclui passe. Executive e Associate pagam tarifa de membro. Os restantes pagam tarifa cheia.",pRegs:"Inscrições",hPass:"Passe",ebOnline:"BCAOnline",ldNeeds:"Um membro publica o que precisa; outro publica o que tem. Ligar os dois é a rede a trabalhar entre reuniões.",pOpenItems:"Itens abertos",hTitle:"Título",hSector:"Setor",ebProof:"Prova",tOutcomes:"Resultados dos membros",ldOutcomes:"O site afirma que 63% dos CEO membros crescem acima de 10%. Uma afirmação assim precisa de uma tabela por trás. Esta é essa tabela.",pRecorded:"Resultados registados",hGrowth:"Crescimento",hPromo:"Promoção",hBoard:"Assento no conselho",hNps:"NPS",ebShop:"Loja",tShop:"Loja",ldShop:"Ebooks, gravações e merchandising — a porta de entrada para líderes ainda não prontos para a adesão.",pCatalogue:"Catálogo",pmSetup:"loja em configuração",hLine:"Linha",hFrom:"A partir de",ebGov:"Governança",tBoard:"Sala do Conselho",ldBoard:"As resoluções e votos são escritos num registo inalterável. Nenhum administrador pode editar ou apagar.",pMandates:"Mandatos estratégicos",hMandate:"Mandato",hOwner:"Responsável",hDue:"Vencimento",tIntel:"Inteligência",ldIntel:"Pesquisa semântica em todas as notas, agentes de briefing, grafo de impacto de alumni, e voz. Nível Soberano.",ctaTalk:"Falar com a TechFides"};
 const EN={};document.querySelectorAll('[data-i]').forEach(e=>EN[e.dataset.i]=e.textContent);
-
-/* ─── formatting — locale is tenant config, so the display layer obeys it ─── */
-const money=minor=>new Intl.NumberFormat(L==='fr'?'fr-FR':'en-US',
-  {style:'currency',currency:'USD',minimumFractionDigits:0}).format(minor/100);
-const date=iso=>new Intl.DateTimeFormat(L==='fr'?'fr-FR':'en-GB',
-  {day:'2-digit',month:'short'}).format(new Date(iso+'T12:00:00'));
-
-/* ─── render ─── */
-const ini=n=>n.replace(/^(Dr\.|Mme)\s+/,'').split(/[\s-]/).filter(Boolean).slice(0,2).map(w=>w[0]).join('');
-const stMap={act:['s-act','Active','Actif'],lap:['s-lap','Lapsed','En défaut'],
-             pau:['s-pau','Paused','Suspendu'],alu:['s-alu','Alumni','Ancien']};
-const seMap={done:['p-done','Held','Tenue'],live:['p-live','In session','En cours'],next:['p-next','Scheduled','Prévue']};
-const agMap={cur:['s-act','Current','À jour'],'30–60':['s-pau','30–60','30–60'],'60+':['s-lap','60+','60+']};
+const DICT={en:EN,fr:FR,es:ES,pt:PT};const LI={en:0,fr:1,es:2,pt:3};
 let L='en';
-
-function stagger(tb){[...tb.children].forEach((r,i)=>r.style.animationDelay=(i*32)+'ms')}
+const t=k=>(DICT[L]&&DICT[L][k])||EN[k]||k;
+const LOC={en:'en-US',fr:'fr-FR',es:'es-ES',pt:'pt-PT'};
+const m=v=>new Intl.NumberFormat(LOC[L],{style:'currency',currency:'USD',minimumFractionDigits:0}).format(v/100);
+const dt=iso=>new Intl.DateTimeFormat(L==='en'?'en-GB':LOC[L],{day:'2-digit',month:'short',year:'2-digit'}).format(new Date(iso+'T12:00:00'));
+const du={en:'d',fr:'j',es:'d',pt:'d'};
+const ini=n=>n.replace(/^(Dr\.)\s+/,'').split(/[\s-]/).filter(Boolean).slice(0,2).map(w=>w[0]).join('');
+const P=(a,b,c,d)=>[a,b,c,d][LI[L]];
+const TIER={plat:['plat','Platinum'],exec:['exec','Executive'],assoc:['','Associate'],pkg:['','Package'],'—':['','—']};
+const tierTag=k=>{const x=TIER[k]||TIER['—'];return `<span class="tag ${x[0]}">${x[1]}</span>`};
+const ST={ok:['s-ok','Active','Actif','Activo','Ativo'],warn:['s-warn','Watch','À surveiller','Vigilar','Atenção'],
+bad:['s-bad','Lapsed','En défaut','Vencido','Em falta'],idle:['s-idle','Dormant','Dormant','Inactivo','Inativo'],
+new:['s-new','New','Nouveau','Nuevo','Novo']};
+const stDot=k=>{const x=ST[k]||ST.idle;return `<span class="dot ${x[0]}"><i></i>${P(x[1],x[2],x[3],x[4])}</span>`};
+const SS={held:['s-ok','Held','Tenue','Celebrada','Realizada'],live:['s-new','In session','En cours','En sesión','Em curso'],
+next:['s-idle','Scheduled','Prévue','Programada','Agendada']};
+const ssDot=k=>{const x=SS[k]||SS.next;return `<span class="dot ${x[0]}"><i></i>${P(x[1],x[2],x[3],x[4])}</span>`};
+const KIND={consulting:['Consulting','Conseil','Consultoría','Consultoria'],
+project_management:['Project mgmt','Gestion de projet','Gestión de proyectos','Gestão de projetos'],
+business_matching:['Business matching','Business matching','Business matching','Business matching'],
+sponsorship:['Sponsorship','Parrainage','Patrocinio','Patrocínio'],
+corporate_proposal:['Corporate','Entreprise','Corporativo','Corporativo'],
+bench_application:['Bench application','Candidature banc','Solicitud banco','Candidatura banco']};
+const AUTH={decision_maker:['Decision maker','Décideur','Decisor','Decisor'],
+part_of_decision:['Part of decision','Participe','Participa','Participa'],
+gathering_info:['Gathering info','Se renseigne','Recopilando','A recolher']};
+const RST={new:'s-new',triaging:'s-warn',briefing_booked:'s-ok',proposal_sent:'s-ok',declined:'s-bad',dormant:'s-idle'};
+const RSTL={new:['New','Nouveau','Nuevo','Novo'],triaging:['Triaging','En triage','Clasificando','Em triagem'],
+briefing_booked:['Briefing booked','Briefing prévu','Briefing agendado','Briefing marcado'],
+proposal_sent:['Proposal sent','Proposition envoyée','Propuesta enviada','Proposta enviada']};
+const BT={coach:['Coach','Coach','Coach','Coach'],consultant:['Consultant','Consultant','Consultor','Consultor'],
+trainer:['Trainer','Formateur','Formador','Formador']};
+const REG={west:['West','Ouest','Oeste','Oeste'],north:['North','Nord','Norte','Norte'],east:['East','Est','Este','Leste'],
+southern:['Southern','Australe','Austral','Austral'],central:['Central','Centre','Central','Central']};
+const PASS={included:['Included','Inclus','Incluido','Incluído'],member_rate:['Member rate','Tarif membre','Tarifa socio','Tarifa membro'],
+full:['Full','Plein tarif','Completa','Cheia'],speaker:['Speaker','Intervenant','Ponente','Orador']};
+const AG={cur:['s-ok','Current','À jour','Al día','Em dia'],'30-60':['s-warn','30–60','30–60','30–60','30–60'],
+'60+':['s-bad','60+','60+','60+','60+']};
+const TL={'1–3 months':['1–3 months','1–3 mois','1–3 meses','1–3 meses'],
+'Within 1 month':['Within 1 month','Sous 1 mois','En 1 mes','Dentro de 1 mês'],
+'3–6 months':['3–6 months','3–6 mois','3–6 meses','3–6 meses'],
+'Exploring':['Exploring','Exploratoire','Explorando','A explorar'],
+'—':['—','—','—','—']};
+const tl=v=>(TL[v]?TL[v][LI[L]]:v);
+const BB={'20+ leaders':['20+ leaders','20+ dirigeants','20+ líderes','20+ líderes'],'—':['—','—','—','—']};
+const bb=v=>(BB[v]?BB[v][LI[L]]:v);
+const authorised=new Set();
+const stag=id=>{const b=document.getElementById(id);if(b)[...b.children].forEach((r,i)=>r.style.animationDelay=(i*28)+'ms')};
+const $=id=>document.getElementById(id);
 
 function render(){
-  const t=k=>L==='fr'?(FR[k]??EN[k]):EN[k];
+  const pend=CONTRACTS.filter(c=>!authorised.has(c[0]));
+  const pv=pend.reduce((a,c)=>a+c[4],0);
+  const unans=REQUESTS.filter(r=>r[7]==='new').length;
+  const oldest=Math.max(...REQUESTS.map(r=>r[6]));
 
-  document.getElementById('sessList').innerHTML=sessions.slice(0,7).map((s,i)=>{
-    const[c,en,fr]=seMap[s[5]];
-    return `<div class="sess" style="animation:fadein .5s var(--ease) ${i*45}ms both">
-      <div class="sess-t">${s[0].split(' ')[1]}</div>
-      <div class="sess-b"><div class="sess-n">${s[1]}</div>
-      <div class="sess-d">${s[2]} · ${s[3]}</div></div>
-      <span class="pill ${c}">${L==='fr'?fr:en}</span></div>`;}).join('');
+  $('qRow').innerHTML=`
+   <div class="q urgent" data-go="authorise"><div class="qk">${t('pAwait')}</div>
+    <div class="qv">${pend.length}</div><div class="qn"><b class="money">${m(pv)}</b> ${P('uninvoiced','non facturé','sin facturar','não faturado')}</div></div>
+   <div class="q" data-go="requests"><div class="qk">${t('pAging')}</div>
+    <div class="qv">${unans}</div><div class="qn"><b>${oldest}${du[L]}</b> ${P('oldest','le plus ancien','el más antiguo','o mais antigo')}</div></div>
+   <div class="q" data-go="consults"><div class="qk">${t('consults')}</div>
+    <div class="qv">${CONSULTS.filter(c=>c[5]!=='confirmed').length}</div><div class="qn">${P('to match','à assigner','por asignar','a atribuir')}</div></div>
+   <div class="q" data-go="sessions"><div class="qk">${t('pToday')}</div>
+    <div class="qv">7</div><div class="qn">4 ${P('zones','fuseaux','zonas','fusos')}</div></div>
+   <div class="q" data-go="members"><div class="qk">${P('Renewals · 30d','Renouvellements · 30j','Renovaciones · 30d','Renovações · 30d')}</div>
+    <div class="qv">4</div><div class="qn"><b class="money">${m(760000)}</b></div></div>`;
 
-  document.getElementById('memBody').innerHTML=members.map(m=>{
-    const[c,en,fr]=stMap[m[4]];
-    return `<tr><td><div class="who"><div class="ini">${ini(m[0])}</div>
-      <div><div class="who-n">${m[0]}</div><div class="who-s">${m[1]}</div></div></div></td>
-      <td>${m[1]}</td><td><span class="tag">${m[2]}</span></td><td>${m[3]}</td>
-      <td><span class="dot ${c}"><i></i>${L==='fr'?fr:en}</span></td>
-      <td class="flag">${m[5]}</td></tr>`;}).join('');
+  const arow=(c,full)=>{const done=authorised.has(c[0]);
+   return `<tr><td class="num">${c[0]}</td>
+    <td><div class="who"><div class="ini">${ini(c[1])}</div><div><div class="wn">${c[1]}</div><div class="ws">${c[2]}</div></div></div></td>
+    <td><span class="tag">${c[3]}</span></td><td class="num money">${m(c[4])}</td>
+    ${full?`<td class="flag">${c[5]}</td>`:''}<td class="flag">${dt(c[6])}</td>
+    ${full?`<td class="flag">${c[7].toUpperCase()}</td>`:''}
+    <td style="text-align:right"><button class="act ${done?'done':''}" data-auth="${c[0]}">${done
+      ?P('✓ Invoiced','✓ Facturé','✓ Facturado','✓ Faturado')
+      :P('Authorise','Autoriser','Autorizar','Autorizar')}</button></td></tr>`};
+  $('authBody').innerHTML=CONTRACTS.map(c=>arow(c,false)).join('');
+  $('authBody2').innerHTML=CONTRACTS.map(c=>arow(c,true)).join('');
+  const lbl=`${pend.length} · ${m(pv)}`;$('awaitTotal').textContent=lbl;$('authTotal2').textContent=lbl;
 
-  document.getElementById('benBody').innerHTML=bench.map(b=>
-    `<tr><td><div class="who"><div class="ini">${ini(b[0])}</div>
-      <div><div class="who-n">${b[0]}</div></div></div></td>
-      <td class="flag">${b[1]}</td><td class="num">${b[2]}</td><td class="num">${b[3]}</td>
-      <td class="num" style="color:var(--gold-lt)">${b[4]}</td><td class="flag">${b[5]}</td></tr>`).join('');
+  $('ageWrap').innerHTML=REQUESTS.slice(0,6).map((r,i)=>{
+   const cls=r[6]>=5?'hot':r[6]>=3?'warm':'';
+   return `<div style="display:flex;gap:14px;padding:13px 20px;border-bottom:1px solid var(--soft);animation:fi .45s var(--ease) ${i*45}ms both">
+    <div class="age ${cls}" style="width:34px;flex:none">${r[6]}${du[L]}</div>
+    <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:500">${r[1]}</div>
+    <div style="font-size:10.5px;color:var(--mute);margin-top:2px">${KIND[r[0]][LI[L]]} · ${r[3]}</div></div>
+    ${stDot(r[7]==='new'?'new':'warn')}</div>`}).join('');
 
-  document.getElementById('sesBody').innerHTML=sessions.map(s=>{
-    const[c,en,fr]=seMap[s[5]];
-    return `<tr><td class="num" style="color:var(--gold-lt)">${s[0]}</td><td>${s[1]}</td><td>${s[2]}</td>
-      <td><span class="tag">${s[3]}</span></td><td class="flag">${s[4]}</td>
-      <td><span class="pill ${c}">${L==='fr'?fr:en}</span></td></tr>`;}).join('');
+  $('sessBody').innerHTML=SESSIONS.slice(0,7).map(s=>
+   `<tr><td class="num" style="color:var(--gold-lt)">${s[0].split(' ')[1]}</td><td>${s[1]}</td><td>${s[2]}</td>
+    <td>${tierTag(s[3])}</td><td class="num">${s[5]}</td><td class="flag">${s[6]}</td><td>${ssDot(s[7])}</td></tr>`).join('');
+  $('allSessBody').innerHTML=SESSIONS.map(s=>
+   `<tr><td class="num" style="color:var(--gold-lt)">${s[0]}</td><td>${s[1]}</td><td>${s[2]}</td>
+    <td><span class="tag">${s[4]}</span></td><td class="flag">${s[6]}</td><td>${ssDot(s[7])}</td></tr>`).join('');
 
-  document.getElementById('invBody').innerHTML=invoices.map(v=>{
-    const[c,en,fr]=agMap[v[6]];
-    return `<tr><td class="num">${v[0]}</td><td>${v[1]}</td>
-      <td class="num" style="color:var(--gold-lt)">${money(v[2])}</td><td class="flag">${date(v[3])}</td>
-      <td class="num">${v[4]}${L==='fr'?' j':'d'}</td><td class="num">${v[5]}</td>
-      <td><span class="dot ${c}"><i></i>${L==='fr'?fr:en}</span></td></tr>`;}).join('');
+  $('invBody').innerHTML=INVOICES.map(v=>{const a=AG[v[6]];
+   return `<tr><td class="num">${v[0]}</td><td>${v[1]}</td><td class="num money">${m(v[2])}</td>
+    <td class="flag">${v[3]}</td><td class="num">${v[4]}${du[L]}</td><td class="num">${v[5]}</td>
+    <td><span class="dot ${a[0]}"><i></i>${P(a[1],a[2],a[3],a[4])}</span></td></tr>`}).join('');
 
-  document.getElementById('attnList').innerHTML=attention.map((a,i)=>{
-    const[c]=stMap[a[3]];
-    return `<div class="sess" style="animation:fadein .5s var(--ease) ${i*60}ms both">
-      <div class="ini" style="width:26px;height:26px;font-size:9.5px">${ini(a[0])}</div>
-      <div class="sess-b"><div class="sess-n" style="font-size:12.5px">${a[0]}</div>
-      <div class="sess-d" style="font-size:10.5px">${a[1]} · ${a[2]}</div></div>
-      <span class="dot ${c}" style="align-self:center"><i></i></span></div>`;}).join('');
+  $('tierRow').innerHTML=`
+   <div class="q"><div class="qk">Platinum · $2,800</div><div class="qv">86</div><div class="qn">12 ${P('sessions/yr','séances/an','sesiones/año','sessões/ano')}</div></div>
+   <div class="q"><div class="qk">Executive · $1,600</div><div class="qv">74</div><div class="qn">4 ${P('sessions/yr','séances/an','sesiones/año','sessões/ano')}</div></div>
+   <div class="q"><div class="qk">Associate · $600</div><div class="qv">58</div><div class="qn">${P('cohort + BCAOnline','cohorte + BCAOnline','cohorte + BCAOnline','coorte + BCAOnline')}</div></div>
+   <div class="q"><div class="qk">${P('Annualised','Revenu annualisé','Ingreso anualizado','Receita anualizada')}</div>
+    <div class="qv money" style="font-size:29px">${m(39960000)}</div><div class="qn">${P('individual memberships','adhésions individuelles','membresías individuales','adesões individuais')}</div></div>`;
 
-  document.getElementById('brdBody').innerHTML=board.map(b=>{
-    const[c,en,fr]=seMap[b[3]];
-    return `<tr><td>${b[0]}</td><td>${b[1]}</td><td class="flag">${b[2]}</td>
-      <td><span class="pill ${c}">${L==='fr'?(b[3]==='live'?'En cours':'À venir'):(b[3]==='live'?'In progress':'Upcoming')}</span></td></tr>`;}).join('');
+  $('memBody').innerHTML=MEMBERS.map(x=>
+   `<tr><td><div class="who"><div class="ini">${ini(x[0])}</div><div><div class="wn">${x[0]}</div><div class="ws">${x[1]}</div></div></div></td>
+    <td>${tierTag(x[2])}</td><td class="flag">${x[3]}</td><td>${x[4]}</td>
+    <td class="num">${x[6]?`${x[5]} / ${x[6]}`:'—'}</td><td class="flag">${dt(x[7])}</td>
+    <td>${stDot(x[8])}</td><td class="flag">${x[9]}</td></tr>`).join('');
 
-  document.getElementById('invMeta').textContent =
-    money(invoices.reduce((a,v)=>a+v[2],0)) + (L==='fr'?' en souffrance':' outstanding');
+  const su=CORP.reduce((a,c)=>a+c[2],0),st=CORP.reduce((a,c)=>a+c[3],0);
+  $('seatSummary').textContent=`${su}/${st} ${P('seats','sièges','asientos','lugares')} · ${m(CORP.reduce((a,c)=>a+c[4],0))}`;
+  $('corpBody').innerHTML=CORP.map(c=>{const p=Math.round(c[2]/c[3]*100);
+   return `<tr><td class="wn">${c[0]}</td><td><span class="tag">${c[1]}</span></td><td class="num">${c[2]} / ${c[3]}</td>
+    <td><div class="bar"><i style="width:${p}%;background:${p<60?'var(--rust)':p<85?'var(--amber)':'var(--sage)'}"></i></div></td>
+    <td class="num money">${m(c[4])}</td><td class="flag">${dt(c[5])}</td><td>${stDot(c[6])}</td><td class="flag">${c[7]}</td></tr>`}).join('');
 
-  ['memBody','benBody','sesBody','invBody','brdBody'].forEach(id=>stagger(document.getElementById(id)));
+  $('pkgRow').innerHTML=`
+   <div class="q"><div class="qk">Starter · $1,000</div><div class="qv">14</div><div class="qn">4 sessions</div></div>
+   <div class="q"><div class="qk">Focus · $1,400</div><div class="qv">18</div><div class="qn">6 sessions</div></div>
+   <div class="q"><div class="qk">Momentum · $2,500</div><div class="qv">15</div><div class="qn">12 sessions</div></div>
+   <div class="q urgent"><div class="qk">${P('Credits outstanding','Crédits en circulation','Créditos pendientes','Créditos em aberto')}</div>
+    <div class="qv">213</div><div class="qn">${P('sessions owed','séances dues','sesiones debidas','sessões devidas')}</div></div>`;
+  $('pkgTotal').textContent=`${PACKAGES.length} ${P('shown','affichés','mostrados','mostrados')} · 47 ${P('active','actifs','activos','ativos')}`;
+  $('pkgBody').innerHTML=PACKAGES.map(p=>{const pc=Math.round(p[3]/p[4]*100);
+   return `<tr><td><div class="who"><div class="ini">${ini(p[0])}</div><div class="wn">${p[0]}</div></div></td>
+    <td><span class="tag">${p[1]}</span></td><td>${p[2]}</td><td class="num">${p[3]} / ${p[4]}</td>
+    <td><div class="bar"><i style="width:${pc}%;background:${pc>=100?'var(--rust)':pc>=80?'var(--amber)':'var(--gold)'}"></i></div></td>
+    <td class="num" style="color:${p[4]-p[3]===0?'var(--rust)':'var(--gold-lt)'}">${p[4]-p[3]}</td>
+    <td class="flag">${dt(p[5])}</td><td>${stDot(p[6])}</td></tr>`}).join('');
+
+  $('reqTotal').textContent=`${REQUESTS.length} ${P('open','ouverts','abiertos','abertos')} · ${unans} ${P('unanswered','sans réponse','sin responder','sem resposta')}`;
+  $('reqBody').innerHTML=[...REQUESTS].sort((a,b)=>b[6]-a[6]).map(r=>{
+   const cls=r[6]>=5?'hot':r[6]>=3?'warm':'';
+   return `<tr><td><span class="tag">${KIND[r[0]][LI[L]]}</span></td>
+    <td><div class="who"><div class="ini">${ini(r[1])}</div><div class="wn">${r[1]}</div></div></td>
+    <td class="flag">${r[2]}</td><td class="num money">${bb(r[3])}</td><td class="flag">${tl(r[4])}</td>
+    <td class="flag">${r[5]==='—'?'—':AUTH[r[5]][LI[L]]}</td><td class="age ${cls}">${r[6]}${du[L]}</td>
+    <td><span class="dot ${RST[r[7]]}"><i></i>${RSTL[r[7]][LI[L]]}</span></td></tr>`}).join('');
+
+  $('benBody').innerHTML=BENCH.map(b=>{const p=Math.round(b[5]/b[6]*100);
+   return `<tr><td><div class="who"><div class="ini">${ini(b[0])}</div><div><div class="wn">${b[0]}</div><div class="ws">${b[8]}</div></div></div></td>
+    <td><span class="tag">${BT[b[1]][LI[L]]}</span></td><td class="flag">${REG[b[2]][LI[L]]}</td>
+    <td class="flag">${b[3]}</td><td class="flag">${b[4]}</td><td class="num">${b[5]} / ${b[6]}</td>
+    <td><div class="bar"><i style="width:${p}%;background:${p>=95?'var(--rust)':p>=80?'var(--amber)':'var(--sage)'}"></i></div></td>
+    <td class="num money">${m(b[7])}</td></tr>`}).join('');
+
+  $('consTotal').textContent=`${CONSULTS.length} · GMT`;
+  $('consBody').innerHTML=CONSULTS.map(c=>
+   `<tr><td><div class="who"><div class="ini">${ini(c[0])}</div><div class="wn">${c[0]}</div></div></td>
+    <td class="flag">${c[1]}</td><td class="num" style="color:var(--gold-lt)">${c[2]}</td><td>${c[3]}</td>
+    <td>${c[4]?stDot('ok'):stDot('bad')}</td>
+    <td>${stDot(c[5]==='confirmed'?'ok':c[5]==='matched'?'warn':'new')}</td>
+    <td style="text-align:right">${c[4]?'':`<button class="act">${P('Notify','Prévenir','Avisar','Avisar')}</button>`}</td></tr>`).join('');
+
+  const paid=CONF.filter(c=>c[4]==='paid').reduce((a,c)=>a+c[3],0);
+  const owed=CONF.filter(c=>c[4]==='registered'&&c[3]>0).reduce((a,c)=>a+c[3],0);
+  $('confRow').innerHTML=`
+   <div class="q"><div class="qk">${P('Registered','Inscrits','Inscritos','Inscritos')}</div><div class="qv">${CONF.length}</div><div class="qn">MIALC 2026</div></div>
+   <div class="q"><div class="qk">${P('Included passes','Pass inclus','Pases incluidos','Passes incluídos')}</div>
+    <div class="qv">${CONF.filter(c=>c[2]==='included').length}</div><div class="qn">Platinum</div></div>
+   <div class="q"><div class="qk">${P('Collected','Encaissé','Cobrado','Recebido')}</div>
+    <div class="qv money" style="font-size:29px">${m(paid)}</div><div class="qn">&nbsp;</div></div>
+   <div class="q urgent"><div class="qk">${P('Unbilled','À facturer','Por facturar','A faturar')}</div>
+    <div class="qv" style="font-size:29px">${m(owed)}</div><div class="qn">${P('registered, unpaid','inscrits non payés','inscritos sin pagar','inscritos não pagos')}</div></div>`;
+  $('confBody').innerHTML=CONF.map(c=>
+   `<tr><td><div class="who"><div class="ini">${ini(c[0])}</div><div class="wn">${c[0]}</div></div></td>
+    <td>${tierTag(c[1])}</td><td><span class="tag ${c[2]==='included'?'plat':''}">${PASS[c[2]][LI[L]]}</span></td>
+    <td class="num ${c[3]?'money':''}">${c[3]?m(c[3]):'—'}</td>
+    <td>${stDot(c[4]==='paid'?'ok':'warn')}</td><td class="flag">${c[5]}</td></tr>`).join('');
+
+  $('nlTotal').textContent=`${NEEDS.filter(n=>n[5]==='open').length} ${P('open','ouverts','abiertos','abertos')} · ${NEEDS.filter(n=>n[5]==='matched').length} ${P('matched','rapprochés','emparejados','ligados')}`;
+  $('nlBody').innerHTML=NEEDS.map(n=>
+   `<tr><td><span class="tag ${n[0]==='lead'?'plat':''}">${n[0]==='need'
+     ?P('Need','Besoin','Necesidad','Necessidade'):P('Lead','Opportunité','Oportunidad','Oportunidade')}</span></td>
+    <td>${n[1]}</td><td class="flag">${n[2]}</td><td class="flag">${n[3]}</td><td class="flag">${REG[n[4]][LI[L]]}</td>
+    <td>${stDot(n[5]==='matched'?'ok':'new')}</td>
+    <td style="text-align:right">${n[5]==='open'?`<button class="act">${P('Match','Rapprocher','Emparejar','Ligar')}</button>`:''}</td></tr>`).join('');
+
+  const a10=OUTCOMES.filter(o=>o[2]>10).length;
+  $('outRow').innerHTML=`
+   <div class="q"><div class="qk">${P('Growth above 10%','Croissance > 10%','Crecimiento > 10%','Crescimento > 10%')}</div>
+    <div class="qv">${Math.round(a10/OUTCOMES.length*100)}%</div>
+    <div class="qn">${a10} ${P('of','sur','de','de')} ${OUTCOMES.length} ${P('recorded','enregistrés','registrados','registados')}</div></div>
+   <div class="q"><div class="qk">${P('Median growth','Croissance médiane','Crecimiento medio','Crescimento mediano')}</div>
+    <div class="qv">13.5<span style="font-size:20px;color:var(--mute)">%</span></div><div class="qn">H1 2026</div></div>
+   <div class="q"><div class="qk">${P('Promotions','Promotions','Ascensos','Promoções')}</div>
+    <div class="qv">${OUTCOMES.filter(o=>o[3]).length}</div><div class="qn">&nbsp;</div></div>
+   <div class="q"><div class="qk">NPS</div><div class="qv">9.0</div><div class="qn">${P('average','moyenne','promedio','média')}</div></div>`;
+  $('outBody').innerHTML=OUTCOMES.map(o=>
+   `<tr><td><div class="who"><div class="ini">${ini(o[0])}</div><div class="wn">${o[0]}</div></div></td>
+    <td>${tierTag(o[1])}</td><td class="num" style="color:${o[2]>10?'var(--sage)':'var(--mute)'}">+${o[2].toFixed(1)}%</td>
+    <td>${o[3]?'<span class="dot s-ok"><i></i></span>':'<span class="flag">—</span>'}</td>
+    <td>${o[4]?'<span class="dot s-ok"><i></i></span>':'<span class="flag">—</span>'}</td>
+    <td class="num">${o[5]}</td></tr>`).join('');
+
+  $('shopBody').innerHTML=SHOP.map(s=>
+   `<tr><td class="wn">${s[0]}</td><td><span class="tag">${s[1]}</span></td>
+    <td class="num money">${m(s[2])}</td><td>${stDot('idle')}</td></tr>`).join('');
+
+  $('brdBody').innerHTML=BOARD.map(b=>
+   `<tr><td>${b[0]}</td><td>${b[1]}</td><td class="flag">${b[2]}</td><td>${ssDot(b[3]==='live'?'live':'next')}</td></tr>`).join('');
+
+  ['authBody','authBody2','memBody','corpBody','pkgBody','reqBody','benBody','consBody','confBody',
+   'nlBody','outBody','shopBody','brdBody','sessBody','allSessBody','invBody'].forEach(stag);
+  wire();
 }
-
-/* ─── language: the lexicon is data, so the whole console re-labels ─── */
+function wire(){
+  document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{
+    if(authorised.has(b.dataset.auth))return; authorised.add(b.dataset.auth); render()});
+  document.querySelectorAll('[data-go]').forEach(q=>q.onclick=()=>go(q.dataset.go));
+}
+function go(v){
+  document.querySelectorAll('.ni').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
+  const el=$('v-'+v); if(el)el.classList.add('on');
+  document.querySelector('.main').scrollTop=0;
+}
+document.querySelectorAll('.ni').forEach(n=>n.onclick=()=>go(n.dataset.v));
 document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.lang button').forEach(x=>x.classList.toggle('on',x===b));
-  L=b.dataset.l;
-  document.documentElement.lang=L;
-  tick();
-  document.querySelectorAll('[data-i]').forEach(e=>{
-    const v=L==='fr'?(FR[e.dataset.i]??EN[e.dataset.i]):EN[e.dataset.i];
-    if(v)e.textContent=v;
-  });
-  render();
+  L=b.dataset.l; document.documentElement.lang=L;
+  document.querySelectorAll('[data-i]').forEach(e=>{const v=t(e.dataset.i); if(v)e.textContent=v});
+  tick(); render();
 });
-
-/* ─── nav ─── */
-document.querySelectorAll('.nav-item').forEach(n=>n.onclick=()=>{
-  document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('on',x===n));
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
-  document.getElementById('v-'+n.dataset.v).classList.add('on');
-  document.querySelector('.main').scrollTop=0;
-});
-
-/* ─── Lagos clock, and a greeting that knows what time it is there ─── */
 function tick(){
-  const now=new Date();
-  document.getElementById('now').textContent=
-    now.toLocaleString('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const h=+now.toLocaleString('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hour12:false});
-  const g = h<12 ? ['Good morning','Bonjour']
-          : h<17 ? ['Good afternoon','Bon après-midi']
-                 : ['Good evening','Bonsoir'];
-  document.getElementById('greet').textContent = L==='fr'?g[1]:g[0];
+  const n=new Date();
+  $('now').textContent=n.toLocaleString('en-GB',{timeZone:'Indian/Mauritius',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const h=+n.toLocaleString('en-GB',{timeZone:'Indian/Mauritius',hour:'2-digit',hour12:false});
+  const g=h<12?['Good morning','Bonjour','Buenos días','Bom dia']
+        :h<17?['Good afternoon','Bon après-midi','Buenas tardes','Boa tarde']
+              :['Good evening','Bonsoir','Buenas noches','Boa noite'];
+  $('greet').textContent=g[LI[L]];
 }
-tick();setInterval(tick,1000);
-render();
+tick(); setInterval(tick,1000); render();
 </script>
 </body>
 </html>

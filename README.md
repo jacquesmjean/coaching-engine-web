@@ -1,11 +1,23 @@
 # Coaching Engine — web
 
-Static preview of the TechFides Coaching Engine console, rendered as BCA
+Back-office console for the TechFides Coaching Engine, rendered as BCA
 Leadership (tenant #1). **Sample data. Not connected to the database.**
 
-Serves `bca.coachingengine.app` while Release 1 is built. The live application
-replaces this at the same host.
+Modelled against the live BCA site: three individual membership tiers, three
+corporate seat tiers, three coaching packages sold separately, the inbound
+consulting / project-management / business-matching pipeline, MIALC passes,
+BCAOnline Needs & Leads, the shop catalogue, and member outcomes.
 
-- Schema and provisioning: separate repo, Supabase project `coaching-engine` (eu-west-2)
-- Tenant config drives the lexicon, locale and branding — see `tenant_config`
+The screen that matters is **Authorise & Invoice**. The website tells every
+buyer "this notifies BCA internally to authorize and issue your invoice" — a
+human approval step between a signed contract and cash. Nothing caught it
+before. That queue does.
+
+Four languages: EN / FR / ES / PT, matching the site. Currency, dates, ageing
+units, budget bands and timelines all localise — not just labels.
+
+Serves bca.coachingengine.app while Release 1 is built.
+
+- Schema: Supabase project `coaching-engine` (eu-west-2), 33 tables, 6 migrations
+- Tenant config drives lexicon, locale and branding
 - Powered by TechFides
