@@ -640,20 +640,20 @@ font-size:10px;color:var(--mute2);flex-wrap:wrap}
 </div>
 
 <script>
-const CONTRACTS=[
+let CONTRACTS=[
 ["BCA-C-2026-0412","Adaeze Okonkwo","Zenith Bank","Platinum",280000,"annual","2026-07-28","en"],
 ["BCA-C-2026-0411","Kwame Mensah","MTN Ghana","Momentum · 12 sessions",250000,"one-time","2026-07-28","en"],
 ["BCA-C-2026-0409","Nadia Benali","Attijariwafa","Executive",160000,"annual","2026-07-27","fr"],
 ["BCA-C-2026-0407","Jean-Baptiste Kouassi","Ecobank CI","Platinum (monthly)",25000,"monthly","2026-07-27","fr"],
 ["BCA-C-2026-0404","Ana Sofia Mendes","Sonangol","Focus · 6 sessions",140000,"one-time","2026-07-26","pt"],
 ["BCA-C-2026-0401","Grace Wanjiru","Safaricom","Associate",60000,"annual","2026-07-25","en"]];
-const INVOICES=[["BCA-2026-0341","Zenith Bank",1250000,"11 Jun",47,3,"60+"],
+let INVOICES=[["BCA-2026-0341","Zenith Bank",1250000,"11 Jun",47,3,"60+"],
 ["BCA-2026-0352","Dangote Group",840000,"24 Jun",34,2,"30-60"],
 ["BCA-2026-0364","MTN Ghana",1500000,"09 Jul",19,1,"30-60"],
 ["BCA-2026-0371","Safaricom",1120000,"17 Jul",11,1,"cur"],
 ["BCA-2026-0377","Ecobank CI",980000,"22 Jul",6,0,"cur"],
 ["BCA-2026-0384","Econet",1400000,"28 Jul",0,0,"cur"]];
-const MEMBERS=[
+let MEMBERS=[
 ["Adaeze Okonkwo","Zenith Bank","plat","Lagos Circle 4","Dr. Ngozi Eze",9,12,"2027-03-14","ok","Lagos, NG"],
 ["Kwame Mensah","MTN Ghana","exec","Accra Circle 2","Samuel Adjei",2,4,"2026-11-02","ok","Accra, GH"],
 ["Fatou Diallo","Sonatel","plat","Dakar Circle 1","Aminata Sow",7,12,"2027-01-20","ok","Dakar, SN"],
@@ -682,7 +682,7 @@ const PACKAGES=[["Alvin Emerson-Thomas","Momentum · 12","Norah Bwaya",8,12,"202
 ["Ibrahim Traoré","Focus · 6","Price Alan Mbida",1,6,"2026-07-14","ok"],
 ["Zanele Mahlangu","Starter · 4","Nankhonde Kasonde",2,4,"2026-07-02","ok"],
 ["Youssef Benkirane","Momentum · 12","Youssef Alami",5,12,"2026-04-09","ok"]];
-const REQUESTS=[
+let REQUESTS=[
 ["consulting","Dr. Emeka Nwachukwu","Federal Ministry of Finance, NG","$75k+","1–3 months","decision_maker",6,"new"],
 ["business_matching","Lindiwe Mokoena","Kgosi Capital, ZA","$25k–$75k","Within 1 month","decision_maker",4,"triaging"],
 ["project_management","Aicha Diop","Union Africaine, SN","$25k–$75k","3–6 months","part_of_decision",4,"new"],
@@ -743,7 +743,7 @@ const BOARD=[["Pan-African Mentorship Initiative — launch","Modupe Taylor-Pear
 ["2027 budget and sensitivity model","Finance Committee","31 Oct 2026","next"]];
 
 
-const LEADS=[
+let LEADS=[
 ["Dr. Emeka Nwachukwu","Federal Ministry of Finance","request_form","Public sector","west",92,"2026-07-30","working"],
 ["Lindiwe Mokoena","Kgosi Capital","referral","Financial services","southern",88,"2026-07-30","qualified"],
 ["Kofi Boateng","Ashanti Gold Ventures","member_intro","Mining","west",85,"2026-07-31","qualified"],
@@ -794,7 +794,7 @@ const PROPS=[
 ["BCA-P-2026-034","Union Africaine","Leadership retreat — Kigali",6200000,3,"2026-07-15","2026-07-16","2026-08-15","viewed"],
 ["BCA-P-2026-031","Kgosi Capital","Leadership 10 seats",1800000,1,"2026-07-09","2026-07-09","2026-08-09","accepted"]];
 
-const CAMPS=[
+let CAMPS=[
 ["Own Your Bench — corporate Q3","membership","LinkedIn · Email",380000,14,"running"],
 ["MIALC 2026 — delegate drive","conference","LinkedIn · Newsletter · Podcast",520000,23,"running"],
 ["Success in Africa — podcast growth","awareness","Podcast · X · Instagram",180000,6,"running"],
@@ -1466,6 +1466,34 @@ function tick(){
   $('greet').textContent=g[LI[L]];
 }
 tick(); setInterval(tick,1000); render();
+
+/* ── LIVE DATA: pull real records from the BCA backend and replace sample data ── */
+const CONSOLE_EP="https://uojsxmdnpwskxeueftgp.supabase.co/functions/v1/bca-console";
+function setBadge(v,n){var e=document.querySelector('[data-v="'+v+'"] .badge');if(e)e.textContent=n;}
+async function bootLive(){
+  var code=null; try{code=localStorage.getItem('ce_code');}catch(_){}
+  if(!code){ code=window.prompt('Coaching Engine — access code'); if(code){try{localStorage.setItem('ce_code',code);}catch(_){}} }
+  if(!code) return;
+  try{
+    var r=await fetch(CONSOLE_EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})});
+    if(!r.ok){ try{localStorage.removeItem('ce_code');}catch(_){} return; }
+    var d=await r.json();
+    if(d.MEMBERS) MEMBERS=d.MEMBERS;
+    if(d.INVOICES) INVOICES=d.INVOICES;
+    if(d.CONTRACTS) CONTRACTS=d.CONTRACTS;
+    if(d.CAMPS) CAMPS=d.CAMPS;
+    if(d.LEADS) LEADS=d.LEADS;
+    if(d.REQUESTS) REQUESTS=d.REQUESTS;
+    if(d.counts){var c=d.counts;
+      setBadge('members',c.members); setBadge('invoices',c.invoices);
+      setBadge('campaigns',c.campaigns); setBadge('requests',c.requests);
+      setBadge('authorise',c.contracts); setBadge('leads',c.leads);}
+    document.title='Coaching Engine · BCA (live)';
+    render();
+  }catch(e){ /* keep sample data on any failure */ }
+}
+bootLive();
+
 </script>
 </body>
 </html>
