@@ -162,6 +162,7 @@ font-size:10px;color:var(--mute2);flex-wrap:wrap}
     <div class="ni on" data-v="today"><span data-i="today">Today</span><span class="badge b-hot">14</span></div>
 
     <div class="nlab" data-i="lGrowth">Growth</div>
+    <div class="ni" data-v="marketing"><span>Sales &amp; Marketing</span><span class="chip">SOV</span></div>
     <div class="ni" data-v="leads"><span data-i="leads">Leads</span><span class="badge b-warm">31</span></div>
     <div class="ni" data-v="outreach"><span data-i="outreach">Outreach</span><span class="chip">SOV</span></div>
     <div class="ni" data-v="pipeline"><span data-i="pipeline">Pipeline</span><span class="badge b-cool">12</span></div>
@@ -491,6 +492,25 @@ font-size:10px;color:var(--mute2);flex-wrap:wrap}
     </div>
   </section>
 
+  <section class="view" id="v-marketing">
+    <div class="eyebrow">Marketing</div>
+    <h1>Sales &amp; Marketing</h1>
+    <p class="lede">The revenue on the table right now: renewals to secure, lapsed members to win back, and the pipeline to work.</p>
+    <div class="rule"></div>
+    <div class="queue" id="mkKpi"></div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Live campaigns</div><div class="pm" id="mkCampTot">—</div></div>
+      <table class="tbl"><thead><tr><th>Campaign</th><th>Objective</th><th>Channels</th><th>Status</th></tr></thead><tbody id="mkCampBody"></tbody></table>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Renewals due · next 90 days</div><div class="pm" id="mkRenTot">—</div></div>
+      <table class="tbl"><thead><tr><th>Member</th><th>Product</th><th>Renews</th><th>Value</th></tr></thead><tbody id="mkRenBody"></tbody></table>
+    </div>
+    <div class="panel">
+      <div class="ph"><div class="pt">Win-back · top 12 by value</div><div class="pm" id="mkWbTot">—</div></div>
+      <table class="tbl"><thead><tr><th>Account</th><th>Region</th><th>Value</th></tr></thead><tbody id="mkWbBody"></tbody></table>
+    </div>
+  </section>
   <section class="view" id="v-campaigns">
     <div class="eyebrow" data-i="ebMkt">Marketing</div>
     <h1 data-i="tCampaigns">Campaigns</h1>
@@ -1469,6 +1489,30 @@ tick(); setInterval(tick,1000); render();
 
 /* ── LIVE DATA: pull real records from the BCA backend and replace sample data ── */
 const CONSOLE_EP="https://uojsxmdnpwskxeueftgp.supabase.co/functions/v1/bca-console";
+const MARKET_EP="https://uojsxmdnpwskxeueftgp.supabase.co/functions/v1/bca-marketing-data";
+function usd(n){return "$"+(n||0).toLocaleString();}
+function esc2(x){return String(x==null?"":x).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function renderMarketing(d){
+  if(!d||!d.kpis){return;}
+  var k=d.kpis, el=function(id){return document.getElementById(id);};
+  if(el("mkKpi")) el("mkKpi").innerHTML=
+   '<div class="q"><div class="qk">Active members</div><div class="qv">'+k.activeMembers+'</div><div class="qn money">'+usd(k.activeARR)+' ARR</div></div>'+
+   '<div class="q"><div class="qk">Win-back</div><div class="qv money" style="font-size:29px">'+usd(k.winbackValue)+'</div><div class="qn">'+k.winbackCount+' lapsed</div></div>'+
+   '<div class="q"><div class="qk">Renewals \u00b7 90d</div><div class="qv">'+k.renewalsCount+'</div><div class="qn money">'+usd(k.renewalsValue)+'</div></div>'+
+   '<div class="q"><div class="qk">Pipeline</div><div class="qv">'+(k.leadsTotal||0).toLocaleString()+'</div><div class="qn">prospects</div></div>';
+  var camps=d.campaigns||[];
+  if(el("mkCampTot")) el("mkCampTot").textContent=camps.length+" active";
+  if(el("mkCampBody")) el("mkCampBody").innerHTML=camps.map(function(c){
+    return '<tr><td class="wn">'+esc2(c.name)+'</td><td><span class="tag">'+esc2(c.objective)+'</span></td><td class="flag">'+esc2((c.channels||[]).join(" \u00b7 "))+'</td><td class="flag">'+esc2(c.status)+'</td></tr>';}).join('');
+  var ren=d.renewals||[];
+  if(el("mkRenTot")) el("mkRenTot").textContent=usd(k.renewalsValue);
+  if(el("mkRenBody")) el("mkRenBody").innerHTML=ren.length?ren.map(function(r){
+    return '<tr><td class="wn">'+esc2(r.name)+'</td><td class="flag">'+esc2((r.product||"").replace("BCA ","").replace(" Membership",""))+'</td><td class="flag">'+esc2(r.renews_on)+'</td><td class="num money">'+usd(r.value)+'</td></tr>';}).join(''):'<tr><td colspan="4" class="flag">None due in this window.</td></tr>';
+  var wb=d.winback||[];
+  if(el("mkWbTot")) el("mkWbTot").textContent=usd(wb.reduce(function(a,x){return a+x.value;},0))+"+";
+  if(el("mkWbBody")) el("mkWbBody").innerHTML=wb.map(function(r){
+    return '<tr><td class="wn">'+esc2(r.name)+'</td><td class="flag">'+esc2(r.region||"\u2014")+'</td><td class="num money">'+usd(r.value)+'</td></tr>';}).join('');
+}
 function setBadge(v,n){var e=document.querySelector('[data-v="'+v+'"] .badge');if(e)e.textContent=n;}
 async function bootLive(){
   var code=null; try{code=localStorage.getItem('ce_code');}catch(_){}
@@ -1490,6 +1534,7 @@ async function bootLive(){
       setBadge('authorise',c.contracts); setBadge('leads',c.leads);}
     document.title='Coaching Engine · BCA (live)';
     render();
+    try{ var rm=await fetch(MARKET_EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})}); if(rm.ok){ renderMarketing(await rm.json()); } }catch(_){}
   }catch(e){ /* keep sample data on any failure */ }
 }
 bootLive();
