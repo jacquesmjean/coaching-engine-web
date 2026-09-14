@@ -166,6 +166,8 @@ tr.click{cursor:pointer} tr.click:hover{background:var(--navy-2)}
 .tl b{font-weight:500;font-size:13.5px} .tl p{margin:2px 0 0;font-size:13px;color:var(--mute)}
 .tl time{font-family:var(--num);font-size:10.5px;color:var(--mute);display:block}
 .saved{font-size:12.5px;color:var(--sage);margin-left:9px}
+select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px solid var(--line);background:var(--ink);color:var(--parch);border-radius:3px}
+.btn.mini{font-size:12px;padding:5px 10px}
 .err{font-size:12.5px;color:var(--rust);margin-top:7px}
 
 @media (max-width:860px){
@@ -339,6 +341,15 @@ tr.click{cursor:pointer} tr.click:hover{background:var(--navy-2)}
       <div class="board" id="pipBoard"></div>
       <div class="rule"></div>
       <div id="pipWrap"></div>
+    </section>
+
+    <!-- ───── team access ───── -->
+    <section class="view" id="v-team" hidden>
+      <div class="eyebrow">Administration</div>
+      <h1>Team access</h1>
+      <p class="lede" id="teamLede">—</p>
+      <div class="rule"></div>
+      <div id="teamWrap"></div>
     </section>
 
     <!-- generated: modules not yet built -->
@@ -547,11 +558,7 @@ const MODULES = [
     what:{en:"Ask questions of BCA's own data in plain language, and receive a weekly briefing on what changed and what needs attention.",
           fr:"Interroger les données de BCA en langage courant et recevoir un briefing hebdomadaire."} },
 
-  { g:"admin", v:"team",      i:"key",   en:"Team access", fr:"Accès équipe",
-    what:{en:"Add and remove colleagues yourself, and decide what each person can see, without going through TechFides.",
-          fr:"Ajouter ou retirer des collègues et définir leurs accès, sans passer par TechFides."},
-    needs:{en:["The people at BCA who need access","What each of them should be able to see"],
-           fr:["Les personnes de BCA qui ont besoin d'un accès","Ce que chacune doit pouvoir voir"]} },
+  { g:"admin", v:"team",      i:"key",   en:"Team access", fr:"Accès équipe", live:true },
   { g:"admin", v:"licensing", i:"spark", en:"Module licensing", fr:"Licences des modules",
     what:{en:"See which modules are included in BCA's plan and switch on anything not yet in use.",
           fr:"Voir les modules inclus dans la formule de BCA et activer ceux non utilisés."} },
@@ -695,6 +702,7 @@ async function start(){
   guard(loadMembers, "members",  "memStats");
   guard(loadLeads,   "leads",    "leadStats");
   guard(loadPipeline,"pipeline", "pipWrap");
+  guard(loadTeam,    "team",     "teamWrap");
   guard(loadBench,   "bench",    "benchWrap");
   guard(loadSessions,"sessions", "sessWrap");
   guard(loadBoard,   "board",    "boardWrap");
@@ -1173,6 +1181,150 @@ async function openOpp(id){
       }]);
       d.querySelector("#drTl").innerHTML = await timelineFor(`opportunity_id=eq.${id}`);
     });
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Team access
+   BCA adds and removes its own people. Nobody's password is ever
+   set here: an address is put on the allowlist, and that person
+   registers themselves and chooses their own password.
+
+   The database is the authority on what an admin may grant.
+   app.guard_invite_privileges() refuses platform administrator
+   outright and refuses 'owner' from anyone who is not an owner.
+   The choices below mirror that so the screen does not offer what
+   the database will reject — but the screen is not the control.
+   ───────────────────────────────────────────────────────────── */
+const ROLE_HELP = {
+  owner:  "Full control, including billing and adding other owners.",
+  admin:  "Everything except owner-level changes. The right choice for most staff.",
+  coach:  "Members, sessions and their own coaching records.",
+  member: "Their own record only.",
+  board:  "Read-only across the organisation. Nothing can be changed.",
+};
+const ASSIGNABLE = ["admin","coach","member","board"];   // 'owner' added below if permitted
+
+async function loadTeam(){
+  const c = claimsOf(session);
+  const iAmOwner = c.tenant_role === "owner" || c.platform_admin === true;
+  const roles = iAmOwner ? ["owner", ...ASSIGNABLE] : ASSIGNABLE;
+
+  const [users, invites] = await Promise.all([
+    q("tenant_users?select=id,full_name,email,role,status,job_title,last_active_at,user_id&order=full_name"),
+    q("tenant_invites?select=id,email,full_name,role,job_title,created_at,claimed_at&order=created_at"),
+  ]);
+  const pending = invites.filter(i => !i.claimed_at);
+
+  $("teamLede").textContent =
+    `${users.length} ${users.length===1?"person has":"people have"} signed in. ` +
+    (pending.length ? `${pending.length} invited and not yet registered.` : "No one is waiting to register.");
+
+  $("teamWrap").innerHTML = `
+    <div class="tblwrap"><table class="tbl">
+      <caption>People with access</caption>
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+      <tbody>${users.length ? users.map(u => {
+        const self = u.user_id === c.sub;
+        const protectedRow = u.role === "owner" && !iAmOwner;
+        return `<tr>
+          <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(u.full_name||u.email))}</span>${esc(u.full_name||"—")}${self?' <span class="panel-m">(you)</span>':""}</td>
+          <td class="wrap">${esc(u.email||"—")}</td>
+          <td>${(self || protectedRow)
+                ? `<span class="pill mut">${esc(label(u.role))}</span>`
+                : `<select class="mini" data-urole="${esc(u.id)}">${optsFor(roles, u.role)}</select>`}</td>
+          <td><span class="pill ${u.status==="active"?"ok":"mut"}">${esc(label(u.status))}</span></td>
+          <td>${(self || protectedRow) ? "" :
+                `<button class="btn ghost mini" type="button" data-suspend="${esc(u.id)}" data-st="${esc(u.status)}">${u.status==="active"?"Suspend":"Restore"}</button>`}</td>
+        </tr>`; }).join("")
+        : `<tr><td colspan="5">Nobody has signed in yet.</td></tr>`}</tbody>
+    </table></div>
+
+    <div class="rule"></div>
+    <h2 style="font-size:19px;margin-bottom:6px">Invited, not yet registered</h2>
+    ${pending.length ? `<div class="tblwrap"><table class="tbl">
+      <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Invited</th><th></th></tr></thead>
+      <tbody>${pending.map(i=>`<tr>
+        <td class="wrap">${esc(i.email)}</td><td class="wrap">${esc(i.full_name||"—")}</td>
+        <td><span class="pill mut">${esc(label(i.role))}</span></td>
+        <td>${esc(day((i.created_at||"").slice(0,10)))}</td>
+        <td><button class="btn ghost mini" type="button" data-revoke="${esc(i.id)}">Withdraw</button></td>
+      </tr>`).join("")}</tbody></table></div>`
+      : `<p class="panel-m">Nobody is waiting to register.</p>`}
+
+    <div class="rule"></div>
+    <div class="panel">
+      <div class="panel-h"><span class="panel-t">Give someone access</span></div>
+      <p class="panel-m">Add their work address. They register themselves and choose their own
+        password — no one here ever sets or sees it. If BCA uses more than one mail domain,
+        add the exact address that person will type.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px;margin-top:12px">
+        <label class="fld"><span>Work email</span><input id="tEmail" type="email" placeholder="name@bcaleadership.com"></label>
+        <label class="fld"><span>Full name</span><input id="tName" placeholder="First and last"></label>
+        <label class="fld"><span>Job title</span><input id="tTitle" placeholder="Optional"></label>
+        <label class="fld"><span>Role</span><select id="tRole">${optsFor(roles,"admin")}</select></label>
+      </div>
+      <p class="panel-m" id="tRoleHelp" style="margin-top:-4px"></p>
+      <div class="row-btn" style="margin-top:8px">
+        <button class="btn" id="tAdd" type="button">Add to the allowlist</button>
+        <span id="teamMsg"></span>
+      </div>
+      ${iAmOwner ? "" : `<p class="panel-m" style="margin-top:10px">Only an owner can add another owner, so that role is not offered here.</p>`}
+    </div>`;
+
+  const msg = $("teamMsg");
+  const say = (t, cls="saved") => { msg.className = cls; msg.textContent = t; };
+  const roleSel = $("tRole");
+  const help = () => { $("tRoleHelp").textContent = ROLE_HELP[roleSel.value] || ""; };
+  roleSel.addEventListener("change", help); help();
+
+  $("tAdd").addEventListener("click", async (e) => {
+    const email = $("tEmail").value.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return say("That does not look like an email address.", "err");
+    if (invites.some(i => (i.email||"").toLowerCase() === email))
+      return say("That address is already on the list.", "err");
+    e.currentTarget.disabled = true; say("Adding…");
+    try {
+      await w("POST", "tenant_invites", [{
+        tenant_id: TENANT, email, role: roleSel.value,
+        full_name: $("tName").value.trim() || null,
+        job_title: $("tTitle").value.trim() || null,
+        platform_admin: false,        // never settable from here; the database refuses it too
+        invited_by: c.sub,
+      }]);
+      $("tEmail").value = $("tName").value = $("tTitle").value = "";
+      say("Added. They can register now.");
+      await guardReload(loadTeam, "team", "teamWrap");
+    } catch (err) { say(err.message || "Could not add that person.", "err"); }
+    finally { const b = $("tAdd"); if (b) b.disabled = false; }
+  });
+
+  $("teamWrap").querySelectorAll("[data-revoke]").forEach(b =>
+    b.addEventListener("click", async () => {
+      b.disabled = true;
+      try { await w("DELETE", `tenant_invites?id=eq.${b.dataset.revoke}`); await guardReload(loadTeam,"team","teamWrap"); }
+      catch (err) { say(err.message, "err"); b.disabled = false; }
+    }));
+
+  $("teamWrap").querySelectorAll("[data-urole]").forEach(sel =>
+    sel.addEventListener("change", async () => {
+      sel.disabled = true; say("Saving…");
+      try { await w("PATCH", `tenant_users?id=eq.${sel.dataset.urole}`, { role: sel.value }); say("Role changed."); }
+      catch (err) { say(err.message, "err"); }
+      finally { sel.disabled = false; }
+    }));
+
+  // Suspending removes access without deleting the person or their history.
+  $("teamWrap").querySelectorAll("[data-suspend]").forEach(b =>
+    b.addEventListener("click", async () => {
+      const next = b.dataset.st === "active" ? "suspended" : "active";
+      b.disabled = true; say("Saving…");
+      try {
+        await w("PATCH", `tenant_users?id=eq.${b.dataset.suspend}`,
+          { status: next, deactivated_at: next === "suspended" ? new Date().toISOString() : null });
+        say(next === "suspended" ? "Access suspended." : "Access restored.");
+        await guardReload(loadTeam, "team", "teamWrap");
+      } catch (err) { say(err.message, "err"); b.disabled = false; }
+    }));
 }
 
 /* ───────── go ───────── */
