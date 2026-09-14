@@ -181,43 +181,7 @@ table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
       <div class="tier"><i aria-hidden="true"></i><span id="tierName">Professional</span></div>
     </div>
 
-    <nav id="nav" aria-label="Sections">
-      <div class="nav-label" data-t="ops">Operations</div>
-      <button class="nav-item" data-v="overview" type="button" aria-current="page">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 12h6l2-7 3 14 2-7h5"/></svg>
-        <span data-t="overview">Overview</span></button>
-      <button class="nav-item" data-v="members" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6 6 0 0 0-2-4.4"/></svg>
-        <span data-t="members">Members</span></button>
-      <button class="nav-item" data-v="bench" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.1 5.6L12 15.8 7.1 18.5l1.1-5.6L4 9l5.6-.7z"/></svg>
-        <span data-t="bench">The Bench</span></button>
-      <button class="nav-item" data-v="sessions" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-        <span data-t="sessions">Sessions</span></button>
-
-      <div class="nav-label" data-t="fin">Finance</div>
-      <button class="nav-item" data-v="billing" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
-        <span data-t="billing">Billing</span></button>
-
-      <div class="nav-label">Growth</div>
-      <button class="nav-item" data-v="leads" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-1.6-4"/></svg>
-        <span>Leads</span></button>
-
-      <div class="nav-label" data-t="mkt">Marketing</div>
-      <button class="nav-item" data-v="website" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 2.6 15.2 0 18M12 3c-2.6 2.8-2.6 15.2 0 18"/></svg>
-        <span data-t="website">Website</span></button>
-
-      <div class="nav-label" data-t="gov">Governance</div>
-      <button class="nav-item" data-v="board" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l8 3.5v5c0 5-3.4 8.9-8 9.9-4.6-1-8-4.9-8-9.9v-5z"/></svg>
-        <span data-t="board">Board Room</span></button>
-
-      <div id="navSoon"></div>
-    </nav>
+    <nav id="nav" aria-label="Sections"></nav>
 
     <div class="rail-foot">
       <button class="btn ghost" id="signOutBtn" type="button" data-t="signout">Sign out</button>
@@ -345,247 +309,301 @@ table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
   </main>
 </div>
 
+
 <script type="module">
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+/* ─────────────────────────────────────────────────────────────
+   BCA Leadership · Service Desk
+   No third-party runtime dependency. The first build imported
+   supabase-js from a CDN; when that CDN was slow the console
+   simply never loaded for the client. Everything below talks to
+   Supabase's own REST and auth endpoints with plain fetch.
 
-const SUPABASE_URL = "https://uojsxmdnpwskxeueftgp.supabase.co";
-const PUBLISHABLE  = "sb_publishable_Z2DVEpLgOb2PkH4ng-Yh5Q__VuY7cKB";
+   The browser holds only the publishable key. Every request is
+   made as the signed-in person and filtered in Postgres by row
+   level security, using the tenant_id stamped into their token.
+   No service role key. No shared access code.
+   ───────────────────────────────────────────────────────────── */
 
-// The browser holds only the publishable key. Every query runs as the signed-in
-// person and is filtered in Postgres by row level security, using the tenant_id
-// stamped into their token. No service role key, no shared access code.
-const sb = createClient(SUPABASE_URL, PUBLISHABLE);
+const API = "https://uojsxmdnpwskxeueftgp.supabase.co";
+const KEY = "sb_publishable_Z2DVEpLgOb2PkH4ng-Yh5Q__VuY7cKB";
+const STORE = "bca.session";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const money = (m, c="USD") => (Number(m||0)/100).toLocaleString("en-US",{style:"currency",currency:c,maximumFractionDigits:0});
 const money2 = (m, c="USD") => (Number(m||0)/100).toLocaleString("en-US",{style:"currency",currency:c});
 const day = (d) => d ? new Date(d+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}) : "—";
-const initials = (s) => (s||"").split(/[\s@.]+/).filter(Boolean).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("") || "··";
+const initials = (s) => (s||"").split(/[\s@._-]+/).filter(Boolean).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("") || "··";
 const todayISO = () => new Date().toISOString().slice(0,10);
-const note = (el, t, ok=false) => { el.textContent=t; el.className="note"+(ok?" ok":""); el.hidden=!t; };
+const note = (el,t,ok=false) => { el.textContent=t; el.className="note"+(ok?" ok":""); el.hidden=!t; };
 
-/* ───────── translations (shell only; data stays as recorded) ───────── */
+/* ───────── session ───────── */
+let session = null;
+try { session = JSON.parse(localStorage.getItem(STORE) || "null"); } catch { session = null; }
+const save = (s) => { session = s; s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); };
+const claimsOf = (s) => { try { return JSON.parse(atob(s.access_token.split(".")[1])); } catch { return {}; } };
+
+async function auth(path, body){
+  const r = await fetch(`${API}/auth/v1/${path}`, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", apikey:KEY },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(j.msg || j.error_description || j.error || `Sign-in failed (${r.status})`);
+  return j;
+}
+
+/** One data read. Returns rows, or throws with a readable message. */
+async function q(path){
+  if (!session) throw new Error("Not signed in");
+  let r = await fetch(`${API}/rest/v1/${path}`, {
+    headers:{ apikey:KEY, Authorization:"Bearer "+session.access_token, Accept:"application/json" },
+  });
+  // An expired token is the ordinary case after an hour, not an error. Refresh once.
+  if (r.status === 401 && session.refresh_token){
+    try {
+      save(await auth("token?grant_type=refresh_token", { refresh_token: session.refresh_token }));
+      r = await fetch(`${API}/rest/v1/${path}`, {
+        headers:{ apikey:KEY, Authorization:"Bearer "+session.access_token, Accept:"application/json" },
+      });
+    } catch { save(null); showGate(); throw new Error("Session expired, please sign in again"); }
+  }
+  if (!r.ok) throw new Error((await r.text()).slice(0,180) || `Request failed (${r.status})`);
+  return r.json();
+}
+/** Row count without pulling the rows. */
+async function count(table, filter=""){
+  const r = await fetch(`${API}/rest/v1/${table}?select=id${filter?"&"+filter:""}`, {
+    headers:{ apikey:KEY, Authorization:"Bearer "+session.access_token, Prefer:"count=exact", Range:"0-0" },
+  });
+  const cr = r.headers.get("content-range") || "";
+  const n = Number(cr.split("/")[1]);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/* ───────── shell text, EN / FR ───────── */
 const T = {
-  en:{ops:"Operations",fin:"Finance",gov:"Governance",mkt:"Marketing",overview:"Overview",members:"Members",
-      bench:"The Bench",sessions:"Sessions",billing:"Billing",website:"Website",board:"Board Room",
-      intel:"Intelligence",signout:"Sign out",memCap:"Every membership on record",invCap:"Invoices, newest first",
-      cName:"Member",cOrg:"Organisation",cTier:"Tier",cStatus:"Status",cRenew:"Renews",cCountry:"Country",
-      cInv:"Invoice",cBilled:"Billed to",cAmount:"Amount",cPaid:"Paid",cIssued:"Issued",cDue:"Due",cAge:"Status"},
-  fr:{ops:"Opérations",fin:"Finance",gov:"Gouvernance",mkt:"Marketing",overview:"Aperçu",members:"Membres",
-      bench:"Le Banc",sessions:"Séances",billing:"Facturation",website:"Site web",board:"Conseil",
-      intel:"Intelligence",signout:"Déconnexion",memCap:"Toutes les adhésions enregistrées",invCap:"Factures, plus récentes d'abord",
-      cName:"Membre",cOrg:"Organisation",cTier:"Formule",cStatus:"Statut",cRenew:"Renouvellement",cCountry:"Pays",
-      cInv:"Facture",cBilled:"Facturé à",cAmount:"Montant",cPaid:"Payé",cIssued:"Émise",cDue:"Échéance",cAge:"Statut"},
+  en:{ops:"Operations",fin:"Finance",growth:"Growth",mkt:"Marketing",gov:"Governance",admin:"Administration",
+      signout:"Sign out",soon:"Soon",locked:"Locked",inbuild:"In build",notplan:"Not in this plan"},
+  fr:{ops:"Opérations",fin:"Finance",growth:"Croissance",mkt:"Marketing",gov:"Gouvernance",admin:"Administration",
+      signout:"Déconnexion",soon:"Bientôt",locked:"Verrouillé",inbuild:"En construction",notplan:"Hors formule"},
 };
 let lang = "en";
-function applyLang(){
-  document.documentElement.lang = lang;
-  document.querySelectorAll("[data-t]").forEach(el => { const v = T[lang][el.dataset.t]; if (v) el.textContent = v; });
-  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.l === lang)));
-}
-document.querySelectorAll(".lang button").forEach(b =>
-  b.addEventListener("click", () => { lang = b.dataset.l; applyLang(); }));
 
-/* ───────── clock ───────── */
-const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-$("tz").textContent = tz;
-const tick = () => { $("now").textContent = new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); };
-tick(); setInterval(tick, 30000);
-
-/* ───────── modules not yet built ─────────
-   These are shown so BCA can see the shape of the platform, and every one is
-   labelled either "Coming" or "Not licensed". None of them display invented
-   figures: each says what it will do and what is needed to switch it on. */
-const ICON = {
+/* ───────── modules: one manifest, so a group can never be emitted twice ───────── */
+const I = {
+  pulse:'<path d="M3 12h6l2-7 3 14 2-7h5"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6 6 0 0 0-2-4.4"/>',
+  star:'<path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.1 5.6L12 15.8 7.1 18.5l1.1-5.6L4 9l5.6-.7z"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  book:'<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 2.6 15.2 0 18M12 3c-2.6 2.8-2.6 15.2 0 18"/>',
+  shield:'<path d="M12 3l8 3.5v5c0 5-3.4 8.9-8 9.9-4.6-1-8-4.9-8-9.9v-5z"/>',
+  card:'<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/>',
   doc:'<path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 13h6M9 17h6"/>',
   flow:'<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 6H14a2 2 0 0 1 2 2v1.5M15.6 13.4 8.9 17.2"/>',
-  card:'<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/>',
-  users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-1.6-4"/>',
   chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/>',
   mega:'<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
-  shield:'<path d="M12 3l8 3.5v5c0 5-3.4 8.9-8 9.9-4.6-1-8-4.9-8-9.9v-5z"/><path d="M9 12l2 2 4-4"/>',
   key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M15 12v2"/>',
   spark:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
 };
-const SOON = [
-  { g:"fin",  v:"payments",  icon:"card",   label:"Payments",
-    what:"Take card payments and issue invoices directly from here, through Stripe, with receipts and renewals handled automatically.",
-    needs:["A Stripe account in BCA's name, so funds settle to BCA","Confirmation that Stripe operates for a Mauritius-registered entity","A decision on annual subscriptions versus one-off invoices"] },
-  { g:"fin",  v:"contracts", icon:"doc",    label:"Contract builder",
-    what:"Generate a membership or coaching agreement, send it for signature, and have the invoice raised the moment it is signed.",
-    needs:["BCA's approved membership agreement text","BCA's approved coaching agreement text","Who countersigns on BCA's side"] },
-  { g:"growth", v:"leads",    icon:"users",  label:"Leads", live:true },
-  { g:"growth", v:"pipeline", icon:"flow",   label:"Pipeline",
-    what:"Track an enquiry from first contact through to a signed member, with stages, owners and an honest forecast.",
-    needs:["The stages BCA actually uses","Who owns an enquiry at each stage"] },
-  { g:"growth", v:"proposals",icon:"doc",    label:"Proposals",
-    what:"Build and send corporate and sponsorship proposals, then see which have been opened and which are waiting on a reply.",
-    needs:["BCA's corporate proposal template","Sponsorship rate card"] },
-  { g:"ops",  v:"requests",  icon:"chat",   label:"Inbound requests",
-    what:"Every enquiry from the website in one queue, routed to the right person, with nothing sitting unanswered.",
-    needs:["Who should receive each type of enquiry","A target response time BCA wants to hold itself to"] },
-  { g:"gov",  v:"documents", icon:"shield", label:"Document vault",
-    what:"Board papers, resolutions and signed agreements in one place, with a record of who opened what and when.",
-    needs:["Which documents belong in the vault","Who may see board-level material"] },
-  { g:"admin",v:"team",      icon:"key",    label:"Team access",
-    what:"Add and remove colleagues yourself, and decide what each person can see, without going through TechFides.",
-    needs:["The list of people at BCA who need access","What each of them should be able to see"] },
-  { g:"admin",v:"licensing", icon:"spark",  label:"Module licensing",
-    what:"See which modules are included in BCA's plan and switch on anything not yet in use.",
-    needs:[] },
-  { g:"mkt",  v:"campaigns", icon:"mega",   label:"Campaigns", locked:true,
-    what:"Plan and measure member recruitment and renewal campaigns across email and social.",
-    needs:[] },
-  { g:"gov",  v:"intel",     icon:"spark",  label:"Intelligence", locked:true,
-    what:"Ask questions of BCA's own data in plain language, and receive a weekly briefing on what changed and what needs attention.",
-    needs:[] },
+const MODULES = [
+  { g:"ops", v:"overview", i:"pulse", en:"Overview",  fr:"Aperçu",  live:true },
+  { g:"ops", v:"members",  i:"users", en:"Members",   fr:"Membres", live:true },
+  { g:"ops", v:"bench",    i:"star",  en:"The Bench", fr:"Le Banc", live:true },
+  { g:"ops", v:"sessions", i:"cal",   en:"Sessions",  fr:"Séances", live:true },
+  { g:"ops", v:"requests", i:"chat",  en:"Inbound requests", fr:"Demandes entrantes",
+    what:{en:"Every enquiry from the website in one queue, routed to the right person, with nothing left unanswered.",
+          fr:"Toutes les demandes du site dans une seule file, dirigées vers la bonne personne."},
+    needs:{en:["Who should receive each type of enquiry","A response time BCA wants to hold itself to"],
+           fr:["Qui reçoit chaque type de demande","Le délai de réponse que BCA veut tenir"]} },
+
+  { g:"fin", v:"billing",  i:"book",  en:"Billing",   fr:"Facturation", live:true },
+  { g:"fin", v:"payments", i:"card",  en:"Payments",  fr:"Paiements",
+    what:{en:"Take card payments and raise invoices from here through Stripe, with receipts and renewals handled automatically.",
+          fr:"Encaisser par carte et émettre les factures via Stripe, reçus et renouvellements automatisés."},
+    needs:{en:["A Stripe account in BCA's name, so funds settle to BCA","Confirmation Stripe operates for a Mauritius-registered entity","Annual subscriptions or one-off invoices"],
+           fr:["Un compte Stripe au nom de BCA","Confirmation que Stripe opère pour une entité mauricienne","Abonnements annuels ou factures ponctuelles"]} },
+  { g:"fin", v:"contracts",i:"doc",   en:"Contract builder", fr:"Générateur de contrats",
+    what:{en:"Generate a membership or coaching agreement, send it for signature, and raise the invoice the moment it is signed.",
+          fr:"Générer un contrat d'adhésion ou de coaching, le faire signer, et facturer dès la signature."},
+    needs:{en:["BCA's approved membership agreement text","BCA's approved coaching agreement text","Who countersigns for BCA"],
+           fr:["Le texte approuvé du contrat d'adhésion","Le texte approuvé du contrat de coaching","Qui contresigne pour BCA"]} },
+
+  { g:"growth", v:"leads",    i:"users", en:"Leads", fr:"Prospects", live:true },
+  { g:"growth", v:"pipeline", i:"flow",  en:"Pipeline", fr:"Pipeline",
+    what:{en:"Follow an enquiry from first contact to signed member, with stages, owners and an honest forecast.",
+          fr:"Suivre une demande jusqu'à l'adhésion, avec étapes, responsables et prévision honnête."},
+    needs:{en:["The stages BCA actually uses","Who owns an enquiry at each stage"],
+           fr:["Les étapes réellement utilisées par BCA","Qui est responsable à chaque étape"]} },
+  { g:"growth", v:"proposals",i:"doc",   en:"Proposals", fr:"Propositions",
+    what:{en:"Build and send corporate and sponsorship proposals, then see which have been opened and which are waiting on a reply.",
+          fr:"Créer et envoyer des propositions entreprises et sponsoring, puis suivre les ouvertures."},
+    needs:{en:["BCA's corporate proposal template","The sponsorship rate card"],
+           fr:["Le modèle de proposition entreprise","La grille tarifaire sponsoring"]} },
+
+  { g:"mkt", v:"website",   i:"globe", en:"Website", fr:"Site web", live:true },
+  { g:"mkt", v:"campaigns", i:"mega",  en:"Campaigns", fr:"Campagnes", locked:true,
+    what:{en:"Plan and measure member recruitment and renewal campaigns across email and social.",
+          fr:"Planifier et mesurer les campagnes de recrutement et de renouvellement."} },
+
+  { g:"gov", v:"board",     i:"shield", en:"Board Room", fr:"Conseil", live:true },
+  { g:"gov", v:"documents", i:"doc",    en:"Document vault", fr:"Coffre documentaire",
+    what:{en:"Board papers, resolutions and signed agreements in one place, with a record of who opened what and when.",
+          fr:"Documents du conseil et contrats signés au même endroit, avec traçabilité des accès."},
+    needs:{en:["Which documents belong in the vault","Who may see board-level material"],
+           fr:["Quels documents entrent dans le coffre","Qui peut voir les documents du conseil"]} },
+  { g:"gov", v:"intel",     i:"spark",  en:"Intelligence", fr:"Intelligence", locked:true,
+    what:{en:"Ask questions of BCA's own data in plain language, and receive a weekly briefing on what changed and what needs attention.",
+          fr:"Interroger les données de BCA en langage courant et recevoir un briefing hebdomadaire."} },
+
+  { g:"admin", v:"team",      i:"key",   en:"Team access", fr:"Accès équipe",
+    what:{en:"Add and remove colleagues yourself, and decide what each person can see, without going through TechFides.",
+          fr:"Ajouter ou retirer des collègues et définir leurs accès, sans passer par TechFides."},
+    needs:{en:["The people at BCA who need access","What each of them should be able to see"],
+           fr:["Les personnes de BCA qui ont besoin d'un accès","Ce que chacune doit pouvoir voir"]} },
+  { g:"admin", v:"licensing", i:"spark", en:"Module licensing", fr:"Licences des modules",
+    what:{en:"See which modules are included in BCA's plan and switch on anything not yet in use.",
+          fr:"Voir les modules inclus dans la formule de BCA et activer ceux non utilisés."} },
 ];
-const GROUPS = { ops:"Operations", fin:"Finance", growth:"Growth", mkt:"Marketing", gov:"Governance", admin:"Administration" };
+const GROUP_ORDER = ["ops","fin","growth","mkt","gov","admin"];
 
-function buildSoon(){
-  const navHost = $("navSoon"), viewHost = $("soonViews");
-  const byGroup = {};
-  SOON.filter(m => !m.live).forEach(m => (byGroup[m.g] ||= []).push(m));
+function buildNav(){
+  const host = $("nav");
+  host.innerHTML = GROUP_ORDER.map(g => {
+    const items = MODULES.filter(m => m.g === g);
+    if (!items.length) return "";
+    return `<div class="nav-label" data-g="${g}">${esc(T[lang][g])}</div>` + items.map(m => {
+      const badge = m.live ? "" :
+        `<span class="lock ${m.locked ? "" : "soon"}">${esc(m.locked ? T[lang].locked : T[lang].soon)}</span>`;
+      return `<button class="nav-item" type="button" data-v="${m.v}"${m.v === "overview" ? ' aria-current="page"' : ""}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${I[m.i]}</svg>
+        <span data-m="${m.v}">${esc(m[lang])}</span>${badge}</button>`;
+    }).join("");
+  }).join("");
 
-  navHost.innerHTML = Object.keys(byGroup).map(g =>
-    `<div class="nav-label">${esc(GROUPS[g] || g)}</div>` +
-    byGroup[g].map(m => `<button class="nav-item" data-v="${m.v}" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${ICON[m.icon]}</svg>
-        <span>${esc(m.label)}</span>
-        <span class="lock ${m.locked ? "" : "soon"}">${m.locked ? "Locked" : "Soon"}</span>
-      </button>`).join("")).join("");
-
-  viewHost.innerHTML = SOON.filter(m => !m.live).map(m => `
+  // views for everything not yet built
+  $("soonViews").innerHTML = MODULES.filter(m => !m.live).map(m => `
     <section class="view" id="v-${m.v}" hidden>
-      <div class="eyebrow">${esc(GROUPS[m.g] || m.g)}</div>
-      <h1>${esc(m.label)}</h1>
-      <div class="soon-head"><span class="soon-tag ${m.locked ? "locked" : ""}">${m.locked ? "Not in this plan" : "In build"}</span></div>
-      <p class="lede">${esc(m.what)}</p>
+      <div class="eyebrow">${esc(T[lang][m.g])}</div>
+      <h1>${esc(m[lang])}</h1>
+      <div class="soon-head"><span class="soon-tag ${m.locked ? "locked" : ""}">${esc(m.locked ? T[lang].notplan : T[lang].inbuild)}</span></div>
+      <p class="lede">${esc(m.what?.[lang] || "")}</p>
       <div class="rule"></div>
       ${m.locked
         ? `<div class="panel"><div class="panel-h"><span class="panel-t">Not included in the Professional plan</span></div>
              <p class="panel-m">This module is available on a higher plan. Speak to TechFides if BCA would like it switched on.</p></div>`
         : `<div class="panel"><div class="panel-h"><span class="panel-t">What we need from BCA</span></div>
-             ${m.needs.length
-               ? `<ul class="needs">${m.needs.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`
-               : `<p class="panel-m">Nothing. This is with TechFides to build.</p>`}
+             ${m.needs?.[lang]?.length ? `<ul class="needs">${m.needs[lang].map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`
+                                        : `<p class="panel-m">Nothing. This one is with TechFides to build.</p>`}
              <p class="panel-m" style="margin-top:4px">Nothing on this screen is live yet, and no figures are shown, because none have been recorded.</p></div>`}
     </section>`).join("");
+
+  host.querySelectorAll(".nav-item").forEach(btn => btn.addEventListener("click", () => {
+    host.querySelectorAll(".nav-item").forEach(b => b.removeAttribute("aria-current"));
+    btn.setAttribute("aria-current","page");
+    document.querySelectorAll(".view").forEach(v => v.hidden = true);
+    const v = $("v-"+btn.dataset.v);
+    if (v){ v.hidden = false; window.scrollTo({top:0}); }
+  }));
 }
 
-/* ───────── nav ───────── */
-function bindNav(){
-  document.querySelectorAll(".nav-item").forEach(btn => {
-    if (btn.disabled || btn.dataset.bound) return;
-    btn.dataset.bound = "1";
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".nav-item").forEach(b => b.removeAttribute("aria-current"));
-      btn.setAttribute("aria-current","page");
-      document.querySelectorAll(".view").forEach(v => v.hidden = true);
-      const v = $("v-" + btn.dataset.v);
-      if (v) { v.hidden = false; window.scrollTo({ top:0 }); }
-    });
-  });
+function applyLang(){
+  document.documentElement.lang = lang;
+  const active = document.querySelector('.nav-item[aria-current="page"]')?.dataset.v;
+  buildNav();
+  if (active){
+    const b = document.querySelector(`.nav-item[data-v="${active}"]`);
+    if (b){ document.querySelectorAll(".nav-item").forEach(x=>x.removeAttribute("aria-current")); b.setAttribute("aria-current","page"); }
+  }
+  document.querySelectorAll(".view").forEach(v => v.hidden = v.id !== "v-"+(active||"overview"));
+  $("signOutBtn").textContent = T[lang].signout;
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.l === lang)));
 }
-buildSoon();
-bindNav();
 
-/* ───────── auth ───────── */
+/* ───────── clock ───────── */
+$("tz").textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+const tick = () => { $("now").textContent = new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); };
+tick(); setInterval(tick, 30000);
+
+document.querySelectorAll(".lang button").forEach(b =>
+  b.addEventListener("click", () => { lang = b.dataset.l; applyLang(); }));
+
+/* ───────── auth UI ───────── */
 $("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const b = $("signInBtn"); b.disabled = true; b.textContent = "Signing in…";
-  const { error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("password").value });
+  try {
+    save(await auth("token?grant_type=password", { email:$("email").value.trim(), password:$("password").value }));
+    await start();
+  } catch (err) { note($("loginMsg"), err.message); }
   b.disabled = false; b.textContent = "Sign in";
-  if (error) note($("loginMsg"), error.message);
 });
+
 $("signUpBtn").addEventListener("click", async () => {
   const email = $("email").value.trim(), password = $("password").value;
   if (!email || password.length < 8) return note($("loginMsg"), "Enter your email and a password of at least 8 characters, then press this button again.");
   const b = $("signUpBtn"); b.disabled = true; b.textContent = "Creating…";
-  const { error } = await sb.auth.signUp({ email, password });
+  try {
+    const j = await auth("signup", { email, password });
+    if (j.access_token){ save(j); await start(); }
+    else note($("loginMsg"), "Account created. Open the confirmation email, then sign in here.", true);
+  } catch (err) { note($("loginMsg"), err.message); }
   b.disabled = false; b.textContent = "First time here? Create your account";
-  if (error) return note($("loginMsg"), error.message);
-  note($("loginMsg"), "Account created. If a confirmation email arrives, open it, then sign in here.", true);
 });
-$("signOutBtn").addEventListener("click", async () => { await sb.auth.signOut(); location.reload(); });
 
-sb.auth.onAuthStateChange((_e, s) => s ? start(s) : showGate());
-sb.auth.getSession().then(({data}) => data.session ? start(data.session) : showGate());
+$("signOutBtn").addEventListener("click", () => { save(null); location.reload(); });
+
 function showGate(){ $("app").hidden = true; $("gate").hidden = false; }
 
 /* ───────── boot ───────── */
-async function start(session){
+async function start(){
+  if (!session?.access_token) return showGate();
   $("gate").hidden = true; $("app").hidden = false;
-  applyLang();
+  buildNav();
+  $("signOutBtn").textContent = T[lang].signout;
 
-  let claims = {};
-  try { claims = JSON.parse(atob(session.access_token.split(".")[1])); } catch {}
-  if (!claims.tenant_id && !claims.platform_admin){
+  const c = claimsOf(session);
+  if (!c.tenant_id && !c.platform_admin){
     note($("appMsg"), "Your account is not yet linked to BCA. Ask your administrator to add you, then sign out and back in.");
     return;
   }
 
-  const email = session.user.email || "";
+  const email = c.email || "";
   $("avatar").textContent = initials(email);
-
-  const { data: me } = await sb.from("tenant_users").select("full_name,role").eq("user_id", session.user.id).maybeSingle();
-  const name = me?.full_name || email.split("@")[0];
-  $("firstName").textContent = name.split(" ")[0];
-  if (me?.full_name) $("avatar").textContent = initials(me.full_name);
+  $("brandHost").textContent = location.hostname;
 
   const h = new Date().getHours();
   $("greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   $("todayLine").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 
-  const { data: t } = await sb.from("tenants").select("slug,tier,legal_name").maybeSingle();
-  if (t?.tier) $("tierName").textContent = t.tier.charAt(0).toUpperCase()+t.tier.slice(1);
-  $("brandHost").textContent = location.hostname;
+  // Each section loads on its own. One failing must never blank the others.
+  const guard = (fn, label) => fn().catch(e => console.error(label, e));
+  guard(async () => {
+    const me = (await q(`tenant_users?select=full_name,role&user_id=eq.${c.sub}&limit=1`))[0];
+    const name = me?.full_name || email.split("@")[0];
+    $("firstName").textContent = name.split(" ")[0];
+    $("avatar").textContent = initials(me?.full_name || email);
+  }, "profile");
+  guard(async () => {
+    const t = (await q("tenants?select=slug,tier,legal_name&limit=1"))[0];
+    if (t?.tier) $("tierName").textContent = t.tier.charAt(0).toUpperCase()+t.tier.slice(1);
+  }, "tenant");
 
-  loadBilling();
-  loadMembers();
-  loadBench();
-  loadSessions();
-  loadBoard();
-  loadWebsite();
-  loadLeads();
+  guard(loadBilling, "billing");
+  guard(loadMembers, "members");
+  guard(loadLeads,   "leads");
+  guard(loadBench,   "bench");
+  guard(loadSessions,"sessions");
+  guard(loadBoard,   "board");
+  guard(loadWebsite, "website");
 }
 
-/* ───────── leads ───────── */
-async function loadLeads(){
-  const { count } = await sb.from("leads").select("id",{count:"exact",head:true});
-  const { data, error } = await sb.from("leads")
-    .select("full_name,organization,source,sector,region,score,status")
-    .order("score",{ascending:false}).limit(120);
-  if (error){ $("leadBody").innerHTML = `<tr><td colspan="7">Could not load leads.</td></tr>`; return; }
-  const rows = data || [];
-  $("leadLede").textContent = `${(count ?? rows.length).toLocaleString()} leads captured to date. The highest scoring ${rows.length} are listed.`;
-
-  const bySource = {};
-  rows.forEach(r => bySource[r.source||"unknown"] = (bySource[r.source||"unknown"]||0)+1);
-  const top = Object.keys(bySource).sort((a,b)=>bySource[b]-bySource[a]).slice(0,3);
-  $("leadStats").innerHTML =
-    `<div class="stat"><span class="stat-k">Total captured</span><span class="stat-v">${(count ?? 0).toLocaleString()}</span><span class="stat-n">all sources</span></div>` +
-    top.map(s=>`<div class="stat amber"><span class="stat-k">${esc(s)}</span><span class="stat-v">${bySource[s]}</span><span class="stat-n">of the top ${rows.length} by score</span></div>`).join("");
-
-  $("leadBody").innerHTML = rows.length ? rows.map(r=>`<tr>
-    <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}</td>
-    <td class="wrap">${esc(r.organization||"—")}</td><td>${esc(r.source||"—")}</td>
-    <td>${esc(r.sector||"—")}</td><td>${esc(r.region||"—")}</td>
-    <td class="num">${esc(r.score ?? "—")}</td>
-    <td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("")
-    : `<tr><td colspan="7">No leads yet.</td></tr>`;
-}
-
-/* ───────── billing + overview figures ───────── */
+/* ───────── billing + overview ───────── */
 async function loadBilling(){
-  const { data, error } = await sb.from("invoices")
-    .select("number,total_minor,paid_minor,currency,status,issued_on,due_on,people(first_name,last_name),organizations(name)")
-    .order("issued_on",{ascending:false}).limit(400);
-  if (error){ $("invBody").innerHTML = `<tr><td colspan="7">Could not load invoices: ${esc(error.message)}</td></tr>`; return; }
-  const rows = data || [];
+  const rows = await q("invoices?select=number,total_minor,paid_minor,currency,status,issued_on,due_on,people(first_name,last_name),organizations(name)&order=issued_on.desc&limit=400");
   const today = todayISO();
-
   const invoiced = rows.reduce((s,r)=>s+Number(r.total_minor||0),0);
   const collected = rows.reduce((s,r)=>s+Number(r.paid_minor||0),0);
   const open = rows.filter(r=>r.status!=="paid");
@@ -593,13 +611,13 @@ async function loadBilling(){
   const pct = invoiced ? Math.round(collected/invoiced*100) : 0;
 
   const band = (r) => {
-    if (r.status === "paid" || !r.due_on) return "cur";
+    if (r.status==="paid" || !r.due_on) return "cur";
     const d = Math.floor((Date.parse(today)-Date.parse(r.due_on))/864e5);
-    return d > 60 ? "d60" : d > 30 ? "d30" : "cur";
+    return d>60 ? "d60" : d>30 ? "d30" : "cur";
   };
-  const buckets = { cur:[], d30:[], d60:[] };
-  open.forEach(r => buckets[band(r)].push(r));
-  const sum = (a) => a.reduce((s,r)=>s+(Number(r.total_minor||0)-Number(r.paid_minor||0)),0);
+  const B = { cur:[], d30:[], d60:[] };
+  open.forEach(r => B[band(r)].push(r));
+  const sum = a => a.reduce((s,r)=>s+(Number(r.total_minor||0)-Number(r.paid_minor||0)),0);
 
   $("billLede").textContent = `${rows.length} invoices on record. ${open.length} still open.`;
   $("billMoney").innerHTML = `
@@ -608,102 +626,99 @@ async function loadBilling(){
       <div class="bar"><span style="width:${pct}%;background:var(--sage)"></span><span style="width:${100-pct}%;background:var(--rust)"></span></div>
       <span class="stat-n">${pct}% of invoiced</span></div>
     <div class="money-l"><span class="stat-k">Outstanding</span><span class="money-v" style="color:var(--rust)">${money2(outstanding)}</span></div>`;
-
   $("billAging").innerHTML = `
-    <div class="stat sage"><span class="stat-k">Current</span><span class="stat-v">${money(sum(buckets.cur))}</span><span class="stat-n">${buckets.cur.length} invoices not yet 30 days past due</span></div>
-    <div class="stat amber"><span class="stat-k">30 to 60 days</span><span class="stat-v">${money(sum(buckets.d30))}</span><span class="stat-n">${buckets.d30.length} invoices</span></div>
-    <div class="stat rust"><span class="stat-k">Over 60 days</span><span class="stat-v">${money(sum(buckets.d60))}</span><span class="stat-n">${buckets.d60.length} invoices</span></div>`;
+    <div class="stat sage"><span class="stat-k">Current</span><span class="stat-v">${money(sum(B.cur))}</span><span class="stat-n">${B.cur.length} not yet 30 days past due</span></div>
+    <div class="stat amber"><span class="stat-k">30 to 60 days</span><span class="stat-v">${money(sum(B.d30))}</span><span class="stat-n">${B.d30.length} invoices</span></div>
+    <div class="stat rust"><span class="stat-k">Over 60 days</span><span class="stat-v">${money(sum(B.d60))}</span><span class="stat-n">${B.d60.length} invoices</span></div>`;
 
-  $("invBody").innerHTML = rows.length ? rows.map(r => {
+  $("invBody").innerHTML = rows.length ? rows.map(r=>{
     const who = [r.people?.first_name,r.people?.last_name].filter(Boolean).join(" ") || r.organizations?.name || "—";
     const b = band(r);
-    const label = r.status === "paid" ? "Paid" : b === "d60" ? "Over 60 days" : b === "d30" ? "30–60 days" : (r.status || "Open");
-    const cls = r.status === "paid" ? "mut" : b;
-    return `<tr>
-      <td class="num">${esc(r.number)}</td>
+    const label = r.status==="paid" ? "Paid" : b==="d60" ? "Over 60 days" : b==="d30" ? "30–60 days" : (r.status||"Open");
+    return `<tr><td class="num">${esc(r.number)}</td>
       <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(who))}</span>${esc(who)}</td>
       <td class="num">${money2(r.total_minor,r.currency||"USD")}</td>
       <td class="num">${money2(r.paid_minor,r.currency||"USD")}</td>
       <td>${day(r.issued_on)}</td><td>${day(r.due_on)}</td>
-      <td><span class="pill ${cls}">${esc(label)}</span></td></tr>`;
+      <td><span class="pill ${r.status==="paid"?"mut":b}">${esc(label)}</span></td></tr>`;
   }).join("") : `<tr><td colspan="7">No invoices yet.</td></tr>`;
 
-  // overview headline
-  const { count: activeMem } = await sb.from("memberships").select("id",{count:"exact",head:true}).eq("status","active");
-  const { count: allMem } = await sb.from("memberships").select("id",{count:"exact",head:true});
-  const { count: leads } = await sb.from("leads").select("id",{count:"exact",head:true});
-
+  const [activeMem, allMem, leads] = await Promise.all([
+    count("memberships","status=eq.active"), count("memberships"), count("leads"),
+  ]);
   $("ovStats").innerHTML = `
-    <div class="stat"><span class="stat-k">Active members</span><span class="stat-v">${activeMem ?? "—"}</span><span class="stat-n">of ${allMem ?? "—"} on record</span></div>
+    <div class="stat"><span class="stat-k">Active members</span><span class="stat-v">${activeMem}</span><span class="stat-n">of ${allMem} on record</span></div>
     <div class="stat sage"><span class="stat-k">Collected</span><span class="stat-v">${money(collected)}</span><span class="stat-n">${pct}% of everything invoiced</span></div>
     <div class="stat rust"><span class="stat-k">Outstanding</span><span class="stat-v">${money(outstanding)}</span><span class="stat-n">${open.length} invoices open</span></div>
-    <div class="stat amber"><span class="stat-k">Leads</span><span class="stat-v">${(leads ?? 0).toLocaleString()}</span><span class="stat-n">captured to date</span></div>`;
-
+    <div class="stat amber"><span class="stat-k">Leads</span><span class="stat-v">${leads.toLocaleString()}</span><span class="stat-n">captured to date</span></div>`;
   $("overviewLede").textContent =
-    `${activeMem ?? 0} active memberships, ${money2(outstanding)} outstanding across ${open.length} open invoices, and ${(leads ?? 0).toLocaleString()} leads on record.`;
-
-  const overdue = buckets.d30.length + buckets.d60.length;
+    `${activeMem} active memberships, ${money2(outstanding)} outstanding across ${open.length} open invoices, and ${leads.toLocaleString()} leads on record.`;
   $("ovPanels").innerHTML = `
-    <div class="panel"><div class="panel-h"><span class="panel-t">Collection</span><span class="pill ${overdue?"d30":"cur"}">${overdue} past 30 days</span></div>
-      <p class="panel-m">${money2(sum(buckets.d60))} of the outstanding balance is more than sixty days past due, across ${buckets.d60.length} invoice${buckets.d60.length===1?"":"s"}.</p></div>
-    <div class="panel"><div class="panel-h"><span class="panel-t">Membership</span><span class="pill mut">${allMem ?? 0} on record</span></div>
-      <p class="panel-m">${activeMem ?? 0} memberships are active. The remainder are lapsed and sit in the Members view with their renewal dates.</p></div>`;
+    <div class="panel"><div class="panel-h"><span class="panel-t">Collection</span><span class="pill ${(B.d30.length+B.d60.length)?"d30":"cur"}">${B.d30.length+B.d60.length} past 30 days</span></div>
+      <p class="panel-m">${money2(sum(B.d60))} of the outstanding balance is more than sixty days past due, across ${B.d60.length} invoice${B.d60.length===1?"":"s"}.</p></div>
+    <div class="panel"><div class="panel-h"><span class="panel-t">Membership</span><span class="pill mut">${allMem} on record</span></div>
+      <p class="panel-m">${activeMem} memberships are active. The rest are lapsed and appear in Members with their renewal dates.</p></div>`;
 }
 
 /* ───────── members ───────── */
 async function loadMembers(){
-  const { data, error } = await sb.from("memberships")
-    .select("status,renews_on,billing,products(name),people(first_name,last_name,country),organizations(name)")
-    .limit(500);
-  if (error){ $("memBody").innerHTML = `<tr><td colspan="6">Could not load memberships.</td></tr>`; return; }
-  const rows = data || [];
-  const by = {};
-  rows.forEach(r => by[r.status||"unknown"] = (by[r.status||"unknown"]||0)+1);
+  const rows = await q("memberships?select=status,renews_on,billing,products(name),people(first_name,last_name,country),organizations(name)&limit=500");
+  const by = {}; rows.forEach(r => by[r.status||"unknown"] = (by[r.status||"unknown"]||0)+1);
   const today = todayISO(), in60 = new Date(Date.now()+60*864e5).toISOString().slice(0,10);
-  const renewing = rows.filter(r => r.status==="active" && r.renews_on > today && r.renews_on <= in60).length;
-
+  const renewing = rows.filter(r=>r.status==="active" && r.renews_on>today && r.renews_on<=in60).length;
   $("memLede").textContent = `${rows.length} memberships on record.`;
   const cls = { active:"sage", lapsed:"rust", cancelled:"rust", pending:"amber" };
   $("memStats").innerHTML =
-    Object.keys(by).sort((a,b)=>by[b]-by[a]).map(k =>
+    Object.keys(by).sort((a,b)=>by[b]-by[a]).map(k=>
       `<div class="stat ${cls[k]||""}"><span class="stat-k">${esc(k)}</span><span class="stat-v">${by[k]}</span><span class="stat-n">${Math.round(by[k]/rows.length*100)}% of ${rows.length}</span></div>`).join("") +
     `<div class="stat amber"><span class="stat-k">Renewing in 60 days</span><span class="stat-v">${renewing}</span><span class="stat-n">active memberships due</span></div>`;
-
-  $("memBody").innerHTML = rows.length ? rows.map(r => {
+  $("memBody").innerHTML = rows.length ? rows.map(r=>{
     const who = [r.people?.first_name,r.people?.last_name].filter(Boolean).join(" ") || r.organizations?.name || "—";
-    const st = r.status || "—";
-    const p = st==="active" ? "cur" : st==="lapsed" ? "d60" : "mut";
-    return `<tr>
-      <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(who))}</span>${esc(who)}</td>
-      <td class="wrap">${esc(r.organizations?.name || "—")}</td>
-      <td>${esc(r.products?.name || "—")}</td>
-      <td><span class="pill ${p}">${esc(st)}</span></td>
-      <td>${day(r.renews_on)}</td>
-      <td>${esc(r.people?.country || "—")}</td></tr>`;
+    const st = r.status||"—";
+    return `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(who))}</span>${esc(who)}</td>
+      <td class="wrap">${esc(r.organizations?.name||"—")}</td><td>${esc(r.products?.name||"—")}</td>
+      <td><span class="pill ${st==="active"?"cur":st==="lapsed"?"d60":"mut"}">${esc(st)}</span></td>
+      <td>${day(r.renews_on)}</td><td>${esc(r.people?.country||"—")}</td></tr>`;
   }).join("") : `<tr><td colspan="6">No memberships yet.</td></tr>`;
+}
+
+/* ───────── leads ───────── */
+async function loadLeads(){
+  const total = await count("leads");
+  const rows = await q("leads?select=full_name,organization,source,sector,region,score,status&order=score.desc&limit=120");
+  $("leadLede").textContent = `${total.toLocaleString()} leads captured to date. The highest scoring ${rows.length} are listed.`;
+  const bySrc = {}; rows.forEach(r => bySrc[r.source||"unknown"] = (bySrc[r.source||"unknown"]||0)+1);
+  $("leadStats").innerHTML =
+    `<div class="stat"><span class="stat-k">Total captured</span><span class="stat-v">${total.toLocaleString()}</span><span class="stat-n">all sources</span></div>` +
+    Object.keys(bySrc).sort((a,b)=>bySrc[b]-bySrc[a]).slice(0,3).map(s=>
+      `<div class="stat amber"><span class="stat-k">${esc(s)}</span><span class="stat-v">${bySrc[s]}</span><span class="stat-n">of the top ${rows.length} by score</span></div>`).join("");
+  $("leadBody").innerHTML = rows.length ? rows.map(r=>
+    `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}</td>
+     <td class="wrap">${esc(r.organization||"—")}</td><td>${esc(r.source||"—")}</td>
+     <td>${esc(r.sector||"—")}</td><td>${esc(r.region||"—")}</td>
+     <td class="num">${esc(r.score ?? "—")}</td><td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("")
+    : `<tr><td colspan="7">No leads yet.</td></tr>`;
 }
 
 /* ───────── bench ───────── */
 async function loadBench(){
-  const { data } = await sb.from("people").select("first_name,last_name,bench_type,disciplines,region,country").not("bench_type","is",null).limit(200);
-  const rows = data || [];
+  const rows = await q("people?select=first_name,last_name,bench_type,disciplines,region,country&bench_type=not.is.null&limit=200");
   $("benchLede").textContent = rows.length ? `${rows.length} on the bench.` : "No coaches or trainers are recorded yet.";
   $("benchWrap").innerHTML = rows.length
     ? `<div class="tblwrap"><table class="tbl"><caption>Coaches, consultants, trainers and facilitators</caption>
        <thead><tr><th>Name</th><th>Type</th><th>Disciplines</th><th>Region</th><th>Country</th></tr></thead><tbody>` +
-      rows.map(r=>{const n=[r.first_name,r.last_name].filter(Boolean).join(" ");
-        return `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(n))}</span>${esc(n)}</td>
+      rows.map(r=>{ const n=[r.first_name,r.last_name].filter(Boolean).join(" ");
+      return `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(n))}</span>${esc(n)}</td>
         <td>${esc(r.bench_type||"—")}</td><td class="wrap">${esc((r.disciplines||[]).join(", ")||"—")}</td>
-        <td>${esc(r.region||"—")}</td><td>${esc(r.country||"—")}</td></tr>`}).join("") + `</tbody></table></div>`
+        <td>${esc(r.region||"—")}</td><td>${esc(r.country||"—")}</td></tr>`;}).join("") + `</tbody></table></div>`
     : `<div class="empty"><b>The roster has not been imported yet</b>
-       <p class="panel-m">The website describes a bench of coaches and trainers across five regions. None of them exist as records in the platform yet, so coach matching and scheduling have nothing to run on.</p>
+       <p class="panel-m">The website describes a bench of coaches and trainers across five regions. None exist as records here yet, so coach matching and scheduling have nothing to run on.</p>
        <p class="panel-m">Send TechFides the roster with each person's disciplines, languages and region and it will appear here.</p></div>`;
 }
 
 /* ───────── sessions ───────── */
 async function loadSessions(){
-  const { data } = await sb.from("sessions").select("id,starts_at,status").order("starts_at",{ascending:false}).limit(50);
-  const rows = data || [];
+  const rows = await q("sessions?select=id,starts_at,status&order=starts_at.desc&limit=50");
   $("sessLede").textContent = rows.length ? `${rows.length} sessions recorded.` : "No sessions have been recorded yet.";
   $("sessWrap").innerHTML = rows.length
     ? `<div class="tblwrap"><table class="tbl"><caption>Recorded sessions</caption><thead><tr><th>When</th><th>Status</th></tr></thead><tbody>` +
@@ -715,8 +730,7 @@ async function loadSessions(){
 
 /* ───────── board room ───────── */
 async function loadBoard(){
-  const { data: con } = await sb.from("contracts").select("number,legal_name,company,amount_minor,currency,status,signed_at").order("created_at",{ascending:false}).limit(50);
-  const rows = con || [];
+  const rows = await q("contracts?select=number,legal_name,company,amount_minor,currency,status,signed_at&order=created_at.desc&limit=50");
   $("boardLede").textContent = rows.length ? `${rows.length} contract${rows.length===1?"":"s"} on record.` : "No contracts on record yet.";
   $("boardWrap").innerHTML = rows.length
     ? `<div class="tblwrap"><table class="tbl"><caption>Contracts</caption>
@@ -728,13 +742,13 @@ async function loadBoard(){
     : `<div class="empty"><b>No contracts on record</b><p class="panel-m">Signed agreements will appear here.</p></div>`;
 }
 
-/* ───────── website ───────── */
+/* ───────── website traffic ───────── */
 async function loadWebsite(){
   const wrap = $("webWrap");
   try{
-    const s = (await sb.auth.getSession()).data.session;
-    const res = await fetch(SUPABASE_URL + "/functions/v1/bca-traffic", {
-      method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+s.access_token },
+    const res = await fetch(API+"/functions/v1/bca-traffic", {
+      method:"POST",
+      headers:{ "Content-Type":"application/json", Authorization:"Bearer "+session.access_token, apikey:KEY },
       body: JSON.stringify({ range:"30d" }) });
     if (!res.ok) throw new Error(String(res.status));
     const t = await res.json();
@@ -749,6 +763,11 @@ async function loadWebsite(){
       <p class="panel-m">Figures appear here once a full period has been collected. Nothing on this page is estimated.</p></div>`;
   }
 }
+
+/* ───────── go ───────── */
+session ? start() : showGate();
+
 </script>
+
 </body>
 </html>
