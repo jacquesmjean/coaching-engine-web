@@ -338,9 +338,29 @@ const todayISO = () => new Date().toISOString().slice(0,10);
 const note = (el,t,ok=false) => { el.textContent=t; el.className="note"+(ok?" ok":""); el.hidden=!t; };
 
 /* ───────── session ───────── */
-let session = null;
-try { session = JSON.parse(localStorage.getItem(STORE) || "null"); } catch { session = null; }
-const save = (s) => { session = s; s ? localStorage.setItem(STORE, JSON.stringify(s)) : localStorage.removeItem(STORE); };
+/* An earlier build of this console signed people in through supabase-js,
+   which parked the session under its own storage key. Anyone already
+   signed in then would be shown the login screen again the first time
+   they loaded this build. Adopt that session instead of discarding it. */
+const LEGACY = "sb-" + new URL(API).hostname.split(".")[0] + "-auth-token";
+
+function readStored(){
+  const parse = (k) => { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch { return null; } };
+  const ours = parse(STORE);
+  if (ours?.access_token) return ours;
+  const old = parse(LEGACY);
+  const s = old?.access_token ? old : (old?.currentSession?.access_token ? old.currentSession : null);
+  if (!s) return null;
+  try { localStorage.setItem(STORE, JSON.stringify(s)); } catch {}
+  return s;
+}
+
+let session = readStored();
+const save = (s) => {
+  session = s;
+  if (s) { localStorage.setItem(STORE, JSON.stringify(s)); }
+  else { localStorage.removeItem(STORE); try { localStorage.removeItem(LEGACY); } catch {} }
+};
 const claimsOf = (s) => { try { return JSON.parse(atob(s.access_token.split(".")[1])); } catch { return {}; } };
 
 async function auth(path, body){
