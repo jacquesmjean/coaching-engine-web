@@ -598,8 +598,18 @@ async function start(){
   $("greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
   $("todayLine").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 
-  // Each section loads on its own. One failing must never blank the others.
-  const guard = (fn, label) => fn().catch(e => console.error(label, e));
+  /* Each section loads on its own, so one failing never blanks the others.
+     A failure must still be visible: a silent catch once left the Sessions
+     page completely empty, which reads to the client as a broken console
+     rather than as a section that could not load. */
+  const guard = (fn, label, target) => fn().catch(e => {
+    console.error(label, e);
+    const el = target && $(target);
+    if (el && !el.innerHTML.trim().replace(/<[^>]*>/g,"")) {
+      el.innerHTML = `<div class="empty"><b>This section could not be loaded</b>
+        <p class="panel-m">Everything else on this page is unaffected. Refreshing usually clears it. If it persists, TechFides has been notified and will look at it.</p></div>`;
+    }
+  });
   guard(async () => {
     const me = (await q(`tenant_users?select=full_name,role&user_id=eq.${c.sub}&limit=1`))[0];
     const name = me?.full_name || email.split("@")[0];
@@ -611,13 +621,13 @@ async function start(){
     if (t?.tier) $("tierName").textContent = t.tier.charAt(0).toUpperCase()+t.tier.slice(1);
   }, "tenant");
 
-  guard(loadBilling, "billing");
-  guard(loadMembers, "members");
-  guard(loadLeads,   "leads");
-  guard(loadBench,   "bench");
-  guard(loadSessions,"sessions");
-  guard(loadBoard,   "board");
-  guard(loadWebsite, "website");
+  guard(loadBilling, "billing",  "billMoney");
+  guard(loadMembers, "members",  "memStats");
+  guard(loadLeads,   "leads",    "leadStats");
+  guard(loadBench,   "bench",    "benchWrap");
+  guard(loadSessions,"sessions", "sessWrap");
+  guard(loadBoard,   "board",    "boardWrap");
+  guard(loadWebsite, "website",  "webWrap");
 }
 
 /* ───────── billing + overview ───────── */
@@ -738,11 +748,11 @@ async function loadBench(){
 
 /* ───────── sessions ───────── */
 async function loadSessions(){
-  const rows = await q("sessions?select=id,starts_at,status&order=starts_at.desc&limit=50");
+  const rows = await q("sessions?select=id,scheduled_at,duration_minutes,status&order=scheduled_at.desc&limit=50");
   $("sessLede").textContent = rows.length ? `${rows.length} sessions recorded.` : "No sessions have been recorded yet.";
   $("sessWrap").innerHTML = rows.length
-    ? `<div class="tblwrap"><table class="tbl"><caption>Recorded sessions</caption><thead><tr><th>When</th><th>Status</th></tr></thead><tbody>` +
-      rows.map(r=>`<tr><td>${esc((r.starts_at||"").slice(0,16).replace("T"," "))}</td><td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("") +
+    ? `<div class="tblwrap"><table class="tbl"><caption>Recorded sessions</caption><thead><tr><th>When</th><th class="num">Minutes</th><th>Status</th></tr></thead><tbody>` +
+      rows.map(r=>`<tr><td>${esc((r.scheduled_at||"").slice(0,16).replace("T"," "))}</td><td class="num">${esc(r.duration_minutes??"—")}</td><td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("") +
       `</tbody></table></div>`
     : `<div class="empty"><b>No sessions recorded yet</b>
        <p class="panel-m">Coaching sessions will appear here once scheduling is in use. Nothing has been booked through the platform so far.</p></div>`;
