@@ -906,7 +906,7 @@ async function owners(){
 
 /* ───────── pipeline ───────── */
 async function loadPipeline(){
-  const rows = await q("opportunities?select=id,name,line,stage,value_minor,currency,probability,expected_close,next_step,next_step_on,lost_reason,people(first_name,last_name),organizations(name)&order=expected_close.asc&limit=300");
+  const rows = await q("opportunities?select=id,name,line,stage,value_minor,currency,probability,expected_close,next_step,next_step_on,lost_reason,people!opportunities_owner_id_fkey(first_name,last_name),organizations(name)&order=expected_close.asc&limit=300");
 
   const open = rows.filter(r => OPEN_STAGES.includes(r.stage));
   const sum  = (a) => a.reduce((t,r)=>t+Number(r.value_minor||0),0);
