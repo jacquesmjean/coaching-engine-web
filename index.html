@@ -4,120 +4,159 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>BCA Leadership · Revenue</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23058D52'/><text x='16' y='23' font-size='18' font-family='Georgia,serif' fill='%23F7A61C' text-anchor='middle'>B</text></svg>">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Jost:wght@300;400;500;600&display=swap">
+<title>BCA Leadership · Service Desk</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230B1426'/><text x='16' y='23' font-size='17' font-family='Georgia,serif' fill='%23C9A227' text-anchor='middle'>B</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  :root{
-    --cream:#FAF6EE; --cream-2:#F2EBDD; --paper:#FFFDF8;
-    --ink:#242424; --ink-soft:#5A5048; --ink-faint:#8B8078;
-    --green:#058D52; --green-mid:#23A455; --gold:#F7A61C; --clay:#C14027;
-    --olive:#ABBB61; --espresso:#452C23;
-    --line:rgba(36,23,12,.14); --line-soft:rgba(36,23,12,.07);
-    --disp:"Marcellus",Georgia,serif; --edit:"Cormorant Garamond",Georgia,serif;
-    --ui:"Jost",Helvetica,Arial,sans-serif;
-    --shadow:0 1px 2px rgba(69,44,35,.05),0 4px 16px rgba(69,44,35,.06);
-  }
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --cream:#191109; --cream-2:#20160E; --paper:#241A11;
-    --ink:#F4EEE4; --ink-soft:#C6B9A8; --ink-faint:#96887B;
-    --green:#4FC98A; --green-mid:#6FD9A2; --gold:#F2B94E; --clay:#E58467; --olive:#C3D189;
-    --espresso:#E5D7C7;
-    --line:rgba(244,238,228,.17); --line-soft:rgba(244,238,228,.08);
-    --shadow:0 1px 2px rgba(0,0,0,.35),0 4px 16px rgba(0,0,0,.3);
-  }}
-  *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
-  body{background:var(--cream);color:var(--ink);font-family:var(--ui);font-weight:300;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
-  .strip{height:7px;background:repeating-linear-gradient(90deg,var(--green) 0 64px,var(--gold) 64px 80px,var(--clay) 80px 96px,var(--olive) 96px 112px,var(--espresso) 112px 128px,var(--gold) 128px 144px,var(--green-mid) 144px 208px)}
-  h1,h2,h3{font-family:var(--disp);font-weight:400;margin:0;color:var(--espresso);text-wrap:balance}
-  .mono{font-variant-numeric:tabular-nums}
-  button{font-family:var(--ui);cursor:pointer}
-  [hidden]{display:none!important}
+:root{
+  --ink:#05090F; --navy:#0B1426; --navy-2:#0F1B31;
+  --parch:#F2EDE3; --mute:#7E889E;
+  --line:#1D2B47; --line-soft:#16223A;
+  --gold:#C9A227; --gold-lt:#E6CB74; --amber:#D6A34A;
+  --sage:#89A67F; --rust:#C06A4E;
+  --disp:"Instrument Serif",Georgia,serif;
+  --ui:"Archivo",Helvetica,Arial,sans-serif;
+  --num:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{background:var(--ink);color:var(--parch);font-family:var(--ui);font-size:15px;font-weight:400;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--disp);font-weight:400;margin:0;letter-spacing:.01em}
+em{font-style:italic;color:var(--gold-lt)}
+button{font-family:var(--ui);cursor:pointer;color:inherit}
+[hidden]{display:none!important}
+a{color:var(--gold-lt)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:2px}
+.skip{position:absolute;left:-9999px;top:0;background:var(--gold);color:var(--ink);padding:10px 16px;z-index:99;font-weight:600}
+.skip:focus{left:8px;top:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
-  /* ---------- sign in ---------- */
-  #gate{min-height:100dvh;display:grid;place-items:center;padding:24px}
-  .card{width:100%;max-width:400px;background:var(--paper);border:1px solid var(--line-soft);box-shadow:var(--shadow);padding:34px 30px;display:flex;flex-direction:column;gap:18px}
-  .card h1{font-size:27px;line-height:1.15}
-  .card .sub{font-family:var(--edit);font-style:italic;font-size:18px;color:var(--ink-soft);margin:0}
-  label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-faint);font-weight:500}
-  input{font-family:var(--ui);font-size:16px;font-weight:300;padding:11px 13px;border:1px solid var(--line);background:var(--cream);color:var(--ink);border-radius:2px}
-  input:focus-visible{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
-  .btn{background:var(--green);color:#fff;border:1px solid var(--green);padding:12px 18px;font-size:14.5px;font-weight:500;letter-spacing:.04em;border-radius:2px}
-  .btn:hover{background:var(--green-mid);border-color:var(--green-mid)}
-  .btn:disabled{opacity:.55;cursor:default}
-  .btn.ghost{background:transparent;color:var(--ink-soft);border-color:var(--line)}
-  .btn.ghost:hover{background:var(--cream-2);color:var(--ink)}
-  .msg{font-size:14px;padding:10px 12px;border-left:3px solid var(--clay);background:var(--cream-2);color:var(--ink-soft)}
-  .msg.ok{border-left-color:var(--green)}
-  .powered{text-align:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);text-decoration:none;display:block;margin-top:4px}
-  .powered b{color:var(--gold);font-weight:500}
+/* ───────── sign in ───────── */
+#gate{min-height:100dvh;display:grid;place-items:center;padding:24px}
+.gcard{width:100%;max-width:392px;background:var(--navy);border:1px solid var(--line);padding:34px 30px;display:flex;flex-direction:column;gap:17px}
+.gmark{width:38px;height:38px;border-radius:9px;background:var(--ink);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--disp);font-size:21px;color:var(--gold)}
+.gcard h1{font-size:28px;line-height:1.1}
+.gcard .s{color:var(--mute);font-size:14px;margin:0}
+label{display:flex;flex-direction:column;gap:6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:500}
+input{font-family:var(--ui);font-size:15px;padding:11px 13px;border:1px solid var(--line);background:var(--ink);color:var(--parch);border-radius:3px}
+input::placeholder{color:#4A5570}
+.btn{background:var(--gold);color:var(--ink);border:1px solid var(--gold);padding:11px 18px;font-size:14px;font-weight:600;letter-spacing:.02em;border-radius:3px}
+.btn:hover{background:var(--gold-lt);border-color:var(--gold-lt)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--mute);border-color:var(--line)}
+.btn.ghost:hover{color:var(--parch);border-color:var(--mute);background:transparent}
+.note{font-size:13.5px;padding:10px 12px;border-left:2px solid var(--rust);background:var(--navy-2);color:var(--mute)}
+.note.ok{border-left-color:var(--sage)}
+.pw{text-align:center;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);text-decoration:none}
+.pw b{color:var(--gold);font-weight:600}
 
-  /* ---------- app shell ---------- */
-  header.top{border-bottom:1px solid var(--line);background:var(--paper)}
-  .topin{max-width:1180px;margin:0 auto;padding:16px 22px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:baseline;justify-content:space-between}
-  .brand{display:flex;flex-direction:column;gap:1px}
-  .brand .n{font-family:var(--disp);font-size:20px;color:var(--espresso)}
-  .brand .t{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--green);font-weight:500}
-  .who{display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--ink-faint)}
-  main{max-width:1180px;margin:0 auto;padding:30px 22px 60px;display:flex;flex-direction:column;gap:34px}
+/* ───────── shell ───────── */
+.shell{display:grid;grid-template-columns:246px 1fr;min-height:100dvh}
+.rail{background:var(--navy);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px;padding:22px 0 16px}
+.brand{padding:0 20px 18px;border-bottom:1px solid var(--line-soft);margin-bottom:14px}
+.brand-row{display:flex;align-items:center;gap:11px}
+.mark{width:34px;height:34px;border-radius:8px;background:var(--ink);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--disp);font-size:19px;color:var(--gold)}
+.brand-name{font-family:var(--disp);font-size:18px;line-height:1.15}
+.brand-sub{font-family:var(--num);font-size:10.5px;color:var(--mute);margin-top:8px;word-break:break-all}
+.tier{display:inline-flex;align-items:center;gap:6px;margin-top:9px;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-lt)}
+.tier i{width:6px;height:6px;border-radius:99px;background:var(--sage);display:block}
+nav{display:flex;flex-direction:column;gap:2px;padding:0 10px}
+.nav-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute);padding:15px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:5px;background:transparent;border:0;width:100%;text-align:left;font-size:14px;color:#B9C2D4}
+.nav-item svg{width:17px;height:17px;flex:none;opacity:.8}
+.nav-item:hover{background:var(--navy-2);color:var(--parch)}
+.nav-item[aria-current="page"]{background:var(--navy-2);color:var(--parch);box-shadow:inset 2px 0 0 var(--gold)}
+.nav-item[disabled]{opacity:.45;cursor:not-allowed}
+.nav-item .lock{margin-left:auto;font-size:9.5px;letter-spacing:.1em;color:var(--mute);text-transform:uppercase;border:1px solid var(--line);padding:1px 6px;border-radius:99px;flex:none}
+.nav-item .lock.soon{color:var(--amber);border-color:rgba(214,163,74,.35)}
+.soon-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:7px}
+.soon-tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;padding:3px 10px;border-radius:99px;color:var(--amber);border:1px solid rgba(214,163,74,.4);background:rgba(214,163,74,.08)}
+.soon-tag.locked{color:var(--mute);border-color:var(--line);background:transparent}
+.needs{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.needs li{display:flex;gap:10px;align-items:flex-start;color:var(--mute);font-size:14.5px}
+.needs li::before{content:"";width:5px;height:5px;border-radius:99px;background:var(--gold);margin-top:9px;flex:none}
+.rail-foot{margin-top:auto;padding:14px 20px 0;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:9px}
 
-  section{display:flex;flex-direction:column;gap:16px}
-  .sechead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px}
-  .sechead h2{font-size:24px}
-  .sechead .note{font-size:13px;color:var(--ink-faint)}
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:14px 26px;border-bottom:1px solid var(--line-soft)}
+.clock{font-family:var(--num);font-size:12px;color:var(--mute)}
+.spacer{flex:1}
+.lang{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.lang button{background:transparent;border:0;padding:5px 11px;font-size:11.5px;letter-spacing:.08em;color:var(--mute)}
+.lang button[aria-pressed="true"]{background:var(--navy-2);color:var(--gold-lt)}
+.avatar{width:31px;height:31px;border-radius:99px;background:var(--navy-2);border:1px solid var(--line);display:grid;place-items:center;font-size:11.5px;font-weight:600;color:var(--gold-lt)}
+.view{padding:26px 26px 60px;max-width:1220px}
+.eyebrow{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.view h1{font-size:clamp(28px,3.6vw,40px);line-height:1.1;margin-top:7px}
+.lede{color:var(--mute);max-width:72ch;margin:9px 0 0;font-size:15.5px}
+.rule{height:1px;background:var(--line-soft);margin:22px 0}
+h2.sec{font-size:22px;margin-bottom:13px}
 
-  .figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-  .fig{background:var(--paper);border:1px solid var(--line-soft);border-top:2px solid var(--bar,var(--green));padding:17px 19px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow)}
-  .fig .k{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:500}
-  .fig .v{font-family:var(--disp);font-size:30px;line-height:1.05;color:var(--espresso);font-variant-numeric:tabular-nums}
-  .fig .d{font-size:13.5px;color:var(--ink-soft)}
-  .fig.gold{--bar:var(--gold)} .fig.clay{--bar:var(--clay)} .fig.olive{--bar:var(--olive)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:14px}
+.stat{background:var(--navy);border:1px solid var(--line-soft);border-top:2px solid var(--acc,var(--gold));padding:15px 17px;display:flex;flex-direction:column;gap:3px}
+.stat-k{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.stat-v{font-family:var(--disp);font-size:29px;line-height:1.05;font-variant-numeric:tabular-nums}
+.stat-n{font-size:13px;color:var(--mute)}
+.stat.sage{--acc:var(--sage)} .stat.rust{--acc:var(--rust)} .stat.amber{--acc:var(--amber)}
 
-  .tablewrap{overflow-x:auto;border:1px solid var(--line-soft);background:var(--paper);box-shadow:var(--shadow)}
-  table{border-collapse:collapse;width:100%;min-width:660px;font-size:14.5px}
-  th,td{text-align:left;padding:10px 15px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
-  th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:500;background:var(--cream-2);position:sticky;top:0}
-  td.num{text-align:right;font-variant-numeric:tabular-nums}
-  th.num{text-align:right}
-  tbody tr:last-child td{border-bottom:none}
-  tbody tr:hover{background:var(--cream-2)}
-  td.who{white-space:normal;min-width:190px}
-  .pill{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:500;padding:2px 9px;border-radius:99px}
-  .pill.paid{background:rgba(5,141,82,.13);color:var(--green)}
-  .pill.sent{background:rgba(247,166,28,.2);color:#8A5C08}
-  .pill.draft{background:rgba(36,23,12,.08);color:var(--ink-faint)}
-  .pill.over{background:rgba(193,64,39,.12);color:var(--clay)}
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill.sent{color:var(--gold)}
-    :root:not([data-theme="light"]) .pill.draft{background:rgba(244,238,228,.1)}}
+.panel{background:var(--navy);border:1px solid var(--line-soft);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.panel-h{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;justify-content:space-between}
+.panel-t{font-family:var(--disp);font-size:19px}
+.panel-m{color:var(--mute);font-size:14px;margin:0;max-width:70ch}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:15px}
 
-  .bar{display:flex;height:26px;border:1px solid var(--line-soft);overflow:hidden;background:var(--cream-2)}
-  .bar span{display:block;height:100%}
-  .legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--ink-soft)}
-  .legend i{display:inline-block;width:11px;height:11px;margin-right:7px;vertical-align:baseline}
+.tblwrap{overflow-x:auto;border:1px solid var(--line-soft);background:var(--navy)}
+table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
+.tbl caption{text-align:left;padding:13px 16px;color:var(--mute);font-size:13px;border-bottom:1px solid var(--line-soft)}
+.tbl th,.tbl td{text-align:left;padding:9px 16px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+.tbl th{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:500;background:var(--navy-2)}
+.tbl td.num,.tbl th.num{text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums}
+.tbl tbody tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:var(--navy-2)}
+.tbl td.wrap{white-space:normal;min-width:180px}
+.pill{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:99px;border:1px solid}
+.pill.cur{color:var(--sage);border-color:rgba(137,166,127,.4);background:rgba(137,166,127,.1)}
+.pill.d30{color:var(--amber);border-color:rgba(214,163,74,.4);background:rgba(214,163,74,.1)}
+.pill.d60{color:var(--rust);border-color:rgba(192,106,78,.45);background:rgba(192,106,78,.12)}
+.pill.mut{color:var(--mute);border-color:var(--line);background:transparent}
+.ini{width:26px;height:26px;border-radius:99px;background:var(--navy-2);border:1px solid var(--line);display:inline-grid;place-items:center;font-size:10.5px;font-weight:600;color:var(--gold-lt);margin-right:9px;vertical-align:middle}
 
-  .panel{background:var(--paper);border:1px solid var(--line-soft);box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;gap:11px}
-  .panel h3{font-size:19px}
-  .panel p{margin:0;color:var(--ink-soft);font-size:15px;max-width:70ch}
-  .panel.flag{border-left:3px solid var(--gold)}
-  .skel{height:13px;background:var(--cream-2);animation:pulse 1.3s ease-in-out infinite}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
-  @media (prefers-reduced-motion:reduce){.skel{animation:none}}
-  footer{border-top:1px solid var(--line);margin-top:10px;padding-top:16px;font-size:12.5px;color:var(--ink-faint);display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
-  footer a{color:var(--ink-faint)}
+.money{display:flex;flex-wrap:wrap;gap:10px}
+.money-l{flex:1;min-width:150px;background:var(--navy-2);border:1px solid var(--line-soft);padding:13px 15px}
+.money-v{font-family:var(--num);font-size:20px;font-variant-numeric:tabular-nums;display:block;margin-top:3px}
+.bar{display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--line-soft);margin-top:4px}
+.bar span{display:block;height:100%}
+
+.empty{border:1px dashed var(--line);background:transparent;padding:22px;text-align:center;color:var(--mute);display:flex;flex-direction:column;gap:7px;align-items:center}
+.empty b{font-family:var(--disp);font-size:19px;color:var(--parch);font-weight:400}
+.sk{display:block;height:13px;background:var(--navy-2);animation:p 1.3s ease-in-out infinite}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.45}}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .rail{flex-direction:column;border-right:0;border-bottom:1px solid var(--line)}
+  nav{flex-direction:row;flex-wrap:wrap;gap:4px}
+  .nav-label{width:100%;padding:8px 10px 2px}
+  .nav-item{width:auto}
+  .rail-foot{margin-top:14px}
+  .view{padding:20px 16px 48px}
+}
 </style>
 </head>
 <body>
-<div class="strip"></div>
+<a class="skip" href="#main">Skip to content</a>
 
-<!-- ===================== SIGN IN ===================== -->
+<!-- ═══════════ SIGN IN ═══════════ -->
 <div id="gate">
-  <form class="card" id="loginForm">
+  <form class="gcard" id="loginForm">
+    <div class="gmark" aria-hidden="true">B</div>
     <div>
       <h1>BCA Leadership</h1>
-      <p class="sub">Revenue &amp; operations</p>
+      <p class="s">Service desk</p>
     </div>
-    <div id="loginMsg" class="msg" hidden></div>
+    <p id="loginMsg" class="note" hidden role="status"></p>
     <label for="email">Email
       <input id="email" type="email" autocomplete="email" required placeholder="you@bcaleadership.com">
     </label>
@@ -126,288 +165,588 @@
     </label>
     <button class="btn" id="signInBtn" type="submit">Sign in</button>
     <button class="btn ghost" id="signUpBtn" type="button">First time here? Create your account</button>
-    <a class="powered" href="https://www.techfides.com" target="_blank" rel="noopener">Powered by <b>TechFides</b></a>
+    <a class="pw" href="https://www.techfides.com" target="_blank" rel="noopener">Powered by <b>TechFides</b></a>
   </form>
 </div>
 
-<!-- ===================== APP ===================== -->
-<div id="app" hidden>
-  <header class="top">
-    <div class="topin">
-      <div class="brand">
-        <span class="n">BCA Leadership</span>
-        <span class="t">Revenue &amp; operations</span>
+<!-- ═══════════ CONSOLE ═══════════ -->
+<div class="shell" id="app" hidden>
+  <aside class="rail">
+    <div class="brand">
+      <div class="brand-row">
+        <div class="mark" aria-hidden="true">B</div>
+        <div><div class="brand-name">BCA Leadership</div></div>
       </div>
-      <div class="who">
-        <span id="whoami" class="mono"></span>
-        <button class="btn ghost" id="signOutBtn" type="button">Sign out</button>
-      </div>
+      <div class="brand-sub" id="brandHost">bca.coachingengine.app</div>
+      <div class="tier"><i aria-hidden="true"></i><span id="tierName">Professional</span></div>
     </div>
-  </header>
 
-  <main>
-    <div id="appMsg" class="msg" hidden></div>
+    <nav id="nav" aria-label="Sections">
+      <div class="nav-label" data-t="ops">Operations</div>
+      <button class="nav-item" data-v="overview" type="button" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 12h6l2-7 3 14 2-7h5"/></svg>
+        <span data-t="overview">Overview</span></button>
+      <button class="nav-item" data-v="members" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6 6 0 0 0-2-4.4"/></svg>
+        <span data-t="members">Members</span></button>
+      <button class="nav-item" data-v="bench" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.4 5.3 5.6.7-4.2 3.9 1.1 5.6L12 15.8 7.1 18.5l1.1-5.6L4 9l5.6-.7z"/></svg>
+        <span data-t="bench">The Bench</span></button>
+      <button class="nav-item" data-v="sessions" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        <span data-t="sessions">Sessions</span></button>
 
-    <!-- ---------- REVENUE ---------- -->
-    <section>
-      <div class="sechead">
-        <h2>Revenue</h2>
-        <span class="note" id="revNote">Loading from your records…</span>
+      <div class="nav-label" data-t="fin">Finance</div>
+      <button class="nav-item" data-v="billing" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+        <span data-t="billing">Billing</span></button>
+
+      <div class="nav-label">Growth</div>
+      <button class="nav-item" data-v="leads" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-1.6-4"/></svg>
+        <span>Leads</span></button>
+
+      <div class="nav-label" data-t="mkt">Marketing</div>
+      <button class="nav-item" data-v="website" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.8 2.6 15.2 0 18M12 3c-2.6 2.8-2.6 15.2 0 18"/></svg>
+        <span data-t="website">Website</span></button>
+
+      <div class="nav-label" data-t="gov">Governance</div>
+      <button class="nav-item" data-v="board" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3l8 3.5v5c0 5-3.4 8.9-8 9.9-4.6-1-8-4.9-8-9.9v-5z"/></svg>
+        <span data-t="board">Board Room</span></button>
+
+      <div id="navSoon"></div>
+    </nav>
+
+    <div class="rail-foot">
+      <button class="btn ghost" id="signOutBtn" type="button" data-t="signout">Sign out</button>
+      <a class="pw" href="https://www.techfides.com" target="_blank" rel="noopener">Powered by <b>TechFides</b></a>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="topbar">
+      <div class="clock"><span id="tz">—</span> · <span id="now">—</span></div>
+      <div class="spacer"></div>
+      <div class="lang" role="group" aria-label="Language">
+        <button type="button" data-l="en" aria-pressed="true">EN</button>
+        <button type="button" data-l="fr" aria-pressed="false">FR</button>
       </div>
-      <div class="figs" id="figs">
-        <div class="fig"><span class="k">Invoiced to date</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
-        <div class="fig"><span class="k">Collected</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
-        <div class="fig"><span class="k">Outstanding</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
-        <div class="fig"><span class="k">Active memberships</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
-      </div>
-      <div class="panel" id="collPanel" hidden>
-        <h3>Collection</h3>
-        <div class="bar" id="collBar"></div>
-        <div class="legend" id="collLegend"></div>
-      </div>
+      <div class="avatar" id="avatar" aria-hidden="true">··</div>
+    </div>
+
+    <p id="appMsg" class="note" hidden role="status" style="margin:20px 26px 0"></p>
+
+    <!-- ───── overview ───── -->
+    <section class="view" id="v-overview" aria-live="polite">
+      <div class="eyebrow" id="todayLine">—</div>
+      <h1><span id="greet">Welcome</span>, <em id="firstName">—</em></h1>
+      <p class="lede" id="overviewLede">Reading your records…</p>
+      <div class="rule"></div>
+      <div class="stats" id="ovStats"></div>
+      <div class="rule"></div>
+      <div class="grid2" id="ovPanels"></div>
     </section>
 
-    <!-- ---------- INVOICES ---------- -->
-    <section>
-      <div class="sechead">
-        <h2>Invoices</h2>
-        <span class="note" id="invNote"></span>
-      </div>
-      <div class="tablewrap">
-        <table>
-          <thead><tr>
-            <th>Invoice</th><th>Billed to</th><th class="num">Amount</th>
-            <th class="num">Paid</th><th>Issued</th><th>Due</th><th>Status</th>
-          </tr></thead>
-          <tbody id="invBody"><tr><td colspan="7"><span class="skel" style="display:block;height:15px"></span></td></tr></tbody>
-        </table>
-      </div>
+    <!-- ───── members ───── -->
+    <section class="view" id="v-members" hidden>
+      <div class="eyebrow" data-t="ops">Operations</div>
+      <h1 data-t="members">Members</h1>
+      <p class="lede" id="memLede">—</p>
+      <div class="rule"></div>
+      <div class="stats" id="memStats"></div>
+      <div class="rule"></div>
+      <div class="tblwrap"><table class="tbl" id="memTbl">
+        <caption data-t="memCap">Every membership on record</caption>
+        <thead><tr>
+          <th data-t="cName">Member</th><th data-t="cOrg">Organisation</th>
+          <th data-t="cTier">Tier</th><th data-t="cStatus">Status</th>
+          <th data-t="cRenew">Renews</th><th data-t="cCountry">Country</th>
+        </tr></thead>
+        <tbody id="memBody"><tr><td colspan="6"><span class="sk"></span></td></tr></tbody>
+      </table></div>
     </section>
 
-    <!-- ---------- MEMBERSHIPS ---------- -->
-    <section>
-      <div class="sechead">
-        <h2>Memberships</h2>
-        <span class="note" id="memNote"></span>
-      </div>
-      <div class="figs" id="memFigs"></div>
+    <!-- ───── bench ───── -->
+    <section class="view" id="v-bench" hidden>
+      <div class="eyebrow" data-t="ops">Operations</div>
+      <h1 data-t="bench">The Bench</h1>
+      <p class="lede" id="benchLede">—</p>
+      <div class="rule"></div>
+      <div id="benchWrap"></div>
     </section>
 
-    <!-- ---------- SITE ANALYTICS ---------- -->
-    <section>
-      <div class="sechead">
-        <h2>Website traffic</h2>
-        <span class="note">bcaleadership.com</span>
-      </div>
-      <div id="trafficWrap"></div>
+    <!-- ───── sessions ───── -->
+    <section class="view" id="v-sessions" hidden>
+      <div class="eyebrow" data-t="ops">Operations</div>
+      <h1 data-t="sessions">Sessions</h1>
+      <p class="lede" id="sessLede">—</p>
+      <div class="rule"></div>
+      <div id="sessWrap"></div>
     </section>
 
-    <footer>
-      <span>Read live from BCA's own database. Figures are not estimates.</span>
-      <a href="https://www.techfides.com" target="_blank" rel="noopener">Powered by <b style="color:var(--gold)">TechFides</b></a>
-    </footer>
+    <!-- ───── billing ───── -->
+    <section class="view" id="v-billing" hidden>
+      <div class="eyebrow" data-t="fin">Finance</div>
+      <h1 data-t="billing">Billing</h1>
+      <p class="lede" id="billLede">—</p>
+      <div class="rule"></div>
+      <div class="money" id="billMoney"></div>
+      <div class="rule"></div>
+      <div class="stats" id="billAging"></div>
+      <div class="rule"></div>
+      <div class="tblwrap"><table class="tbl" id="invTbl">
+        <caption data-t="invCap">Invoices, newest first</caption>
+        <thead><tr>
+          <th data-t="cInv">Invoice</th><th data-t="cBilled">Billed to</th>
+          <th class="num" data-t="cAmount">Amount</th><th class="num" data-t="cPaid">Paid</th>
+          <th data-t="cIssued">Issued</th><th data-t="cDue">Due</th><th data-t="cAge">Status</th>
+        </tr></thead>
+        <tbody id="invBody"><tr><td colspan="7"><span class="sk"></span></td></tr></tbody>
+      </table></div>
+    </section>
+
+    <!-- ───── website ───── -->
+    <section class="view" id="v-website" hidden>
+      <div class="eyebrow" data-t="mkt">Marketing</div>
+      <h1 data-t="website">Website</h1>
+      <p class="lede" id="webLede">bcaleadership.com</p>
+      <div class="rule"></div>
+      <div id="webWrap"></div>
+    </section>
+
+    <!-- ───── leads ───── -->
+    <section class="view" id="v-leads" hidden>
+      <div class="eyebrow">Growth</div>
+      <h1>Leads</h1>
+      <p class="lede" id="leadLede">—</p>
+      <div class="rule"></div>
+      <div class="stats" id="leadStats"></div>
+      <div class="rule"></div>
+      <div class="tblwrap"><table class="tbl">
+        <caption>Highest scoring first</caption>
+        <thead><tr><th>Name</th><th>Organisation</th><th>Source</th><th>Sector</th><th>Region</th><th class="num">Score</th><th>Status</th></tr></thead>
+        <tbody id="leadBody"><tr><td colspan="7"><span class="sk"></span></td></tr></tbody>
+      </table></div>
+    </section>
+
+    <!-- generated: modules not yet built -->
+    <div id="soonViews"></div>
+
+    <!-- ───── board ───── -->
+    <section class="view" id="v-board" hidden>
+      <div class="eyebrow" data-t="gov">Governance</div>
+      <h1 data-t="board">Board Room</h1>
+      <p class="lede" id="boardLede">—</p>
+      <div class="rule"></div>
+      <div id="boardWrap"></div>
+    </section>
   </main>
 </div>
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
-const SUPABASE_URL  = "https://uojsxmdnpwskxeueftgp.supabase.co";
-const PUBLISHABLE   = "sb_publishable_Z2DVEpLgOb2PkH4ng-Yh5Q__VuY7cKB";
+const SUPABASE_URL = "https://uojsxmdnpwskxeueftgp.supabase.co";
+const PUBLISHABLE  = "sb_publishable_Z2DVEpLgOb2PkH4ng-Yh5Q__VuY7cKB";
 
-// The browser only ever holds the publishable key. Every query below runs as the
-// signed-in person and is filtered by row level security in Postgres, using the
-// tenant_id stamped into their token. No service role key is shipped to the client
-// and there is no shared access code.
+// The browser holds only the publishable key. Every query runs as the signed-in
+// person and is filtered in Postgres by row level security, using the tenant_id
+// stamped into their token. No service role key, no shared access code.
 const sb = createClient(SUPABASE_URL, PUBLISHABLE);
 
 const $ = (id) => document.getElementById(id);
-const gate = $("gate"), app = $("app");
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const money = (m, c="USD") => (Number(m||0)/100).toLocaleString("en-US",{style:"currency",currency:c,maximumFractionDigits:0});
+const money2 = (m, c="USD") => (Number(m||0)/100).toLocaleString("en-US",{style:"currency",currency:c});
+const day = (d) => d ? new Date(d+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}) : "—";
+const initials = (s) => (s||"").split(/[\s@.]+/).filter(Boolean).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("") || "··";
+const todayISO = () => new Date().toISOString().slice(0,10);
+const note = (el, t, ok=false) => { el.textContent=t; el.className="note"+(ok?" ok":""); el.hidden=!t; };
 
-const money = (minor, ccy = "USD") =>
-  (Number(minor || 0) / 100).toLocaleString("en-US", { style: "currency", currency: ccy, maximumFractionDigits: 0 });
-const money2 = (minor, ccy = "USD") =>
-  (Number(minor || 0) / 100).toLocaleString("en-US", { style: "currency", currency: ccy });
-const day = (iso) => iso ? new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+/* ───────── translations (shell only; data stays as recorded) ───────── */
+const T = {
+  en:{ops:"Operations",fin:"Finance",gov:"Governance",mkt:"Marketing",overview:"Overview",members:"Members",
+      bench:"The Bench",sessions:"Sessions",billing:"Billing",website:"Website",board:"Board Room",
+      intel:"Intelligence",signout:"Sign out",memCap:"Every membership on record",invCap:"Invoices, newest first",
+      cName:"Member",cOrg:"Organisation",cTier:"Tier",cStatus:"Status",cRenew:"Renews",cCountry:"Country",
+      cInv:"Invoice",cBilled:"Billed to",cAmount:"Amount",cPaid:"Paid",cIssued:"Issued",cDue:"Due",cAge:"Status"},
+  fr:{ops:"Opérations",fin:"Finance",gov:"Gouvernance",mkt:"Marketing",overview:"Aperçu",members:"Membres",
+      bench:"Le Banc",sessions:"Séances",billing:"Facturation",website:"Site web",board:"Conseil",
+      intel:"Intelligence",signout:"Déconnexion",memCap:"Toutes les adhésions enregistrées",invCap:"Factures, plus récentes d'abord",
+      cName:"Membre",cOrg:"Organisation",cTier:"Formule",cStatus:"Statut",cRenew:"Renouvellement",cCountry:"Pays",
+      cInv:"Facture",cBilled:"Facturé à",cAmount:"Montant",cPaid:"Payé",cIssued:"Émise",cDue:"Échéance",cAge:"Statut"},
+};
+let lang = "en";
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(el => { const v = T[lang][el.dataset.t]; if (v) el.textContent = v; });
+  document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.l === lang)));
+}
+document.querySelectorAll(".lang button").forEach(b =>
+  b.addEventListener("click", () => { lang = b.dataset.l; applyLang(); }));
 
-function say(el, text, ok = false) {
-  el.textContent = text;
-  el.className = "msg" + (ok ? " ok" : "");
-  el.hidden = !text;
+/* ───────── clock ───────── */
+const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+$("tz").textContent = tz;
+const tick = () => { $("now").textContent = new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"}); };
+tick(); setInterval(tick, 30000);
+
+/* ───────── modules not yet built ─────────
+   These are shown so BCA can see the shape of the platform, and every one is
+   labelled either "Coming" or "Not licensed". None of them display invented
+   figures: each says what it will do and what is needed to switch it on. */
+const ICON = {
+  doc:'<path d="M6 2h8l4 4v16H6z"/><path d="M14 2v5h5M9 13h6M9 17h6"/>',
+  flow:'<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 6H14a2 2 0 0 1 2 2v1.5M15.6 13.4 8.9 17.2"/>',
+  card:'<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19M6 15h4"/>',
+  users:'<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.6M18 20a6 6 0 0 0-1.6-4"/>',
+  chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/>',
+  mega:'<path d="M3 11v2a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
+  shield:'<path d="M12 3l8 3.5v5c0 5-3.4 8.9-8 9.9-4.6-1-8-4.9-8-9.9v-5z"/><path d="M9 12l2 2 4-4"/>',
+  key:'<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M15 12v2"/>',
+  spark:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+};
+const SOON = [
+  { g:"fin",  v:"payments",  icon:"card",   label:"Payments",
+    what:"Take card payments and issue invoices directly from here, through Stripe, with receipts and renewals handled automatically.",
+    needs:["A Stripe account in BCA's name, so funds settle to BCA","Confirmation that Stripe operates for a Mauritius-registered entity","A decision on annual subscriptions versus one-off invoices"] },
+  { g:"fin",  v:"contracts", icon:"doc",    label:"Contract builder",
+    what:"Generate a membership or coaching agreement, send it for signature, and have the invoice raised the moment it is signed.",
+    needs:["BCA's approved membership agreement text","BCA's approved coaching agreement text","Who countersigns on BCA's side"] },
+  { g:"growth", v:"leads",    icon:"users",  label:"Leads", live:true },
+  { g:"growth", v:"pipeline", icon:"flow",   label:"Pipeline",
+    what:"Track an enquiry from first contact through to a signed member, with stages, owners and an honest forecast.",
+    needs:["The stages BCA actually uses","Who owns an enquiry at each stage"] },
+  { g:"growth", v:"proposals",icon:"doc",    label:"Proposals",
+    what:"Build and send corporate and sponsorship proposals, then see which have been opened and which are waiting on a reply.",
+    needs:["BCA's corporate proposal template","Sponsorship rate card"] },
+  { g:"ops",  v:"requests",  icon:"chat",   label:"Inbound requests",
+    what:"Every enquiry from the website in one queue, routed to the right person, with nothing sitting unanswered.",
+    needs:["Who should receive each type of enquiry","A target response time BCA wants to hold itself to"] },
+  { g:"gov",  v:"documents", icon:"shield", label:"Document vault",
+    what:"Board papers, resolutions and signed agreements in one place, with a record of who opened what and when.",
+    needs:["Which documents belong in the vault","Who may see board-level material"] },
+  { g:"admin",v:"team",      icon:"key",    label:"Team access",
+    what:"Add and remove colleagues yourself, and decide what each person can see, without going through TechFides.",
+    needs:["The list of people at BCA who need access","What each of them should be able to see"] },
+  { g:"admin",v:"licensing", icon:"spark",  label:"Module licensing",
+    what:"See which modules are included in BCA's plan and switch on anything not yet in use.",
+    needs:[] },
+  { g:"mkt",  v:"campaigns", icon:"mega",   label:"Campaigns", locked:true,
+    what:"Plan and measure member recruitment and renewal campaigns across email and social.",
+    needs:[] },
+  { g:"gov",  v:"intel",     icon:"spark",  label:"Intelligence", locked:true,
+    what:"Ask questions of BCA's own data in plain language, and receive a weekly briefing on what changed and what needs attention.",
+    needs:[] },
+];
+const GROUPS = { ops:"Operations", fin:"Finance", growth:"Growth", mkt:"Marketing", gov:"Governance", admin:"Administration" };
+
+function buildSoon(){
+  const navHost = $("navSoon"), viewHost = $("soonViews");
+  const byGroup = {};
+  SOON.filter(m => !m.live).forEach(m => (byGroup[m.g] ||= []).push(m));
+
+  navHost.innerHTML = Object.keys(byGroup).map(g =>
+    `<div class="nav-label">${esc(GROUPS[g] || g)}</div>` +
+    byGroup[g].map(m => `<button class="nav-item" data-v="${m.v}" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${ICON[m.icon]}</svg>
+        <span>${esc(m.label)}</span>
+        <span class="lock ${m.locked ? "" : "soon"}">${m.locked ? "Locked" : "Soon"}</span>
+      </button>`).join("")).join("");
+
+  viewHost.innerHTML = SOON.filter(m => !m.live).map(m => `
+    <section class="view" id="v-${m.v}" hidden>
+      <div class="eyebrow">${esc(GROUPS[m.g] || m.g)}</div>
+      <h1>${esc(m.label)}</h1>
+      <div class="soon-head"><span class="soon-tag ${m.locked ? "locked" : ""}">${m.locked ? "Not in this plan" : "In build"}</span></div>
+      <p class="lede">${esc(m.what)}</p>
+      <div class="rule"></div>
+      ${m.locked
+        ? `<div class="panel"><div class="panel-h"><span class="panel-t">Not included in the Professional plan</span></div>
+             <p class="panel-m">This module is available on a higher plan. Speak to TechFides if BCA would like it switched on.</p></div>`
+        : `<div class="panel"><div class="panel-h"><span class="panel-t">What we need from BCA</span></div>
+             ${m.needs.length
+               ? `<ul class="needs">${m.needs.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`
+               : `<p class="panel-m">Nothing. This is with TechFides to build.</p>`}
+             <p class="panel-m" style="margin-top:4px">Nothing on this screen is live yet, and no figures are shown, because none have been recorded.</p></div>`}
+    </section>`).join("");
 }
 
-/* ---------------- auth ---------------- */
+/* ───────── nav ───────── */
+function bindNav(){
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    if (btn.disabled || btn.dataset.bound) return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".nav-item").forEach(b => b.removeAttribute("aria-current"));
+      btn.setAttribute("aria-current","page");
+      document.querySelectorAll(".view").forEach(v => v.hidden = true);
+      const v = $("v-" + btn.dataset.v);
+      if (v) { v.hidden = false; window.scrollTo({ top:0 }); }
+    });
+  });
+}
+buildSoon();
+bindNav();
+
+/* ───────── auth ───────── */
 $("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const btn = $("signInBtn");
-  btn.disabled = true; btn.textContent = "Signing in…";
-  const { error } = await sb.auth.signInWithPassword({
-    email: $("email").value.trim(), password: $("password").value,
-  });
-  btn.disabled = false; btn.textContent = "Sign in";
-  if (error) say($("loginMsg"), error.message);
+  const b = $("signInBtn"); b.disabled = true; b.textContent = "Signing in…";
+  const { error } = await sb.auth.signInWithPassword({ email:$("email").value.trim(), password:$("password").value });
+  b.disabled = false; b.textContent = "Sign in";
+  if (error) note($("loginMsg"), error.message);
 });
-
 $("signUpBtn").addEventListener("click", async () => {
   const email = $("email").value.trim(), password = $("password").value;
-  if (!email || password.length < 8) {
-    return say($("loginMsg"), "Enter your email and a password of at least 8 characters, then press this button again.");
-  }
-  const btn = $("signUpBtn");
-  btn.disabled = true; btn.textContent = "Creating…";
+  if (!email || password.length < 8) return note($("loginMsg"), "Enter your email and a password of at least 8 characters, then press this button again.");
+  const b = $("signUpBtn"); b.disabled = true; b.textContent = "Creating…";
   const { error } = await sb.auth.signUp({ email, password });
-  btn.disabled = false; btn.textContent = "First time here? Create your account";
-  if (error) return say($("loginMsg"), error.message);
-  say($("loginMsg"), "Account created. If a confirmation email arrives, open it, then sign in here.", true);
+  b.disabled = false; b.textContent = "First time here? Create your account";
+  if (error) return note($("loginMsg"), error.message);
+  note($("loginMsg"), "Account created. If a confirmation email arrives, open it, then sign in here.", true);
 });
-
 $("signOutBtn").addEventListener("click", async () => { await sb.auth.signOut(); location.reload(); });
 
-sb.auth.onAuthStateChange((_e, session) => { session ? start(session) : showGate(); });
-sb.auth.getSession().then(({ data }) => { data.session ? start(data.session) : showGate(); });
+sb.auth.onAuthStateChange((_e, s) => s ? start(s) : showGate());
+sb.auth.getSession().then(({data}) => data.session ? start(data.session) : showGate());
+function showGate(){ $("app").hidden = true; $("gate").hidden = false; }
 
-function showGate() { app.hidden = true; gate.hidden = false; }
+/* ───────── boot ───────── */
+async function start(session){
+  $("gate").hidden = true; $("app").hidden = false;
+  applyLang();
 
-/* ---------------- boot ---------------- */
-async function start(session) {
-  gate.hidden = true; app.hidden = false;
-  $("whoami").textContent = session.user.email;
-
-  // tenant_id is stamped into the token by the access-token hook. Without it every
-  // policy compares against null and the person correctly sees nothing, so say so
-  // plainly rather than rendering an empty dashboard that looks broken.
   let claims = {};
-  try { claims = JSON.parse(atob(session.access_token.split(".")[1])); } catch { /* ignore */ }
-  if (!claims.tenant_id && !claims.platform_admin) {
-    say($("appMsg"), "Your account is not yet linked to BCA. Ask your administrator to add you, then sign out and back in.");
+  try { claims = JSON.parse(atob(session.access_token.split(".")[1])); } catch {}
+  if (!claims.tenant_id && !claims.platform_admin){
+    note($("appMsg"), "Your account is not yet linked to BCA. Ask your administrator to add you, then sign out and back in.");
     return;
   }
 
-  loadRevenue();
-  loadInvoices();
-  loadMemberships();
-  loadTraffic();
+  const email = session.user.email || "";
+  $("avatar").textContent = initials(email);
+
+  const { data: me } = await sb.from("tenant_users").select("full_name,role").eq("user_id", session.user.id).maybeSingle();
+  const name = me?.full_name || email.split("@")[0];
+  $("firstName").textContent = name.split(" ")[0];
+  if (me?.full_name) $("avatar").textContent = initials(me.full_name);
+
+  const h = new Date().getHours();
+  $("greet").textContent = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  $("todayLine").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+  const { data: t } = await sb.from("tenants").select("slug,tier,legal_name").maybeSingle();
+  if (t?.tier) $("tierName").textContent = t.tier.charAt(0).toUpperCase()+t.tier.slice(1);
+  $("brandHost").textContent = location.hostname;
+
+  loadBilling();
+  loadMembers();
+  loadBench();
+  loadSessions();
+  loadBoard();
+  loadWebsite();
+  loadLeads();
 }
 
-/* ---------------- revenue ---------------- */
-async function loadRevenue() {
-  const { data, error } = await sb.from("invoices").select("total_minor, paid_minor, status, currency");
-  if (error) return say($("appMsg"), "Could not load revenue: " + error.message);
-
+/* ───────── leads ───────── */
+async function loadLeads(){
+  const { count } = await sb.from("leads").select("id",{count:"exact",head:true});
+  const { data, error } = await sb.from("leads")
+    .select("full_name,organization,source,sector,region,score,status")
+    .order("score",{ascending:false}).limit(120);
+  if (error){ $("leadBody").innerHTML = `<tr><td colspan="7">Could not load leads.</td></tr>`; return; }
   const rows = data || [];
-  const invoiced  = rows.reduce((s, r) => s + Number(r.total_minor || 0), 0);
-  const collected = rows.reduce((s, r) => s + Number(r.paid_minor || 0), 0);
-  const open      = rows.filter((r) => r.status !== "paid");
-  const outstanding = open.reduce((s, r) => s + (Number(r.total_minor || 0) - Number(r.paid_minor || 0)), 0);
+  $("leadLede").textContent = `${(count ?? rows.length).toLocaleString()} leads captured to date. The highest scoring ${rows.length} are listed.`;
 
-  const { count: activeMem } = await sb.from("memberships")
-    .select("id", { count: "exact", head: true }).eq("status", "active");
-  const { count: allMem } = await sb.from("memberships")
-    .select("id", { count: "exact", head: true });
+  const bySource = {};
+  rows.forEach(r => bySource[r.source||"unknown"] = (bySource[r.source||"unknown"]||0)+1);
+  const top = Object.keys(bySource).sort((a,b)=>bySource[b]-bySource[a]).slice(0,3);
+  $("leadStats").innerHTML =
+    `<div class="stat"><span class="stat-k">Total captured</span><span class="stat-v">${(count ?? 0).toLocaleString()}</span><span class="stat-n">all sources</span></div>` +
+    top.map(s=>`<div class="stat amber"><span class="stat-k">${esc(s)}</span><span class="stat-v">${bySource[s]}</span><span class="stat-n">of the top ${rows.length} by score</span></div>`).join("");
 
-  const pct = invoiced ? Math.round((collected / invoiced) * 100) : 0;
-
-  $("figs").innerHTML = `
-    <div class="fig"><span class="k">Invoiced to date</span><span class="v">${money(invoiced)}</span><span class="d">${rows.length} invoices</span></div>
-    <div class="fig olive"><span class="k">Collected</span><span class="v">${money(collected)}</span><span class="d">${pct}% of invoiced</span></div>
-    <div class="fig clay"><span class="k">Outstanding</span><span class="v">${money(outstanding)}</span><span class="d">${open.length} invoice${open.length === 1 ? "" : "s"} open</span></div>
-    <div class="fig gold"><span class="k">Active memberships</span><span class="v">${activeMem ?? "—"}</span><span class="d">of ${allMem ?? "—"} on record</span></div>`;
-
-  $("revNote").textContent = "Live from your records";
-
-  const outPct = 100 - pct;
-  $("collBar").innerHTML =
-    `<span style="width:${pct}%;background:var(--green)"></span>` +
-    `<span style="width:${outPct}%;background:var(--clay)"></span>`;
-  $("collLegend").innerHTML =
-    `<span><i style="background:var(--green)"></i>Collected ${money2(collected)}</span>` +
-    `<span><i style="background:var(--clay)"></i>Outstanding ${money2(outstanding)}</span>`;
-  $("collPanel").hidden = false;
+  $("leadBody").innerHTML = rows.length ? rows.map(r=>`<tr>
+    <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}</td>
+    <td class="wrap">${esc(r.organization||"—")}</td><td>${esc(r.source||"—")}</td>
+    <td>${esc(r.sector||"—")}</td><td>${esc(r.region||"—")}</td>
+    <td class="num">${esc(r.score ?? "—")}</td>
+    <td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("")
+    : `<tr><td colspan="7">No leads yet.</td></tr>`;
 }
 
-/* ---------------- invoices ---------------- */
-async function loadInvoices() {
+/* ───────── billing + overview figures ───────── */
+async function loadBilling(){
   const { data, error } = await sb.from("invoices")
     .select("number,total_minor,paid_minor,currency,status,issued_on,due_on,people(first_name,last_name),organizations(name)")
-    .order("issued_on", { ascending: false })
-    .limit(300);
-
-  const body = $("invBody");
-  if (error) { body.innerHTML = `<tr><td colspan="7">Could not load invoices: ${esc(error.message)}</td></tr>`; return; }
+    .order("issued_on",{ascending:false}).limit(400);
+  if (error){ $("invBody").innerHTML = `<tr><td colspan="7">Could not load invoices: ${esc(error.message)}</td></tr>`; return; }
   const rows = data || [];
-  if (!rows.length) { body.innerHTML = `<tr><td colspan="7">No invoices yet.</td></tr>`; return; }
+  const today = todayISO();
 
-  const today = new Date().toISOString().slice(0, 10);
-  body.innerHTML = rows.map((r) => {
-    const who = [r.people?.first_name, r.people?.last_name].filter(Boolean).join(" ") || r.organizations?.name || "—";
-    const overdue = r.status !== "paid" && r.due_on && r.due_on < today;
-    const cls = overdue ? "over" : (r.status === "paid" ? "paid" : r.status === "sent" ? "sent" : "draft");
-    const label = overdue ? "Overdue" : (r.status || "—");
+  const invoiced = rows.reduce((s,r)=>s+Number(r.total_minor||0),0);
+  const collected = rows.reduce((s,r)=>s+Number(r.paid_minor||0),0);
+  const open = rows.filter(r=>r.status!=="paid");
+  const outstanding = open.reduce((s,r)=>s+(Number(r.total_minor||0)-Number(r.paid_minor||0)),0);
+  const pct = invoiced ? Math.round(collected/invoiced*100) : 0;
+
+  const band = (r) => {
+    if (r.status === "paid" || !r.due_on) return "cur";
+    const d = Math.floor((Date.parse(today)-Date.parse(r.due_on))/864e5);
+    return d > 60 ? "d60" : d > 30 ? "d30" : "cur";
+  };
+  const buckets = { cur:[], d30:[], d60:[] };
+  open.forEach(r => buckets[band(r)].push(r));
+  const sum = (a) => a.reduce((s,r)=>s+(Number(r.total_minor||0)-Number(r.paid_minor||0)),0);
+
+  $("billLede").textContent = `${rows.length} invoices on record. ${open.length} still open.`;
+  $("billMoney").innerHTML = `
+    <div class="money-l"><span class="stat-k">Invoiced to date</span><span class="money-v">${money2(invoiced)}</span></div>
+    <div class="money-l"><span class="stat-k">Collected</span><span class="money-v" style="color:var(--sage)">${money2(collected)}</span>
+      <div class="bar"><span style="width:${pct}%;background:var(--sage)"></span><span style="width:${100-pct}%;background:var(--rust)"></span></div>
+      <span class="stat-n">${pct}% of invoiced</span></div>
+    <div class="money-l"><span class="stat-k">Outstanding</span><span class="money-v" style="color:var(--rust)">${money2(outstanding)}</span></div>`;
+
+  $("billAging").innerHTML = `
+    <div class="stat sage"><span class="stat-k">Current</span><span class="stat-v">${money(sum(buckets.cur))}</span><span class="stat-n">${buckets.cur.length} invoices not yet 30 days past due</span></div>
+    <div class="stat amber"><span class="stat-k">30 to 60 days</span><span class="stat-v">${money(sum(buckets.d30))}</span><span class="stat-n">${buckets.d30.length} invoices</span></div>
+    <div class="stat rust"><span class="stat-k">Over 60 days</span><span class="stat-v">${money(sum(buckets.d60))}</span><span class="stat-n">${buckets.d60.length} invoices</span></div>`;
+
+  $("invBody").innerHTML = rows.length ? rows.map(r => {
+    const who = [r.people?.first_name,r.people?.last_name].filter(Boolean).join(" ") || r.organizations?.name || "—";
+    const b = band(r);
+    const label = r.status === "paid" ? "Paid" : b === "d60" ? "Over 60 days" : b === "d30" ? "30–60 days" : (r.status || "Open");
+    const cls = r.status === "paid" ? "mut" : b;
     return `<tr>
-      <td class="mono">${esc(r.number)}</td>
-      <td class="who">${esc(who)}</td>
-      <td class="num">${money2(r.total_minor, r.currency || "USD")}</td>
-      <td class="num">${money2(r.paid_minor, r.currency || "USD")}</td>
-      <td>${day(r.issued_on)}</td>
-      <td>${day(r.due_on)}</td>
-      <td><span class="pill ${cls}">${esc(label)}</span></td>
-    </tr>`;
-  }).join("");
+      <td class="num">${esc(r.number)}</td>
+      <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(who))}</span>${esc(who)}</td>
+      <td class="num">${money2(r.total_minor,r.currency||"USD")}</td>
+      <td class="num">${money2(r.paid_minor,r.currency||"USD")}</td>
+      <td>${day(r.issued_on)}</td><td>${day(r.due_on)}</td>
+      <td><span class="pill ${cls}">${esc(label)}</span></td></tr>`;
+  }).join("") : `<tr><td colspan="7">No invoices yet.</td></tr>`;
 
-  $("invNote").textContent = `${rows.length} shown, newest first`;
+  // overview headline
+  const { count: activeMem } = await sb.from("memberships").select("id",{count:"exact",head:true}).eq("status","active");
+  const { count: allMem } = await sb.from("memberships").select("id",{count:"exact",head:true});
+  const { count: leads } = await sb.from("leads").select("id",{count:"exact",head:true});
+
+  $("ovStats").innerHTML = `
+    <div class="stat"><span class="stat-k">Active members</span><span class="stat-v">${activeMem ?? "—"}</span><span class="stat-n">of ${allMem ?? "—"} on record</span></div>
+    <div class="stat sage"><span class="stat-k">Collected</span><span class="stat-v">${money(collected)}</span><span class="stat-n">${pct}% of everything invoiced</span></div>
+    <div class="stat rust"><span class="stat-k">Outstanding</span><span class="stat-v">${money(outstanding)}</span><span class="stat-n">${open.length} invoices open</span></div>
+    <div class="stat amber"><span class="stat-k">Leads</span><span class="stat-v">${(leads ?? 0).toLocaleString()}</span><span class="stat-n">captured to date</span></div>`;
+
+  $("overviewLede").textContent =
+    `${activeMem ?? 0} active memberships, ${money2(outstanding)} outstanding across ${open.length} open invoices, and ${(leads ?? 0).toLocaleString()} leads on record.`;
+
+  const overdue = buckets.d30.length + buckets.d60.length;
+  $("ovPanels").innerHTML = `
+    <div class="panel"><div class="panel-h"><span class="panel-t">Collection</span><span class="pill ${overdue?"d30":"cur"}">${overdue} past 30 days</span></div>
+      <p class="panel-m">${money2(sum(buckets.d60))} of the outstanding balance is more than sixty days past due, across ${buckets.d60.length} invoice${buckets.d60.length===1?"":"s"}.</p></div>
+    <div class="panel"><div class="panel-h"><span class="panel-t">Membership</span><span class="pill mut">${allMem ?? 0} on record</span></div>
+      <p class="panel-m">${activeMem ?? 0} memberships are active. The remainder are lapsed and sit in the Members view with their renewal dates.</p></div>`;
 }
 
-/* ---------------- memberships ---------------- */
-async function loadMemberships() {
-  const { data, error } = await sb.from("memberships").select("status, renews_on, products(name)");
-  if (error) { $("memNote").textContent = "Could not load memberships"; return; }
+/* ───────── members ───────── */
+async function loadMembers(){
+  const { data, error } = await sb.from("memberships")
+    .select("status,renews_on,billing,products(name),people(first_name,last_name,country),organizations(name)")
+    .limit(500);
+  if (error){ $("memBody").innerHTML = `<tr><td colspan="6">Could not load memberships.</td></tr>`; return; }
   const rows = data || [];
   const by = {};
-  rows.forEach((r) => { by[r.status || "unknown"] = (by[r.status || "unknown"] || 0) + 1; });
+  rows.forEach(r => by[r.status||"unknown"] = (by[r.status||"unknown"]||0)+1);
+  const today = todayISO(), in60 = new Date(Date.now()+60*864e5).toISOString().slice(0,10);
+  const renewing = rows.filter(r => r.status==="active" && r.renews_on > today && r.renews_on <= in60).length;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const in60 = new Date(Date.now() + 60 * 864e5).toISOString().slice(0, 10);
-  const renewing = rows.filter((r) => r.status === "active" && r.renews_on && r.renews_on > today && r.renews_on <= in60).length;
+  $("memLede").textContent = `${rows.length} memberships on record.`;
+  const cls = { active:"sage", lapsed:"rust", cancelled:"rust", pending:"amber" };
+  $("memStats").innerHTML =
+    Object.keys(by).sort((a,b)=>by[b]-by[a]).map(k =>
+      `<div class="stat ${cls[k]||""}"><span class="stat-k">${esc(k)}</span><span class="stat-v">${by[k]}</span><span class="stat-n">${Math.round(by[k]/rows.length*100)}% of ${rows.length}</span></div>`).join("") +
+    `<div class="stat amber"><span class="stat-k">Renewing in 60 days</span><span class="stat-v">${renewing}</span><span class="stat-n">active memberships due</span></div>`;
 
-  const order = ["active", "lapsed", "cancelled", "pending", "unknown"];
-  const cls = { active: "", lapsed: "clay", cancelled: "clay", pending: "gold", unknown: "" };
-  $("memFigs").innerHTML =
-    order.filter((k) => by[k]).map((k) =>
-      `<div class="fig ${cls[k] || ""}"><span class="k">${k}</span><span class="v">${by[k]}</span><span class="d">${Math.round((by[k] / rows.length) * 100)}% of ${rows.length}</span></div>`
-    ).join("") +
-    `<div class="fig gold"><span class="k">Renewing in 60 days</span><span class="v">${renewing}</span><span class="d">active memberships due</span></div>`;
-
-  $("memNote").textContent = `${rows.length} on record`;
+  $("memBody").innerHTML = rows.length ? rows.map(r => {
+    const who = [r.people?.first_name,r.people?.last_name].filter(Boolean).join(" ") || r.organizations?.name || "—";
+    const st = r.status || "—";
+    const p = st==="active" ? "cur" : st==="lapsed" ? "d60" : "mut";
+    return `<tr>
+      <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(who))}</span>${esc(who)}</td>
+      <td class="wrap">${esc(r.organizations?.name || "—")}</td>
+      <td>${esc(r.products?.name || "—")}</td>
+      <td><span class="pill ${p}">${esc(st)}</span></td>
+      <td>${day(r.renews_on)}</td>
+      <td>${esc(r.people?.country || "—")}</td></tr>`;
+  }).join("") : `<tr><td colspan="6">No memberships yet.</td></tr>`;
 }
 
-/* ---------------- website traffic ---------------- */
-async function loadTraffic() {
-  const wrap = $("trafficWrap");
-  try {
+/* ───────── bench ───────── */
+async function loadBench(){
+  const { data } = await sb.from("people").select("first_name,last_name,bench_type,disciplines,region,country").not("bench_type","is",null).limit(200);
+  const rows = data || [];
+  $("benchLede").textContent = rows.length ? `${rows.length} on the bench.` : "No coaches or trainers are recorded yet.";
+  $("benchWrap").innerHTML = rows.length
+    ? `<div class="tblwrap"><table class="tbl"><caption>Coaches, consultants, trainers and facilitators</caption>
+       <thead><tr><th>Name</th><th>Type</th><th>Disciplines</th><th>Region</th><th>Country</th></tr></thead><tbody>` +
+      rows.map(r=>{const n=[r.first_name,r.last_name].filter(Boolean).join(" ");
+        return `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(n))}</span>${esc(n)}</td>
+        <td>${esc(r.bench_type||"—")}</td><td class="wrap">${esc((r.disciplines||[]).join(", ")||"—")}</td>
+        <td>${esc(r.region||"—")}</td><td>${esc(r.country||"—")}</td></tr>`}).join("") + `</tbody></table></div>`
+    : `<div class="empty"><b>The roster has not been imported yet</b>
+       <p class="panel-m">The website describes a bench of coaches and trainers across five regions. None of them exist as records in the platform yet, so coach matching and scheduling have nothing to run on.</p>
+       <p class="panel-m">Send TechFides the roster with each person's disciplines, languages and region and it will appear here.</p></div>`;
+}
+
+/* ───────── sessions ───────── */
+async function loadSessions(){
+  const { data } = await sb.from("sessions").select("id,starts_at,status").order("starts_at",{ascending:false}).limit(50);
+  const rows = data || [];
+  $("sessLede").textContent = rows.length ? `${rows.length} sessions recorded.` : "No sessions have been recorded yet.";
+  $("sessWrap").innerHTML = rows.length
+    ? `<div class="tblwrap"><table class="tbl"><caption>Recorded sessions</caption><thead><tr><th>When</th><th>Status</th></tr></thead><tbody>` +
+      rows.map(r=>`<tr><td>${esc((r.starts_at||"").slice(0,16).replace("T"," "))}</td><td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("") +
+      `</tbody></table></div>`
+    : `<div class="empty"><b>No sessions recorded yet</b>
+       <p class="panel-m">Coaching sessions will appear here once scheduling is in use. Nothing has been booked through the platform so far.</p></div>`;
+}
+
+/* ───────── board room ───────── */
+async function loadBoard(){
+  const { data: con } = await sb.from("contracts").select("number,legal_name,company,amount_minor,currency,status,signed_at").order("created_at",{ascending:false}).limit(50);
+  const rows = con || [];
+  $("boardLede").textContent = rows.length ? `${rows.length} contract${rows.length===1?"":"s"} on record.` : "No contracts on record yet.";
+  $("boardWrap").innerHTML = rows.length
+    ? `<div class="tblwrap"><table class="tbl"><caption>Contracts</caption>
+       <thead><tr><th>Reference</th><th>Party</th><th>Company</th><th class="num">Value</th><th>Status</th><th>Signed</th></tr></thead><tbody>` +
+      rows.map(r=>`<tr><td class="num">${esc(r.number||"—")}</td><td class="wrap">${esc(r.legal_name||"—")}</td>
+        <td class="wrap">${esc(r.company||"—")}</td><td class="num">${money2(r.amount_minor,r.currency||"USD")}</td>
+        <td><span class="pill ${r.status==="signed"?"cur":"mut"}">${esc(r.status||"—")}</span></td>
+        <td>${esc((r.signed_at||"").slice(0,10)||"—")}</td></tr>`).join("") + `</tbody></table></div>`
+    : `<div class="empty"><b>No contracts on record</b><p class="panel-m">Signed agreements will appear here.</p></div>`;
+}
+
+/* ───────── website ───────── */
+async function loadWebsite(){
+  const wrap = $("webWrap");
+  try{
+    const s = (await sb.auth.getSession()).data.session;
     const res = await fetch(SUPABASE_URL + "/functions/v1/bca-traffic", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + (await sb.auth.getSession()).data.session.access_token,
-      },
-      body: JSON.stringify({ range: "30d" }),
-    });
+      method:"POST", headers:{ "Content-Type":"application/json", Authorization:"Bearer "+s.access_token },
+      body: JSON.stringify({ range:"30d" }) });
     if (!res.ok) throw new Error(String(res.status));
     const t = await res.json();
     if (!t || t.unavailable) throw new Error("unconfigured");
-
-    wrap.innerHTML = `<div class="figs">
-      <div class="fig"><span class="k">Visitors</span><span class="v">${Number(t.visitors).toLocaleString()}</span><span class="d">last 30 days</span></div>
-      <div class="fig olive"><span class="k">Page views</span><span class="v">${Number(t.pageviews).toLocaleString()}</span><span class="d">last 30 days</span></div>
-      <div class="fig gold"><span class="k">Bounce rate</span><span class="v">${t.bounce ?? "—"}%</span><span class="d">last 30 days</span></div>
-    </div>`;
-  } catch {
-    wrap.innerHTML = `<div class="panel flag">
-      <h3>Measurement started 14 September 2026</h3>
-      <p>Traffic analytics were installed on every page of bcaleadership.com on 14 September. Before that date the site was never measured, so there is no history to show.</p>
-      <p>Figures appear here once a full period has been collected. Nothing is estimated.</p>
-    </div>`;
+    wrap.innerHTML = `<div class="stats">
+      <div class="stat"><span class="stat-k">Visitors</span><span class="stat-v">${Number(t.visitors).toLocaleString()}</span><span class="stat-n">last 30 days</span></div>
+      <div class="stat sage"><span class="stat-k">Page views</span><span class="stat-v">${Number(t.pageviews).toLocaleString()}</span><span class="stat-n">last 30 days</span></div>
+      <div class="stat amber"><span class="stat-k">Bounce rate</span><span class="stat-v">${t.bounce ?? "—"}%</span><span class="stat-n">last 30 days</span></div></div>`;
+  }catch{
+    wrap.innerHTML = `<div class="empty"><b>Measurement began 14 September 2026</b>
+      <p class="panel-m">Traffic analytics were installed across every page of bcaleadership.com on 14 September. The site was never measured before that date, so there is no history to show.</p>
+      <p class="panel-m">Figures appear here once a full period has been collected. Nothing on this page is estimated.</p></div>`;
   }
 }
 </script>
