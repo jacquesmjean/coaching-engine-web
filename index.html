@@ -134,6 +134,40 @@ table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
 .sk{display:block;height:13px;background:var(--navy-2);animation:p 1.3s ease-in-out infinite}
 @keyframes p{0%,100%{opacity:1}50%{opacity:.45}}
 
+/* ── pipeline board ── */
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(152px,1fr));gap:8px;margin-bottom:6px}
+.col{background:var(--navy-2);border:1px solid var(--line-soft);border-top:2px solid var(--mute);padding:11px 12px;min-height:82px}
+.col.on{border-top-color:var(--gold)}
+.col.won{border-top-color:var(--sage)} .col.lost{border-top-color:var(--rust)}
+.col-k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
+.col-n{font-family:var(--disp);font-size:25px;line-height:1.1;margin-top:5px;font-variant-numeric:tabular-nums}
+.col-v{font-family:var(--num);font-size:11.5px;color:var(--mute);margin-top:2px;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer} tr.click:hover{background:var(--navy-2)}
+.due{color:var(--rust)} .ok{color:var(--sage)}
+
+/* ── drawer ── */
+.scrim{position:fixed;inset:0;background:rgba(3,6,12,.66);z-index:40}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(470px,94vw);background:var(--navy);border-left:1px solid var(--line);z-index:41;display:flex;flex-direction:column;box-shadow:-24px 0 60px rgba(0,0,0,.5)}
+.dr-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+.dr-b{padding:18px 20px 26px;overflow-y:auto;flex:1}
+.dr-x{background:none;border:1px solid var(--line);color:var(--mute);width:29px;height:29px;border-radius:3px;font-size:15px;line-height:1;flex:none}
+.dr-x:hover{color:var(--parch);border-color:var(--mute)}
+.fld{display:block;margin-bottom:13px}
+.fld span{display:block;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute);margin-bottom:5px}
+.fld select,.fld input,.fld textarea{width:100%;font-family:var(--ui);font-size:14px;padding:9px 11px;border:1px solid var(--line);background:var(--ink);color:var(--parch);border-radius:3px}
+.fld textarea{min-height:74px;resize:vertical}
+.btn{font-family:var(--ui);font-size:13.5px;padding:9px 15px;border-radius:3px;border:1px solid var(--gold);background:var(--gold);color:#1A1204;font-weight:500}
+.btn[disabled]{opacity:.5}
+.btn.ghost{background:none;color:var(--parch);border-color:var(--line)}
+.row-btn{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.tl{list-style:none;padding:0;margin:8px 0 0;border-left:1px solid var(--line)}
+.tl li{padding:0 0 13px 14px;position:relative}
+.tl li::before{content:"";position:absolute;left:-4px;top:5px;width:7px;height:7px;border-radius:99px;background:var(--gold)}
+.tl b{font-weight:500;font-size:13.5px} .tl p{margin:2px 0 0;font-size:13px;color:var(--mute)}
+.tl time{font-family:var(--num);font-size:10.5px;color:var(--mute);display:block}
+.saved{font-size:12.5px;color:var(--sage);margin-left:9px}
+.err{font-size:12.5px;color:var(--rust);margin-top:7px}
+
 @media (max-width:860px){
   .shell{grid-template-columns:1fr}
   .rail{flex-direction:column;border-right:0;border-bottom:1px solid var(--line)}
@@ -295,6 +329,18 @@ table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
       </table></div>
     </section>
 
+    <!-- ───── pipeline ───── -->
+    <section class="view" id="v-pipeline" hidden>
+      <div class="eyebrow">Growth</div>
+      <h1>Pipeline</h1>
+      <p class="lede" id="pipLede">—</p>
+      <div class="rule"></div>
+      <div class="stats" id="pipStats"></div>
+      <div class="board" id="pipBoard"></div>
+      <div class="rule"></div>
+      <div id="pipWrap"></div>
+    </section>
+
     <!-- generated: modules not yet built -->
     <div id="soonViews"></div>
 
@@ -392,6 +438,33 @@ async function q(path){
   if (!r.ok) throw new Error((await r.text()).slice(0,180) || `Request failed (${r.status})`);
   return r.json();
 }
+/** One write. Same refresh-once behaviour as a read. */
+async function w(method, path, body){
+  if (!session) throw new Error("Not signed in");
+  const send = () => fetch(`${API}/rest/v1/${path}`, {
+    method,
+    headers:{ apikey:KEY, Authorization:"Bearer "+session.access_token,
+              "Content-Type":"application/json", Accept:"application/json",
+              Prefer:"return=representation" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  let r = await send();
+  if (r.status === 401 && session.refresh_token){
+    try {
+      save(await auth("token?grant_type=refresh_token", { refresh_token: session.refresh_token }));
+      r = await send();
+    } catch { save(null); showGate(); throw new Error("Session expired, please sign in again"); }
+  }
+  if (!r.ok){
+    const t = (await r.text()).slice(0,200);
+    // Postgres check constraints and RLS produce messages no client should read raw.
+    if (r.status === 403 || /row-level security/i.test(t)) throw new Error("You do not have permission to make that change.");
+    if (/violates check constraint/i.test(t)) throw new Error("That value is not one this field accepts.");
+    throw new Error(t || `Save failed (${r.status})`);
+  }
+  return r.status === 204 ? null : r.json();
+}
+
 /** Row count without pulling the rows. */
 async function count(table, filter=""){
   const r = await fetch(`${API}/rest/v1/${table}?select=id${filter?"&"+filter:""}`, {
@@ -452,11 +525,7 @@ const MODULES = [
            fr:["Le texte approuvé du contrat d'adhésion","Le texte approuvé du contrat de coaching","Qui contresigne pour BCA"]} },
 
   { g:"growth", v:"leads",    i:"users", en:"Leads", fr:"Prospects", live:true },
-  { g:"growth", v:"pipeline", i:"flow",  en:"Pipeline", fr:"Pipeline",
-    what:{en:"Follow an enquiry from first contact to signed member, with stages, owners and an honest forecast.",
-          fr:"Suivre une demande jusqu'à l'adhésion, avec étapes, responsables et prévision honnête."},
-    needs:{en:["The stages BCA actually uses","Who owns an enquiry at each stage"],
-           fr:["Les étapes réellement utilisées par BCA","Qui est responsable à chaque étape"]} },
+  { g:"growth", v:"pipeline", i:"flow",  en:"Pipeline", fr:"Pipeline", live:true },
   { g:"growth", v:"proposals",i:"doc",   en:"Proposals", fr:"Propositions",
     what:{en:"Build and send corporate and sponsorship proposals, then see which have been opened and which are waiting on a reply.",
           fr:"Créer et envoyer des propositions entreprises et sponsoring, puis suivre les ouvertures."},
@@ -590,6 +659,7 @@ async function start(){
     return;
   }
 
+  TENANT = c.tenant_id || null;
   const email = c.email || "";
   $("avatar").textContent = initials(email);
   $("brandHost").textContent = location.hostname;
@@ -624,6 +694,7 @@ async function start(){
   guard(loadBilling, "billing",  "billMoney");
   guard(loadMembers, "members",  "memStats");
   guard(loadLeads,   "leads",    "leadStats");
+  guard(loadPipeline,"pipeline", "pipWrap");
   guard(loadBench,   "bench",    "benchWrap");
   guard(loadSessions,"sessions", "sessWrap");
   guard(loadBoard,   "board",    "boardWrap");
@@ -715,7 +786,7 @@ async function loadMembers(){
 /* ───────── leads ───────── */
 async function loadLeads(){
   const total = await count("leads");
-  const rows = await q("leads?select=full_name,organization,source,sector,region,score,status&order=score.desc&limit=120");
+  const rows = await q("leads?select=id,full_name,organization,source,sector,region,score,status,owner_id,next_touch_on&order=score.desc&limit=120");
   $("leadLede").textContent = `${total.toLocaleString()} leads captured to date. The highest scoring ${rows.length} are listed.`;
   const bySrc = {}; rows.forEach(r => bySrc[r.source||"unknown"] = (bySrc[r.source||"unknown"]||0)+1);
   $("leadStats").innerHTML =
@@ -723,11 +794,14 @@ async function loadLeads(){
     Object.keys(bySrc).sort((a,b)=>bySrc[b]-bySrc[a]).slice(0,3).map(s=>
       `<div class="stat amber"><span class="stat-k">${esc(s)}</span><span class="stat-v">${bySrc[s]}</span><span class="stat-n">of the top ${rows.length} by score</span></div>`).join("");
   $("leadBody").innerHTML = rows.length ? rows.map(r=>
-    `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}</td>
+    `<tr class="click" data-lead="${esc(r.id)}"><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}</td>
      <td class="wrap">${esc(r.organization||"—")}</td><td>${esc(r.source||"—")}</td>
      <td>${esc(r.sector||"—")}</td><td>${esc(r.region||"—")}</td>
      <td class="num">${esc(r.score ?? "—")}</td><td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("")
     : `<tr><td colspan="7">No leads yet.</td></tr>`;
+  // Every lead row opens the working drawer. A register you cannot act on is a report.
+  $("leadBody").querySelectorAll("tr.click").forEach(tr =>
+    tr.addEventListener("click", () => openLead(tr.dataset.lead)));
 }
 
 /* ───────── bench ───────── */
@@ -792,6 +866,313 @@ async function loadWebsite(){
       <p class="panel-m">Traffic analytics were installed across every page of bcaleadership.com on 14 September. The site was never measured before that date, so there is no history to show.</p>
       <p class="panel-m">Figures appear here once a full period has been collected. Nothing on this page is estimated.</p></div>`;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Pipeline and lead working
+   Stages, statuses and activity kinds are not invented here. Each
+   is fixed by a check constraint in the database, so the console
+   offers exactly those values and nothing that would be rejected.
+   ───────────────────────────────────────────────────────────── */
+const STAGES = ["qualifying","briefing","proposal","negotiation","verbal","won","lost"];
+const OPEN_STAGES = STAGES.filter(s => s !== "won" && s !== "lost");
+const STAGE_P = { qualifying:10, briefing:25, proposal:50, negotiation:70, verbal:90, won:100, lost:0 };
+const LEAD_STATUS = ["new","working","nurturing","qualified","converted","disqualified"];
+const ACT_KINDS = ["call","meeting","email_sent","email_replied","linkedin","whatsapp","note","proposal_sent","contract_sent"];
+const LINES = ["individual_membership","corporate_membership","coaching_package","consulting","project_management","business_matching","sponsorship","conference","other"];
+const label = (s) => String(s||"").replace(/_/g," ").replace(/^./,c=>c.toUpperCase());
+
+let OWNERS = null;                       // BCA staff who can own a lead
+let TENANT = null;                       // tenant_id from the token
+
+/* Reload one section after a write. Same contract as the loader guard in
+   start(): a failure is reported in place, never left as a blank panel. */
+async function guardReload(fn, label, target){
+  try { await fn(); }
+  catch (e) {
+    console.error(label, e);
+    const el = $(target);
+    if (el) el.innerHTML = `<div class="empty"><b>Saved, but this view could not be refreshed</b>
+      <p class="panel-m">The change was written. Reload the page to see it.</p></div>`;
+  }
+}
+
+async function owners(){
+  if (OWNERS) return OWNERS;
+  const rows = await q("people?select=id,first_name,last_name,email,title&or=(email.ilike.*bcaleadership.com,email.ilike.*breakfastclubafrica.com)&order=first_name&limit=50");
+  OWNERS = rows.map(p => ({ id:p.id, name:[p.first_name,p.last_name].filter(Boolean).join(" ") || p.email }));
+  return OWNERS;
+}
+
+/* ───────── pipeline ───────── */
+async function loadPipeline(){
+  const rows = await q("opportunities?select=id,name,line,stage,value_minor,currency,probability,expected_close,next_step,next_step_on,lost_reason,people(first_name,last_name),organizations(name)&order=expected_close.asc&limit=300");
+
+  const open = rows.filter(r => OPEN_STAGES.includes(r.stage));
+  const sum  = (a) => a.reduce((t,r)=>t+Number(r.value_minor||0),0);
+  const weighted = open.reduce((t,r)=>t+Number(r.value_minor||0)*(Number(r.probability ?? STAGE_P[r.stage] ?? 0)/100),0);
+  const won = rows.filter(r=>r.stage==="won");
+
+  $("pipLede").textContent = rows.length
+    ? `${open.length} open ${open.length===1?"opportunity":"opportunities"} worth ${money(sum(open))}, weighted to ${money(weighted)}.`
+    : "No opportunities yet. Open a lead and raise one to start the pipeline.";
+
+  $("pipStats").innerHTML =
+    `<div class="stat"><span class="stat-k">Open pipeline</span><span class="stat-v">${money(sum(open))}</span><span class="stat-n">${open.length} open</span></div>
+     <div class="stat amber"><span class="stat-k">Weighted forecast</span><span class="stat-v">${money(weighted)}</span><span class="stat-n">by probability</span></div>
+     <div class="stat"><span class="stat-k">Won</span><span class="stat-v">${money(sum(won))}</span><span class="stat-n">${won.length} closed won</span></div>
+     <div class="stat"><span class="stat-k">Needing a next step</span><span class="stat-v">${open.filter(r=>!r.next_step_on).length}</span><span class="stat-n">of ${open.length} open</span></div>`;
+
+  $("pipBoard").innerHTML = STAGES.map(s => {
+    const inSt = rows.filter(r=>r.stage===s);
+    const cls = s==="won" ? "won" : s==="lost" ? "lost" : (inSt.length ? "on" : "");
+    return `<div class="col ${cls}"><div class="col-k">${esc(label(s))}</div>
+      <div class="col-n">${inSt.length}</div>
+      <div class="col-v">${inSt.length ? money(sum(inSt)) : "—"}</div></div>`;
+  }).join("");
+
+  const today = todayISO();
+  $("pipWrap").innerHTML = rows.length
+    ? `<div class="tblwrap"><table class="tbl"><caption>Opportunities, soonest expected close first</caption>
+        <thead><tr><th>Opportunity</th><th>Line</th><th>Stage</th><th class="num">Value</th>
+        <th class="num">%</th><th>Expected</th><th>Next step</th><th>Owner</th></tr></thead><tbody>` +
+      rows.map(r=>{
+        const overdue = r.next_step_on && r.next_step_on < today && OPEN_STAGES.includes(r.stage);
+        const who = r.people ? [r.people.first_name,r.people.last_name].filter(Boolean).join(" ") : "";
+        return `<tr class="click" data-opp="${esc(r.id)}">
+          <td class="wrap">${esc(r.name||"—")}${r.organizations?.name?`<br><span class="panel-m">${esc(r.organizations.name)}</span>`:""}</td>
+          <td>${esc(label(r.line))}</td>
+          <td><span class="pill ${r.stage==="won"?"ok":r.stage==="lost"?"bad":"mut"}">${esc(label(r.stage))}</span></td>
+          <td class="num">${money(r.value_minor, r.currency||"USD")}</td>
+          <td class="num">${esc(r.probability ?? STAGE_P[r.stage] ?? "—")}</td>
+          <td>${esc(day(r.expected_close))}</td>
+          <td class="wrap ${overdue?"due":""}">${esc(r.next_step || "—")}${r.next_step_on?`<br><span class="panel-m ${overdue?"due":""}">${overdue?"overdue ":""}${esc(day(r.next_step_on))}</span>`:""}</td>
+          <td>${esc(who||"—")}</td></tr>`;
+      }).join("") + `</tbody></table></div>`
+    : `<div class="empty"><b>The pipeline is empty</b>
+        <p class="panel-m">BCA has ${(await count("leads")).toLocaleString()} leads on record and no opportunities raised against any of them. Open Leads, choose one, and raise an opportunity to begin.</p></div>`;
+
+  $("pipWrap").querySelectorAll("tr.click").forEach(tr =>
+    tr.addEventListener("click", () => openOpp(tr.dataset.opp)));
+}
+
+/* ───────── drawer ───────── */
+function closeDrawer(){
+  document.getElementById("scrim")?.remove();
+  document.getElementById("drawer")?.remove();
+  document.removeEventListener("keydown", escClose);
+}
+function escClose(e){ if (e.key === "Escape") closeDrawer(); }
+
+function drawer(title, sub, bodyHTML){
+  closeDrawer();
+  const scrim = document.createElement("div");
+  scrim.className = "scrim"; scrim.id = "scrim";
+  scrim.addEventListener("click", closeDrawer);
+  const d = document.createElement("aside");
+  d.className = "drawer"; d.id = "drawer";
+  d.setAttribute("role","dialog"); d.setAttribute("aria-modal","true"); d.setAttribute("aria-label", title);
+  d.innerHTML = `<div class="dr-h"><div><h2 style="font-size:21px">${esc(title)}</h2>
+      <p class="panel-m" style="margin-top:3px">${esc(sub)}</p></div>
+      <button class="dr-x" type="button" aria-label="Close">&#215;</button></div>
+      <div class="dr-b">${bodyHTML}</div>`;
+  document.body.append(scrim, d);
+  d.querySelector(".dr-x").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", escClose);
+  d.querySelector("select,input,textarea,button")?.focus();
+  return d;
+}
+
+const optsFor = (list, sel) => list.map(v =>
+  `<option value="${esc(v)}"${v===sel?" selected":""}>${esc(label(v))}</option>`).join("");
+
+async function timelineFor(filter){
+  const acts = await q(`activities?select=kind,direction,subject,body,occurred_at&${filter}&order=occurred_at.desc&limit=25`);
+  return acts.length
+    ? `<ul class="tl">${acts.map(a=>`<li><time>${esc((a.occurred_at||"").slice(0,16).replace("T"," "))}</time>
+        <b>${esc(label(a.kind))}</b>${a.subject?` — ${esc(a.subject)}`:""}
+        ${a.body?`<p>${esc(a.body)}</p>`:""}</li>`).join("")}</ul>`
+    : `<p class="panel-m">Nothing logged yet.</p>`;
+}
+
+/* Wire the save/log controls shared by the lead and opportunity drawers. */
+function wireSave(d, onSave, onLog){
+  const msg = d.querySelector("#drMsg");
+  const say = (t, cls="saved") => { msg.className = cls; msg.textContent = t; };
+  d.querySelector("#drSave")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget; b.disabled = true; say("Saving…");
+    try { await onSave(d); say("Saved."); }
+    catch (err) { say(err.message || "Could not save.", "err"); }
+    finally { b.disabled = false; }
+  });
+  d.querySelector("#drLog")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget; b.disabled = true; say("Saving…");
+    try {
+      await onLog(d);
+      d.querySelector("#actBody").value = "";
+      d.querySelector("#actSubject").value = "";
+      say("Logged.");
+    } catch (err) { say(err.message || "Could not log that.", "err"); }
+    finally { b.disabled = false; }
+  });
+}
+
+const actBlock = () => `
+  <div class="rule"></div>
+  <h3 style="font-size:16px;margin-bottom:8px">Log contact</h3>
+  <label class="fld"><span>What happened</span>
+    <select id="actKind">${optsFor(ACT_KINDS,"call")}</select></label>
+  <label class="fld"><span>Subject</span><input id="actSubject" placeholder="Short summary"></label>
+  <label class="fld"><span>Notes</span><textarea id="actBody" placeholder="What was said, what was agreed"></textarea></label>
+  <div class="row-btn"><button class="btn" id="drLog" type="button">Log it</button></div>`;
+
+async function openLead(id){
+  const [lead] = await q(`leads?select=*&id=eq.${id}`);
+  if (!lead) return;
+  const who = await owners();
+  const d = drawer(lead.full_name || "Lead",
+    [lead.organization, lead.role, lead.country].filter(Boolean).join(" · ") || "No organisation recorded",
+    `<label class="fld"><span>Status</span><select id="fStatus">${optsFor(LEAD_STATUS, lead.status)}</select></label>
+     <label class="fld"><span>Owner</span><select id="fOwner">
+        <option value="">Unassigned</option>
+        ${who.map(o=>`<option value="${esc(o.id)}"${o.id===lead.owner_id?" selected":""}>${esc(o.name)}</option>`).join("")}
+     </select>${who.length ? "" : `<p class="panel-m" style="margin-top:5px">No BCA staff records exist to assign to yet.</p>`}</label>
+     <label class="fld"><span>Follow up on</span><input id="fNext" type="date" value="${esc(lead.next_touch_on||"")}"></label>
+     <div class="row-btn"><button class="btn" id="drSave" type="button">Save</button>
+       <button class="btn ghost" id="drOpp" type="button">Raise an opportunity</button>
+       <span id="drMsg"></span></div>
+     <div class="rule"></div>
+     <p class="panel-m">Source ${esc(label(lead.source)||"unknown")} · score ${esc(lead.score ?? "—")}${lead.email?` · ${esc(lead.email)}`:""}</p>
+     ${actBlock()}
+     <div class="rule"></div>
+     <h3 style="font-size:16px;margin-bottom:4px">History</h3>
+     <div id="drTl">${await timelineFor(`lead_id=eq.${id}`)}</div>`);
+
+  wireSave(d,
+    async () => {
+      await w("PATCH", `leads?id=eq.${id}`, {
+        status: d.querySelector("#fStatus").value,
+        owner_id: d.querySelector("#fOwner").value || null,
+        next_touch_on: d.querySelector("#fNext").value || null,
+        last_touch_at: new Date().toISOString(),
+      });
+      await guardReload(loadLeads, "leads", "leadStats");
+    },
+    async () => {
+      await w("POST", "activities", [{
+        tenant_id: TENANT, lead_id: id,
+        kind: d.querySelector("#actKind").value,
+        direction: d.querySelector("#actKind").value === "note" ? "internal" : "out",
+        subject: d.querySelector("#actSubject").value || null,
+        body: d.querySelector("#actBody").value || null,
+        occurred_at: new Date().toISOString(),
+      }]);
+      d.querySelector("#drTl").innerHTML = await timelineFor(`lead_id=eq.${id}`);
+    });
+
+  d.querySelector("#drOpp").addEventListener("click", () => newOpp(lead));
+}
+
+async function newOpp(lead){
+  const who = await owners();
+  const in90 = new Date(Date.now()+90*864e5).toISOString().slice(0,10);
+  const d = drawer("Raise an opportunity", `From ${lead.full_name || "this lead"}`,
+    `<label class="fld"><span>Name it</span>
+       <input id="oName" value="${esc((lead.organization || lead.full_name || "New opportunity"))}"></label>
+     <label class="fld"><span>Line of business</span><select id="oLine">${optsFor(LINES,"individual_membership")}</select></label>
+     <label class="fld"><span>Stage</span><select id="oStage">${optsFor(OPEN_STAGES,"qualifying")}</select></label>
+     <label class="fld"><span>Value, in whole ${"USD"}</span><input id="oValue" type="number" min="0" step="50" value="0"></label>
+     <label class="fld"><span>Expected close</span><input id="oClose" type="date" value="${in90}"></label>
+     <label class="fld"><span>Owner</span><select id="oOwner"><option value="">Unassigned</option>
+       ${who.map(o=>`<option value="${esc(o.id)}"${o.id===lead.owner_id?" selected":""}>${esc(o.name)}</option>`).join("")}</select></label>
+     <label class="fld"><span>Next step</span><input id="oNext" placeholder="What has to happen next"></label>
+     <label class="fld"><span>Next step by</span><input id="oNextOn" type="date"></label>
+     <div class="row-btn"><button class="btn" id="drSave" type="button">Create</button><span id="drMsg"></span></div>
+     <p class="panel-m" style="margin-top:12px">Creating this also marks the lead qualified, so it stops appearing as untouched.</p>`);
+
+  wireSave(d, async () => {
+    const stage = d.querySelector("#oStage").value;
+    const [opp] = await w("POST", "opportunities", [{
+      tenant_id: TENANT, lead_id: lead.id, person_id: lead.person_id || null,
+      name: d.querySelector("#oName").value || "New opportunity",
+      line: d.querySelector("#oLine").value,
+      stage,
+      probability: STAGE_P[stage] ?? 10,
+      value_minor: Math.round(Number(d.querySelector("#oValue").value || 0) * 100),
+      currency: "USD",
+      expected_close: d.querySelector("#oClose").value || null,
+      owner_id: d.querySelector("#oOwner").value || null,
+      next_step: d.querySelector("#oNext").value || null,
+      next_step_on: d.querySelector("#oNextOn").value || null,
+    }]);
+    // Only after the opportunity exists — never leave a lead marked qualified with nothing behind it.
+    await w("PATCH", `leads?id=eq.${lead.id}`, { status:"qualified", last_touch_at:new Date().toISOString() });
+    await Promise.all([
+      guardReload(loadPipeline, "pipeline", "pipWrap"),
+      guardReload(loadLeads, "leads", "leadStats"),
+    ]);
+    setTimeout(() => openOpp(opp.id), 350);
+  }, async () => {});
+}
+
+async function openOpp(id){
+  const [o] = await q(`opportunities?select=*&id=eq.${id}`);
+  if (!o) return;
+  const who = await owners();
+  const d = drawer(o.name || "Opportunity",
+    `${label(o.line)} · ${money2(o.value_minor, o.currency||"USD")}`,
+    `<label class="fld"><span>Stage</span><select id="fStage">${optsFor(STAGES, o.stage)}</select></label>
+     <label class="fld"><span>Probability, per cent</span>
+       <input id="fProb" type="number" min="0" max="100" value="${esc(o.probability ?? STAGE_P[o.stage] ?? 10)}"></label>
+     <label class="fld"><span>Value, in whole ${esc(o.currency||"USD")}</span>
+       <input id="fVal" type="number" min="0" step="50" value="${esc(Math.round(Number(o.value_minor||0)/100))}"></label>
+     <label class="fld"><span>Expected close</span><input id="fClose" type="date" value="${esc(o.expected_close||"")}"></label>
+     <label class="fld"><span>Owner</span><select id="fOwner"><option value="">Unassigned</option>
+       ${who.map(p=>`<option value="${esc(p.id)}"${p.id===o.owner_id?" selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
+     <label class="fld"><span>Next step</span><input id="fNext" value="${esc(o.next_step||"")}"></label>
+     <label class="fld"><span>Next step by</span><input id="fNextOn" type="date" value="${esc(o.next_step_on||"")}"></label>
+     <label class="fld" id="lostWrap" ${o.stage==="lost"?"":'hidden'}><span>Why it was lost</span>
+       <input id="fLost" value="${esc(o.lost_reason||"")}"></label>
+     <div class="row-btn"><button class="btn" id="drSave" type="button">Save</button><span id="drMsg"></span></div>
+     ${actBlock()}
+     <div class="rule"></div>
+     <h3 style="font-size:16px;margin-bottom:4px">History</h3>
+     <div id="drTl">${await timelineFor(`opportunity_id=eq.${id}`)}</div>`);
+
+  // Probability follows the stage unless someone has deliberately set it.
+  const stageSel = d.querySelector("#fStage"), probIn = d.querySelector("#fProb");
+  stageSel.addEventListener("change", () => {
+    probIn.value = STAGE_P[stageSel.value] ?? probIn.value;
+    d.querySelector("#lostWrap").hidden = stageSel.value !== "lost";
+  });
+
+  wireSave(d,
+    async () => {
+      const stage = stageSel.value;
+      await w("PATCH", `opportunities?id=eq.${id}`, {
+        stage,
+        probability: Number(probIn.value || 0),
+        value_minor: Math.round(Number(d.querySelector("#fVal").value || 0) * 100),
+        expected_close: d.querySelector("#fClose").value || null,
+        owner_id: d.querySelector("#fOwner").value || null,
+        next_step: d.querySelector("#fNext").value || null,
+        next_step_on: d.querySelector("#fNextOn").value || null,
+        lost_reason: stage === "lost" ? (d.querySelector("#fLost").value || null) : null,
+        closed_at: (stage==="won"||stage==="lost") ? (o.closed_at || new Date().toISOString()) : null,
+      });
+      await guardReload(loadPipeline, "pipeline", "pipWrap");
+    },
+    async () => {
+      await w("POST", "activities", [{
+        tenant_id: TENANT, opportunity_id: id, lead_id: o.lead_id || null,
+        kind: d.querySelector("#actKind").value,
+        direction: d.querySelector("#actKind").value === "note" ? "internal" : "out",
+        subject: d.querySelector("#actSubject").value || null,
+        body: d.querySelector("#actBody").value || null,
+        occurred_at: new Date().toISOString(),
+      }]);
+      d.querySelector("#drTl").innerHTML = await timelineFor(`opportunity_id=eq.${id}`);
+    });
 }
 
 /* ───────── go ───────── */
