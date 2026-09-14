@@ -1,1544 +1,415 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>BCA Leadership · Coaching Engine</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>BCA Leadership · Revenue</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23058D52'/><text x='16' y='23' font-size='18' font-family='Georgia,serif' fill='%23F7A61C' text-anchor='middle'>B</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Cormorant+Garamond:ital,wght@0,600;1,500&family=Jost:wght@300;400;500;600&display=swap">
 <style>
-:root{--ink:#05090F;--navy:#0B1426;--navy2:#0F1A2E;--navy3:#13203A;--line:#1D2B47;--soft:#16223A;
---gold:#C9A227;--gold-lt:#E6CB74;--gold-dim:rgba(201,162,39,.16);--parch:#F2EDE3;--parch2:#CFC9BD;
---mute:#7E889E;--mute2:#5A6478;--sage:#89A67F;--rust:#C06A4E;--amber:#D6A34A;--sky:#6E8FB5;
---ease:cubic-bezier(.16,.84,.44,1)}
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{background:var(--ink);color:var(--parch);font-family:'Archivo',sans-serif;font-size:14px;
--webkit-font-smoothing:antialiased;overflow:hidden}
-body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:
-radial-gradient(1200px 700px at 80% -12%,rgba(201,162,39,.07),transparent 62%),
-radial-gradient(900px 600px at 6% 108%,rgba(29,43,71,.5),transparent 60%)}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;
-background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
-.demo{position:fixed;top:0;left:0;right:0;z-index:99;display:flex;align-items:center;justify-content:center;
-gap:10px;height:30px;background:#3A2A08;border-bottom:1px solid rgba(201,162,39,.35);
-font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-lt)}
-.demo b{color:var(--parch);font-weight:600;letter-spacing:.1em}
-.demo i{width:5px;height:5px;border-radius:50%;background:var(--gold);font-style:normal}
-.shell{position:relative;z-index:2;display:grid;grid-template-columns:250px 1fr;height:calc(100vh - 30px);margin-top:30px}
-.rail{background:linear-gradient(180deg,var(--navy),#080F1D);border-right:1px solid var(--soft);
-display:flex;flex-direction:column;padding:22px 0 14px}
-.brand{padding:0 22px 18px;border-bottom:1px solid var(--soft)}
-.brow{display:flex;align-items:center;gap:11px}
-.mark{width:36px;height:36px;flex:none;border-radius:50%;border:1px solid var(--gold);display:grid;place-items:center;
-font-family:'Instrument Serif',serif;font-size:16px;color:var(--gold-lt);
-background:radial-gradient(circle at 30% 25%,rgba(201,162,39,.22),transparent 70%)}
-.bname{font-family:'Instrument Serif',serif;font-size:18px;line-height:1.1}
-.bsub{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--mute2);letter-spacing:.04em;margin-top:5px;word-break:break-all}
-.tier{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:9px;letter-spacing:.16em;
-text-transform:uppercase;color:var(--gold);border:1px solid var(--gold-dim);background:rgba(201,162,39,.06);
-padding:3px 8px;border-radius:2px}
-.tier i{width:4px;height:4px;border-radius:50%;background:var(--gold);font-style:normal}
-nav{padding:12px 10px;flex:1;overflow-y:auto}
-.nlab{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute2);padding:11px 12px 5px}
-.ni span[data-i]{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ni{position:relative;display:flex;align-items:center;gap:9px;padding:6.5px 12px;border-radius:3px;cursor:pointer;
-color:var(--parch2);font-size:13px;font-weight:500;transition:background .18s var(--ease),color .18s var(--ease);user-select:none}
-.ni:hover{background:rgba(255,255,255,.035);color:var(--parch)}
-.ni.on{background:rgba(201,162,39,.075);color:var(--gold-lt)}
-.ni.on::before{content:'';position:absolute;left:-10px;top:7px;bottom:7px;width:2px;background:var(--gold)}
-.ni.locked{opacity:.38}
-.badge{margin-left:auto;min-width:19px;height:17px;padding:0 5px;border-radius:9px;display:grid;place-items:center;
-font-size:9.5px;font-weight:700;font-family:'IBM Plex Mono',monospace}
-.b-hot{background:var(--rust);color:#fff}.b-warm{background:var(--gold);color:var(--ink)}
-.b-cool{background:var(--navy3);color:var(--parch2);border:1px solid var(--line)}
-.chip{margin-left:auto;font-size:7.5px;letter-spacing:.1em;color:var(--sky);border:1px solid rgba(110,143,181,.32);padding:2px 4px;border-radius:2px}
-.lock{margin-left:auto;font-size:8px;letter-spacing:.12em;color:var(--gold);border:1px solid var(--gold-dim);padding:2px 5px;border-radius:2px}
-.rfoot{padding:13px 22px 0;border-top:1px solid var(--soft);margin-top:6px}
-.pw{display:flex;align-items:center;gap:7px;font-size:9.5px;color:var(--mute2);letter-spacing:.05em}
-.pw b{color:var(--parch2);font-weight:600}
-.pwd{width:3px;height:3px;border-radius:50%;background:var(--gold);flex:none}
-.main{overflow-y:auto}
-.main::-webkit-scrollbar,nav::-webkit-scrollbar{width:8px}
-.main::-webkit-scrollbar-thumb,nav::-webkit-scrollbar-thumb{background:var(--line);border-radius:9px}
-.top{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:16px;padding:0 38px;height:56px;
-background:rgba(5,9,15,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--soft)}
-.clock{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--parch2)}
-.clock span{color:var(--mute2)}
-.sp{flex:1}
-.lang{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden}
-.lang button{background:none;border:0;color:var(--mute);cursor:pointer;font-family:'Archivo';font-size:10px;
-font-weight:600;letter-spacing:.1em;padding:5px 9px;transition:.18s var(--ease)}
-.lang button.on{background:var(--gold);color:var(--ink)}
-.lang button:not(.on):hover{color:var(--parch)}
-.av{width:29px;height:29px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;
-font-size:10px;font-weight:600;color:var(--gold-lt);background:var(--navy2)}
-.view{padding:32px 38px 64px;max-width:1560px;display:none}
-.view.on{display:block;animation:rise .45s var(--ease) both}
-@keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
-.eyebrow{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:10px}
-.eyebrow::after{content:'';height:1px;flex:1;max-width:70px;background:linear-gradient(90deg,var(--gold-dim),transparent)}
-h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:38px;line-height:1.06;letter-spacing:-.01em;margin:12px 0 7px}
-h1 em{font-style:italic;color:var(--gold-lt)}
-.lede{color:var(--mute);font-size:13.5px;max-width:66ch;line-height:1.62}
-.rule{height:1px;background:linear-gradient(90deg,var(--gold-dim),var(--soft) 30%,transparent);margin:28px 0 24px}
-.queue{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:1px;background:var(--soft);
-border:1px solid var(--soft);border-radius:3px;overflow:hidden;margin-bottom:24px}
-.q{background:var(--navy);padding:18px 20px;cursor:pointer;transition:background .22s var(--ease);position:relative}
-.q:hover{background:var(--navy2)}
-.q.urgent{background:linear-gradient(150deg,rgba(192,106,78,.13),var(--navy))}
-.q.urgent::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--rust)}
-.qk{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute2)}
-.qv{font-family:'Instrument Serif',serif;font-size:38px;line-height:1;margin:10px 0 5px;font-variant-numeric:tabular-nums}
-.q.urgent .qv{color:#E08A6B}
-.qn{font-size:11px;color:var(--mute)}
-.qn b{font-weight:600;color:var(--parch2)}
-.money{color:var(--gold-lt)}
-.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:22px}
-.panel{border:1px solid var(--soft);border-radius:3px;background:rgba(11,20,38,.55);overflow:hidden;margin-bottom:22px}
-.ph{display:flex;align-items:baseline;gap:11px;padding:15px 20px;border-bottom:1px solid var(--soft)}
-.pt{font-family:'Instrument Serif',serif;font-size:18px}
-.pm{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--mute2);margin-left:auto}
-.tbl{width:100%;border-collapse:collapse}
-.tbl th{text-align:left;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute2);
-font-weight:600;padding:11px 20px;border-bottom:1px solid var(--soft);background:rgba(8,14,26,.5)}
-.tbl td:last-child{padding-right:24px}
-.tbl td{padding:12px 20px;border-bottom:1px solid var(--soft);font-size:12.5px;vertical-align:middle}
-.tbl tbody tr{transition:background .16s var(--ease);opacity:0;animation:fi .4s var(--ease) forwards}
-.tbl tbody tr:hover{background:rgba(255,255,255,.025)}
-@keyframes fi{to{opacity:1}}
-.num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap}
-.who{display:flex;align-items:center;gap:10px}
-.ini{width:28px;height:28px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:9.5px;
-font-weight:600;background:var(--navy3);color:var(--gold-lt);border:1px solid var(--line)}
-.wn{font-weight:500;white-space:nowrap}.ws{font-size:10.5px;color:var(--mute2);margin-top:2px}
-.tag{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--parch2);border:1px solid var(--line);
-padding:3px 7px;border-radius:2px;background:var(--navy2);white-space:nowrap}
-.tag.plat{color:var(--gold-lt);border-color:var(--gold-dim);background:rgba(201,162,39,.08)}
-.tag.exec{color:var(--sky);border-color:rgba(110,143,181,.3)}
-.dot{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--parch2);white-space:nowrap}
-.dot i{width:5px;height:5px;border-radius:50%;flex:none;font-style:normal}
-.s-ok i{background:var(--sage)}.s-bad i{background:var(--rust)}.s-warn i{background:var(--amber)}
-.s-idle i{background:var(--mute2)}.s-new i{background:var(--gold)}
-.flag{font-size:10.5px;color:var(--mute2);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
-.act{border:1px solid var(--gold);color:var(--gold-lt);background:rgba(201,162,39,.07);padding:5px 12px;
-border-radius:2px;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:600;cursor:pointer;
-font-family:'Archivo';transition:.2s var(--ease);white-space:nowrap}
-.act:hover{background:var(--gold);color:var(--ink)}
-.act.done{border-color:rgba(137,166,127,.4);color:var(--sage);background:rgba(137,166,127,.08);cursor:default}
-.act.done:hover{background:rgba(137,166,127,.08);color:var(--sage)}
-.bar{height:4px;background:var(--navy3);border-radius:3px;overflow:hidden;display:flex;width:78px}
-.bar i{height:100%;font-style:normal;background:var(--gold)}
-.age{font-family:'IBM Plex Mono',monospace;font-size:11px}
-.age.hot{color:var(--rust)}.age.warm{color:var(--amber)}
-.locked-view{text-align:center;padding:88px 24px}
-.locked-view .mark{margin:0 auto 22px;width:52px;height:52px;font-size:20px}
-.locked-view h2{font-family:'Instrument Serif',serif;font-size:29px;font-weight:400;margin-bottom:11px}
-.locked-view p{color:var(--mute);max-width:46ch;margin:0 auto 24px;line-height:1.7}
-.cta{display:inline-block;border:1px solid var(--gold);color:var(--gold-lt);background:rgba(201,162,39,.07);
-padding:10px 24px;border-radius:2px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
-font-weight:600;cursor:pointer;transition:.22s var(--ease)}
-.cta:hover{background:var(--gold);color:var(--ink)}
-.foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--soft);display:flex;gap:18px;
-font-size:10px;color:var(--mute2);flex-wrap:wrap}
-.foot b{color:var(--parch2);font-weight:600}
-@media(max-width:1180px){.shell{grid-template-columns:1fr}.rail{display:none}.grid2{grid-template-columns:1fr}
-.view{padding:24px 18px 56px}.top{padding:0 18px}}
+  :root{
+    --cream:#FAF6EE; --cream-2:#F2EBDD; --paper:#FFFDF8;
+    --ink:#242424; --ink-soft:#5A5048; --ink-faint:#8B8078;
+    --green:#058D52; --green-mid:#23A455; --gold:#F7A61C; --clay:#C14027;
+    --olive:#ABBB61; --espresso:#452C23;
+    --line:rgba(36,23,12,.14); --line-soft:rgba(36,23,12,.07);
+    --disp:"Marcellus",Georgia,serif; --edit:"Cormorant Garamond",Georgia,serif;
+    --ui:"Jost",Helvetica,Arial,sans-serif;
+    --shadow:0 1px 2px rgba(69,44,35,.05),0 4px 16px rgba(69,44,35,.06);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --cream:#191109; --cream-2:#20160E; --paper:#241A11;
+    --ink:#F4EEE4; --ink-soft:#C6B9A8; --ink-faint:#96887B;
+    --green:#4FC98A; --green-mid:#6FD9A2; --gold:#F2B94E; --clay:#E58467; --olive:#C3D189;
+    --espresso:#E5D7C7;
+    --line:rgba(244,238,228,.17); --line-soft:rgba(244,238,228,.08);
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 4px 16px rgba(0,0,0,.3);
+  }}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--cream);color:var(--ink);font-family:var(--ui);font-weight:300;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .strip{height:7px;background:repeating-linear-gradient(90deg,var(--green) 0 64px,var(--gold) 64px 80px,var(--clay) 80px 96px,var(--olive) 96px 112px,var(--espresso) 112px 128px,var(--gold) 128px 144px,var(--green-mid) 144px 208px)}
+  h1,h2,h3{font-family:var(--disp);font-weight:400;margin:0;color:var(--espresso);text-wrap:balance}
+  .mono{font-variant-numeric:tabular-nums}
+  button{font-family:var(--ui);cursor:pointer}
+  [hidden]{display:none!important}
+
+  /* ---------- sign in ---------- */
+  #gate{min-height:100dvh;display:grid;place-items:center;padding:24px}
+  .card{width:100%;max-width:400px;background:var(--paper);border:1px solid var(--line-soft);box-shadow:var(--shadow);padding:34px 30px;display:flex;flex-direction:column;gap:18px}
+  .card h1{font-size:27px;line-height:1.15}
+  .card .sub{font-family:var(--edit);font-style:italic;font-size:18px;color:var(--ink-soft);margin:0}
+  label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-faint);font-weight:500}
+  input{font-family:var(--ui);font-size:16px;font-weight:300;padding:11px 13px;border:1px solid var(--line);background:var(--cream);color:var(--ink);border-radius:2px}
+  input:focus-visible{outline:2px solid var(--green);outline-offset:1px;border-color:var(--green)}
+  .btn{background:var(--green);color:#fff;border:1px solid var(--green);padding:12px 18px;font-size:14.5px;font-weight:500;letter-spacing:.04em;border-radius:2px}
+  .btn:hover{background:var(--green-mid);border-color:var(--green-mid)}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn.ghost{background:transparent;color:var(--ink-soft);border-color:var(--line)}
+  .btn.ghost:hover{background:var(--cream-2);color:var(--ink)}
+  .msg{font-size:14px;padding:10px 12px;border-left:3px solid var(--clay);background:var(--cream-2);color:var(--ink-soft)}
+  .msg.ok{border-left-color:var(--green)}
+  .powered{text-align:center;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);text-decoration:none;display:block;margin-top:4px}
+  .powered b{color:var(--gold);font-weight:500}
+
+  /* ---------- app shell ---------- */
+  header.top{border-bottom:1px solid var(--line);background:var(--paper)}
+  .topin{max-width:1180px;margin:0 auto;padding:16px 22px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:baseline;justify-content:space-between}
+  .brand{display:flex;flex-direction:column;gap:1px}
+  .brand .n{font-family:var(--disp);font-size:20px;color:var(--espresso)}
+  .brand .t{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--green);font-weight:500}
+  .who{display:flex;align-items:center;gap:14px;font-size:13.5px;color:var(--ink-faint)}
+  main{max-width:1180px;margin:0 auto;padding:30px 22px 60px;display:flex;flex-direction:column;gap:34px}
+
+  section{display:flex;flex-direction:column;gap:16px}
+  .sechead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px}
+  .sechead h2{font-size:24px}
+  .sechead .note{font-size:13px;color:var(--ink-faint)}
+
+  .figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+  .fig{background:var(--paper);border:1px solid var(--line-soft);border-top:2px solid var(--bar,var(--green));padding:17px 19px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow)}
+  .fig .k{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:500}
+  .fig .v{font-family:var(--disp);font-size:30px;line-height:1.05;color:var(--espresso);font-variant-numeric:tabular-nums}
+  .fig .d{font-size:13.5px;color:var(--ink-soft)}
+  .fig.gold{--bar:var(--gold)} .fig.clay{--bar:var(--clay)} .fig.olive{--bar:var(--olive)}
+
+  .tablewrap{overflow-x:auto;border:1px solid var(--line-soft);background:var(--paper);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:660px;font-size:14.5px}
+  th,td{text-align:left;padding:10px 15px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+  th{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);font-weight:500;background:var(--cream-2);position:sticky;top:0}
+  td.num{text-align:right;font-variant-numeric:tabular-nums}
+  th.num{text-align:right}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--cream-2)}
+  td.who{white-space:normal;min-width:190px}
+  .pill{font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:500;padding:2px 9px;border-radius:99px}
+  .pill.paid{background:rgba(5,141,82,.13);color:var(--green)}
+  .pill.sent{background:rgba(247,166,28,.2);color:#8A5C08}
+  .pill.draft{background:rgba(36,23,12,.08);color:var(--ink-faint)}
+  .pill.over{background:rgba(193,64,39,.12);color:var(--clay)}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pill.sent{color:var(--gold)}
+    :root:not([data-theme="light"]) .pill.draft{background:rgba(244,238,228,.1)}}
+
+  .bar{display:flex;height:26px;border:1px solid var(--line-soft);overflow:hidden;background:var(--cream-2)}
+  .bar span{display:block;height:100%}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--ink-soft)}
+  .legend i{display:inline-block;width:11px;height:11px;margin-right:7px;vertical-align:baseline}
+
+  .panel{background:var(--paper);border:1px solid var(--line-soft);box-shadow:var(--shadow);padding:20px 22px;display:flex;flex-direction:column;gap:11px}
+  .panel h3{font-size:19px}
+  .panel p{margin:0;color:var(--ink-soft);font-size:15px;max-width:70ch}
+  .panel.flag{border-left:3px solid var(--gold)}
+  .skel{height:13px;background:var(--cream-2);animation:pulse 1.3s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  @media (prefers-reduced-motion:reduce){.skel{animation:none}}
+  footer{border-top:1px solid var(--line);margin-top:10px;padding-top:16px;font-size:12.5px;color:var(--ink-faint);display:flex;flex-wrap:wrap;gap:6px 18px;justify-content:space-between}
+  footer a{color:var(--ink-faint)}
 </style>
 </head>
 <body>
-<div class="demo"><i></i><b>Preview</b> · sample data, not BCA records</div>
-<div class="shell">
-<aside class="rail">
-  <div class="brand">
-    <div class="brow"><div class="mark">B</div><div><div class="bname">BCA Leadership</div></div></div>
-    <div class="bsub">servicedesk.bcaleadership.com</div>
-    <div class="tier"><i></i>Professional</div>
-  </div>
-  <nav>
-    <div class="nlab" data-i="lToday">Desk</div>
-    <div class="ni on" data-v="today"><span data-i="today">Today</span><span class="badge b-hot">14</span></div>
+<div class="strip"></div>
 
-    <div class="nlab" data-i="lGrowth">Growth</div>
-    <div class="ni" data-v="marketing"><span>Sales &amp; Marketing</span><span class="chip">SOV</span></div>
-    <div class="ni" data-v="leads"><span data-i="leads">Leads</span><span class="badge b-warm">31</span></div>
-    <div class="ni" data-v="outreach"><span data-i="outreach">Outreach</span><span class="chip">SOV</span></div>
-    <div class="ni" data-v="pipeline"><span data-i="pipeline">Pipeline</span><span class="badge b-cool">12</span></div>
-    <div class="ni" data-v="proposals"><span data-i="proposals">Proposals</span><span class="badge b-warm">5</span></div>
-    <div class="ni" data-v="campaigns"><span data-i="campaigns">Campaigns</span><span class="chip">SOV</span></div>
-    <div class="ni" data-v="requests"><span data-i="requests">Requests</span><span class="badge b-warm">8</span></div>
-
-    <div class="nlab" data-i="lRev">Revenue</div>
-    <div class="ni" data-v="authorise"><span data-i="authorise">Authorise &amp; Invoice</span><span class="badge b-hot">6</span></div>
-    <div class="ni" data-v="invoices"><span data-i="invoices">Invoices</span><span class="badge b-cool">6</span></div>
-    <div class="ni" data-v="contracts"><span data-i="contracts">Contracts</span></div>
-    <div class="ni" data-v="members"><span data-i="members">Members</span><span class="badge b-cool">218</span></div>
-    <div class="ni" data-v="corporate"><span data-i="corporate">Accounts</span><span class="badge b-cool">9</span></div>
-    <div class="ni" data-v="coaching"><span data-i="coaching">Coaching</span><span class="badge b-cool">47</span></div>
-
-    <div class="nlab" data-i="lFin">Finance</div>
-    <div class="ni" data-v="financial"><span data-i="financial">Financial Dashboard</span></div>
-
-    <div class="nlab" data-i="lOps">Operations</div>
-    <div class="ni" data-v="bench"><span data-i="bench">The Bench</span><span class="badge b-cool">42</span></div>
-    <div class="ni" data-v="sessions"><span data-i="sessions">Sessions</span></div>
-    <div class="ni" data-v="consults"><span data-i="consults">Consultations</span><span class="badge b-warm">5</span></div>
-    <div class="ni" data-v="mialc"><span data-i="mialc">MIALC</span></div>
-
-    <div class="nlab" data-i="lRel">Relationships</div>
-    <div class="ni" data-v="investors"><span data-i="investors">Investors</span><span class="chip">SOV</span></div>
-    <div class="ni" data-v="needs"><span data-i="needs">Needs &amp; Leads</span><span class="badge b-cool">23</span></div>
-    <div class="ni" data-v="outcomes"><span data-i="outcomes">Outcomes</span></div>
-    <div class="ni" data-v="shop"><span data-i="shop">Shop</span></div>
-
-    <div class="nlab" data-i="lAdmin">Administration</div>
-    <div class="ni" data-v="team"><span data-i="team">Team &amp; Access</span><span class="badge b-cool">9</span></div>
-    <div class="ni" data-v="modules"><span data-i="modules">Modules &amp; Licensing</span><span class="badge b-warm">4</span></div>
-
-    <div class="nlab" data-i="lGov">Governance</div>
-    <div class="ni" data-v="board"><span data-i="board">Board Room</span></div>
-    <div class="ni locked" data-v="intel"><span data-i="intel">Intelligence</span><span class="lock">TIER</span></div>
-  </nav>
-  <div class="rfoot"><div class="pw"><span class="pwd"></span>Powered by <b>TechFides</b></div></div>
-</aside>
-
-<main class="main">
-  <div class="top">
-    <div class="clock"><span>Mauritius</span> · <span id="now">—</span></div>
-    <div class="sp"></div>
-    <div class="lang"><button class="on" data-l="en">EN</button><button data-l="fr">FR</button>
-      <button data-l="es">ES</button><button data-l="pt">PT</button></div>
-    <div class="av">MT</div>
-  </div>
-
-  <section class="view on" id="v-today">
-    <div class="eyebrow" data-i="ebToday">The desk · Wednesday 29 July 2026</div>
-    <h1><span id="greet">Good morning</span>, <em>Modupe</em></h1>
-    <p class="lede" data-i="ldToday">Six signed contracts are waiting on your authorisation before an invoice can go out. That is the only queue on this page where waiting costs money.</p>
-    <div class="rule"></div>
-    <div class="queue" id="qRow"></div>
-    <div class="grid2">
-      <div class="panel">
-        <div class="ph"><div class="pt" data-i="pAwait">Awaiting Authorisation</div><div class="pm" id="awaitTotal">—</div></div>
-        <table class="tbl"><thead><tr><th data-i="hContract">Contract</th><th data-i="hWho">Signatory</th>
-          <th data-i="hProduct">Product</th><th data-i="hValue">Value</th><th data-i="hSigned">Signed</th><th></th>
-        </tr></thead><tbody id="authBody"></tbody></table>
-      </div>
-      <div class="panel">
-        <div class="ph"><div class="pt" data-i="pAging">Unanswered Requests</div><div class="pm">first response</div></div>
-        <div id="ageWrap"></div>
-      </div>
+<!-- ===================== SIGN IN ===================== -->
+<div id="gate">
+  <form class="card" id="loginForm">
+    <div>
+      <h1>BCA Leadership</h1>
+      <p class="sub">Revenue &amp; operations</p>
     </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pToday">Today's Sessions</div><div class="pm">4 regions</div></div>
-      <table class="tbl"><thead><tr><th data-i="hTime">Time</th><th data-i="hMember">Member</th>
-        <th data-i="hCoach">Coach</th><th data-i="hTier">Tier</th><th data-i="hCredits">Credits left</th>
-        <th data-i="hZone">Zone</th><th data-i="hStatus">Status</th></tr></thead><tbody id="sessBody"></tbody></table>
-    </div>
-    <div class="foot"><span><b>Entity</b> C/O FFG (Mauritius) Ltd</span><span><b>Languages</b> EN · FR · ES · PT</span>
-      <span><b>Regions</b> 5 + diaspora</span><span><b>Revenue lines</b> 7</span><span><b>Modules</b> 9 of 10</span></div>
-  </section>
-
-  <section class="view" id="v-authorise">
-    <div class="eyebrow" data-i="ebFin">Finance</div>
-    <h1 data-i="tAuth">Authorise &amp; Invoice</h1>
-    <p class="lede" data-i="ldAuth">The website tells every buyer that BCA will authorise and issue their invoice. This is where that happens. A signed contract with no invoice is a client who committed and was never billed.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pSigned">Signed, awaiting authorisation</div><div class="pm" id="authTotal2">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hContract">Contract</th><th data-i="hWho">Signatory</th>
-        <th data-i="hProduct">Product</th><th data-i="hValue">Value</th><th data-i="hBilling">Billing</th>
-        <th data-i="hSigned">Signed</th><th data-i="hLang">Lang</th><th></th></tr></thead><tbody id="authBody2"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pIssued">Issued this month</div><div class="pm">USD</div></div>
-      <table class="tbl"><thead><tr><th data-i="hInvoice">Invoice</th><th data-i="hPayer">Payer</th>
-        <th data-i="hAmount">Amount</th><th data-i="hDue">Due</th><th data-i="hAge">Age</th>
-        <th data-i="hRem">Reminders</th><th data-i="hStatus">Status</th></tr></thead><tbody id="invBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-members">
-    <div class="eyebrow" data-i="ebDir">Directory</div>
-    <h1 data-i="tMembers">Members</h1>
-    <p class="lede" data-i="ldMembers">Three individual tiers. Coaching credits are an entitlement, not a schedule — the balance shown is what each member can still draw down this term.</p>
-    <div class="rule"></div>
-    <div class="queue" id="tierRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pAll">All members</div><div class="pm">218 · page 1</div></div>
-      <table class="tbl"><thead><tr><th data-i="hName">Name</th><th data-i="hTier">Tier</th>
-        <th data-i="hCohort">Cohort</th><th data-i="hCoach">Coach</th><th data-i="hCredits">Credits</th>
-        <th data-i="hRenews">Renews</th><th data-i="hStanding">Standing</th><th data-i="hLoc">Location</th>
-      </tr></thead><tbody id="memBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-corporate">
-    <div class="eyebrow" data-i="ebCorp">New for 2026</div>
-    <h1 data-i="tCorp">Corporate Membership</h1>
-    <p class="lede" data-i="ldCorp">Seat-based. The question that matters every week is not who bought, it is how many seats are sitting empty — an unused seat is a renewal that will not happen.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pAccounts">Corporate accounts</div><div class="pm" id="seatSummary">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hOrg">Organisation</th><th data-i="hPlan">Plan</th>
-        <th data-i="hSeats">Seats used</th><th></th><th data-i="hValue">Value</th><th data-i="hRenews">Renews</th>
-        <th data-i="hStatus">Status</th><th data-i="hLoc">Location</th></tr></thead><tbody id="corpBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-coaching">
-    <div class="eyebrow" data-i="ebCoach">Sold separately from membership</div>
-    <h1 data-i="tCoaching">Coaching Packages</h1>
-    <p class="lede" data-i="ldCoaching">Starter, Focus and Momentum are session credits, not subscriptions. Every held session draws one down. The ledger is what makes a client's balance defensible when they ask.</p>
-    <div class="rule"></div>
-    <div class="queue" id="pkgRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pClients">Package clients</div><div class="pm" id="pkgTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hName">Client</th><th data-i="hPackage">Package</th>
-        <th data-i="hCoach">Coach</th><th data-i="hUsed">Used</th><th></th><th data-i="hCredits">Left</th>
-        <th data-i="hPurchased">Purchased</th><th data-i="hStatus">Status</th></tr></thead><tbody id="pkgBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-requests">
-    <div class="eyebrow" data-i="ebPipe">Inbound</div>
-    <h1 data-i="tRequests">Requests</h1>
-    <p class="lede" data-i="ldRequests">Consulting, project management and business matching arrive already qualified — budget band, timeline, and whether the sender can actually decide. Sorted by how long they have waited, because that is the number that loses deals.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pOpen">Open requests</div><div class="pm" id="reqTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hKind">Kind</th><th data-i="hWho">From</th>
-        <th data-i="hOrg">Organisation</th><th data-i="hBudget">Budget</th><th data-i="hTimeline">Timeline</th>
-        <th data-i="hAuthority">Authority</th><th data-i="hWaiting">Waiting</th><th data-i="hStatus">Status</th>
-      </tr></thead><tbody id="reqBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-bench">
-    <div class="eyebrow" data-i="ebBench">Faculty</div>
-    <h1>The <em>Bench</em></h1>
-    <p class="lede" data-i="ldBench">Forty-two coaches, consultants, facilitators and trainers across all five African regions. Load is what to watch — an over-committed coach is how session quality quietly drops.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pBench">Bench roster</div><div class="pm">42 active</div></div>
-      <table class="tbl"><thead><tr><th data-i="hName">Name</th><th data-i="hType">Type</th>
-        <th data-i="hRegion">Region</th><th data-i="hDisc">Disciplines</th><th data-i="hLangs">Languages</th>
-        <th data-i="hLoad">Load</th><th></th><th data-i="hPayout">Payout · Jul</th></tr></thead><tbody id="benBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-sessions">
-    <div class="eyebrow" data-i="ebCal">Calendar</div>
-    <h1 data-i="tSessions">Sessions</h1>
-    <p class="lede" data-i="ldSessions">Stored as an absolute instant alongside the zone it was agreed in. Marking a session held draws a credit from the member's balance — the two can never drift apart.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pWeek">This week</div><div class="pm">31 scheduled</div></div>
-      <table class="tbl"><thead><tr><th data-i="hWhen">When</th><th data-i="hMember">Member</th>
-        <th data-i="hCoach">Coach</th><th data-i="hSource">Drawn from</th><th data-i="hZone">Zone</th>
-        <th data-i="hStatus">Status</th></tr></thead><tbody id="allSessBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-consults">
-    <div class="eyebrow" data-i="ebMatch">Matching</div>
-    <h1 data-i="tConsults">Consultations</h1>
-    <p class="lede" data-i="ldConsults">The thirty-minute call that turns a website visitor into a client. Booked in GMT, two to five business days out, and the matched coach has to be told — the site promises they will be.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pBookings">Bookings</div><div class="pm" id="consTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hWho">Name</th><th data-i="hOrg">Organisation</th>
-        <th data-i="hSlot">Requested slot</th><th data-i="hCoach">Matched coach</th>
-        <th data-i="hNotified">Coach notified</th><th data-i="hStatus">Status</th><th></th></tr></thead><tbody id="consBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-mialc">
-    <div class="eyebrow" data-i="ebConf">Conference</div>
-    <h1>Made in Africa <em>Leadership Conference</em></h1>
-    <p class="lede" data-i="ldMialc">Platinum includes a pass. Executive and Associate pay member rates. Everyone else pays full. Getting that right at registration is the difference between a clean invoice and an awkward email.</p>
-    <div class="rule"></div>
-    <div class="queue" id="confRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pRegs">Registrations</div><div class="pm">MIALC 2026 · Mauritius</div></div>
-      <table class="tbl"><thead><tr><th data-i="hName">Delegate</th><th data-i="hTier">Member tier</th>
-        <th data-i="hPass">Pass</th><th data-i="hAmount">Amount</th><th data-i="hStatus">Status</th>
-        <th data-i="hLoc">From</th></tr></thead><tbody id="confBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-needs">
-    <div class="eyebrow" data-i="ebOnline">BCAOnline</div>
-    <h1>Needs &amp; <em>Leads</em></h1>
-    <p class="lede" data-i="ldNeeds">A member posts what they need; another posts what they have. Matching the two is the network doing work between meetings, and it is the single most quotable reason members renew.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pOpenItems">Open items</div><div class="pm" id="nlTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hKind">Kind</th><th data-i="hTitle">Title</th>
-        <th data-i="hWho">Member</th><th data-i="hSector">Sector</th><th data-i="hRegion">Region</th>
-        <th data-i="hStatus">Status</th><th></th></tr></thead><tbody id="nlBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-outcomes">
-    <div class="eyebrow" data-i="ebProof">Proof</div>
-    <h1 data-i="tOutcomes">Member Outcomes</h1>
-    <p class="lede" data-i="ldOutcomes">The site claims 63% of member CEOs see revenue growth above 10%. A claim like that needs a table behind it. This is that table — and it is also the strongest renewal argument BCA owns.</p>
-    <div class="rule"></div>
-    <div class="queue" id="outRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pRecorded">Recorded outcomes</div><div class="pm">H1 2026</div></div>
-      <table class="tbl"><thead><tr><th data-i="hName">Member</th><th data-i="hTier">Tier</th>
-        <th data-i="hGrowth">Revenue growth</th><th data-i="hPromo">Promotion</th>
-        <th data-i="hBoard">Board seat</th><th data-i="hNps">NPS</th></tr></thead><tbody id="outBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-shop">
-    <div class="eyebrow" data-i="ebShop">Storefront</div>
-    <h1 data-i="tShop">Shop</h1>
-    <p class="lede" data-i="ldShop">Ebooks, recordings and merch — the entry point for leaders not ready for membership. The storefront is still in setup on the site; the catalogue and order plumbing are ready for it.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pCatalogue">Catalogue</div><div class="pm" data-i="pmSetup">storefront in setup</div></div>
-      <table class="tbl"><thead><tr><th data-i="hProduct">Product</th><th data-i="hLine">Line</th>
-        <th data-i="hFrom">From</th><th data-i="hStatus">Status</th></tr></thead><tbody id="shopBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-board">
-    <div class="eyebrow" data-i="ebGov">Governance</div>
-    <h1 data-i="tBoard">Board Room</h1>
-    <p class="lede" data-i="ldBoard">Resolutions and votes write to an append-only trail. No administrator can edit or delete an entry — that is what makes the record defensible to a regulator or a donor.</p>
-    <div class="rule"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pMandates">Strategic mandates</div><div class="pm">Q3 2026</div></div>
-      <table class="tbl"><thead><tr><th data-i="hMandate">Mandate</th><th data-i="hOwner">Owner</th>
-        <th data-i="hDue">Due</th><th data-i="hStatus">Status</th></tr></thead><tbody id="brdBody"></tbody></table>
-    </div>
-  </section>
-
-
-  <section class="view" id="v-leads">
-    <div class="eyebrow" data-i="ebGrowth">Growth</div>
-    <h1 data-i="tLeads">Leads</h1>
-    <p class="lede" data-i="ldLeads">Scored on fit and authority, not on how warm the conversation felt. A senior title with a budget beats an enthusiastic contact who cannot sign.</p>
-    <div class="rule"></div>
-    <div class="queue" id="leadRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pLeads">Working list</div><div class="pm" id="leadTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hName">Name</th><th data-i="hOrg">Organisation</th>
-        <th data-i="hSource">Source</th><th data-i="hSector">Sector</th><th data-i="hRegion">Region</th>
-        <th data-i="hScore">Score</th><th></th><th data-i="hNextTouch">Next touch</th><th data-i="hStatus">Status</th>
-      </tr></thead><tbody id="leadBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-outreach">
-    <div class="eyebrow" data-i="ebGrowth">Growth</div>
-    <h1 data-i="tOutreach">Outreach</h1>
-    <p class="lede" data-i="ldOutreach">Sequences in four languages. Reply rate is the only column worth optimising — open rate flatters a sequence that nobody answers.</p>
-    <div class="rule"></div>
-    <div class="queue" id="outreachRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pSeq">Sequences</div><div class="pm" id="seqTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hSequence">Sequence</th><th data-i="hChannel">Channel</th>
-        <th data-i="hLang">Lang</th><th data-i="hEnrolled">Enrolled</th><th data-i="hOpened">Opened</th>
-        <th data-i="hReplied">Replied</th><th data-i="hReplyRate">Reply rate</th><th data-i="hStatus">Status</th>
-      </tr></thead><tbody id="seqBody"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pTouches">Recent touches</div><div class="pm">activity feed</div></div>
-      <table class="tbl"><thead><tr><th data-i="hWhen">When</th><th data-i="hKindA">Kind</th>
-        <th data-i="hWho">Who</th><th data-i="hSubject">Subject</th><th data-i="hDir">Direction</th>
-      </tr></thead><tbody id="actBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-pipeline">
-    <div class="eyebrow" data-i="ebGrowth">Growth</div>
-    <h1 data-i="tPipeline">Pipeline</h1>
-    <p class="lede" data-i="ldPipeline">Weighted value is what to plan against. The unweighted number is what gets quoted in meetings and it is almost always wrong.</p>
-    <div class="rule"></div>
-    <div class="queue" id="pipeRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pStages">By stage</div><div class="pm" id="stageTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hStage">Stage</th><th data-i="hCount">Deals</th>
-        <th data-i="hValue">Value</th><th data-i="hWeighted">Weighted</th><th></th></tr></thead><tbody id="stageBody"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pOpps">Open opportunities</div><div class="pm" id="oppTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hOpp">Opportunity</th><th data-i="hLine">Line</th>
-        <th data-i="hStage">Stage</th><th data-i="hValue">Value</th><th data-i="hProb">Prob.</th>
-        <th data-i="hClose">Close</th><th data-i="hIdle">Idle</th><th data-i="hNextStep">Next step</th>
-      </tr></thead><tbody id="oppBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-proposals">
-    <div class="eyebrow" data-i="ebGrowth">Growth</div>
-    <h1 data-i="tProposals">Proposals</h1>
-    <p class="lede" data-i="ldProposals">Sent and never opened is a different problem from opened and unanswered. Chasing the wrong one wastes the follow-up.</p>
-    <div class="rule"></div>
-    <div class="queue" id="propRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pProps">Open proposals</div><div class="pm" id="propTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hProposal">Proposal</th><th data-i="hOrg">Organisation</th>
-        <th data-i="hValue">Value</th><th data-i="hVer">Ver.</th><th data-i="hSent">Sent</th>
-        <th data-i="hViewed">Opened</th><th data-i="hValid">Valid to</th><th data-i="hStatus">Status</th><th></th>
-      </tr></thead><tbody id="propBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-marketing">
-    <div class="eyebrow">Marketing</div>
-    <h1>Sales &amp; Marketing</h1>
-    <p class="lede">The revenue on the table right now: renewals to secure, lapsed members to win back, and the pipeline to work.</p>
-    <div class="rule"></div>
-    <div class="queue" id="mkKpi"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt">Live campaigns</div><div class="pm" id="mkCampTot">—</div></div>
-      <table class="tbl"><thead><tr><th>Campaign</th><th>Objective</th><th>Channels</th><th>Status</th></tr></thead><tbody id="mkCampBody"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt">Renewals due · next 90 days</div><div class="pm" id="mkRenTot">—</div></div>
-      <table class="tbl"><thead><tr><th>Member</th><th>Product</th><th>Renews</th><th>Value</th></tr></thead><tbody id="mkRenBody"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt">Win-back · top 12 by value</div><div class="pm" id="mkWbTot">—</div></div>
-      <table class="tbl"><thead><tr><th>Account</th><th>Region</th><th>Value</th></tr></thead><tbody id="mkWbBody"></tbody></table>
-    </div>
-  </section>
-  <section class="view" id="v-campaigns">
-    <div class="eyebrow" data-i="ebMkt">Marketing</div>
-    <h1 data-i="tCampaigns">Campaigns</h1>
-    <p class="lede" data-i="ldCampaigns">Cost per lead is the number that decides whether a channel continues. Impressions are a vanity column kept only because someone always asks for it.</p>
-    <div class="rule"></div>
-    <div class="queue" id="campRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pCamps">Campaigns</div><div class="pm" id="campTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hCampaign">Campaign</th><th data-i="hObjective">Objective</th>
-        <th data-i="hChannels">Channels</th><th data-i="hSpend">Spend</th><th data-i="hLeads">Leads</th>
-        <th data-i="hCPL">Cost / lead</th><th></th><th data-i="hStatus">Status</th></tr></thead><tbody id="campBody"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pPosts">Scheduled &amp; published</div><div class="pm">Mon · Wed · Fri</div></div>
-      <table class="tbl"><thead><tr><th data-i="hChannel">Channel</th><th data-i="hWhen">When</th>
-        <th data-i="hLang">Lang</th><th data-i="hBody">Post</th><th data-i="hImpr">Impr.</th>
-        <th data-i="hEng">Eng.</th><th data-i="hLeads">Leads</th><th data-i="hStatus">Status</th>
-      </tr></thead><tbody id="postBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-financial">
-    <div class="eyebrow" data-i="ebFin">Finance</div>
-    <h1 data-i="tFinancial">Financial Dashboard</h1>
-    <p class="lede" data-i="ldFinancial">Every figure here is computed from invoices, payments, payouts and memberships. Nothing is stored twice — a total kept apart from the rows that produce it is a total that will eventually disagree with them.</p>
-    <div class="rule"></div>
-    <div class="queue" id="finRow"></div>
-    <div class="grid2">
-      <div class="panel">
-        <div class="ph"><div class="pt" data-i="pByLine">Revenue by line</div><div class="pm" data-i="pmAnnual">annualised</div></div>
-        <table class="tbl"><thead><tr><th data-i="hLine">Line</th><th data-i="hRecurring">Recurring</th>
-          <th data-i="hOneOff">One-off</th><th data-i="hTotal">Total</th><th></th></tr></thead><tbody id="lineBody"></tbody></table>
-      </div>
-      <div class="panel">
-        <div class="ph"><div class="pt" data-i="pAging">Receivables ageing</div><div class="pm">USD</div></div>
-        <div id="agingWrap"></div>
-        <div class="ph" style="border-top:1px solid var(--soft)"><div class="pt" data-i="pPayouts">Coach payouts · July</div></div>
-        <div id="payoutWrap"></div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pMonths">Trailing six months</div><div class="pm">collected vs invoiced</div></div>
-      <table class="tbl"><thead><tr><th data-i="hMonth">Month</th><th data-i="hInvoiced">Invoiced</th>
-        <th data-i="hCollected">Collected</th><th data-i="hRate">Collection rate</th><th></th>
-        <th data-i="hNewMem">New members</th><th data-i="hChurn">Lapsed</th></tr></thead><tbody id="monthBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-invoices">
-    <div class="eyebrow" data-i="ebFin">Finance</div>
-    <h1 data-i="tInvoices">Invoice Management</h1>
-    <p class="lede" data-i="ldInvoices">Reminders send in each payer's own language on a 3, 7, 14 and 21 day cadence. Terms are 14 days. Anything past 60 needs a call, not a fourth email.</p>
-    <div class="rule"></div>
-    <div class="queue" id="invRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pAllInv">All invoices</div><div class="pm" id="invTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hInvoice">Invoice</th><th data-i="hPayer">Payer</th>
-        <th data-i="hProduct">For</th><th data-i="hAmount">Amount</th><th data-i="hPaid">Paid</th>
-        <th data-i="hDue">Due</th><th data-i="hAge">Age</th><th data-i="hRem">Reminders</th>
-        <th data-i="hMethod">Method</th><th data-i="hStatus">Status</th><th></th></tr></thead><tbody id="invMgmtBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-contracts">
-    <div class="eyebrow" data-i="ebLegal">Legal</div>
-    <h1 data-i="tContracts">Contract Management</h1>
-    <p class="lede" data-i="ldContracts">Every contract carries its e-signature record — typed name, timestamp, address. That trio is what makes an electronic signature defensible if it is ever questioned.</p>
-    <div class="rule"></div>
-    <div class="queue" id="conRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pAllCon">All contracts</div><div class="pm" id="conTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hContract">Contract</th><th data-i="hWho">Signatory</th>
-        <th data-i="hProduct">Product</th><th data-i="hValue">Value</th><th data-i="hSigTrail">Signature trail</th>
-        <th data-i="hSigned">Signed</th><th data-i="hStatus">Status</th></tr></thead><tbody id="conBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-investors">
-    <div class="eyebrow" data-i="ebIR">Investor relations</div>
-    <h1 data-i="tInvestors">Investors</h1>
-    <p class="lede" data-i="ldInvestors">An investor register is a reporting obligation before it is a funding source. The column to watch is the next update due — a missed one costs more trust than a missed quarter costs money.</p>
-    <div class="rule"></div>
-    <div class="queue" id="invstRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pInvestors">Register</div><div class="pm" id="invstTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hInvestor">Investor</th><th data-i="hKind">Type</th>
-        <th data-i="hRel">Relationship</th><th data-i="hCommitted">Committed</th><th data-i="hInvested">Invested</th>
-        <th data-i="hOwn">Equity</th><th data-i="hCadence">Cadence</th><th data-i="hNextUpd">Next update</th><th></th>
-      </tr></thead><tbody id="invstBody"></tbody></table>
-    </div>
-  </section>
-
-
-  <section class="view" id="v-team">
-    <div class="eyebrow" data-i="ebAdmin">Administration</div>
-    <h1>Team &amp; <em>Access</em></h1>
-    <p class="lede" data-i="ldTeam">Access is granted by function, not by seniority. A finance manager needs invoices and never needs a coaching note — and the person who decides that should be BCA, without calling us.</p>
-    <div class="rule"></div>
-    <div class="queue" id="teamRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pTeam">Team members</div><div class="pm" id="teamTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hName">Name</th><th data-i="hRoleT">Role</th>
-        <th data-i="hTemplate">Template</th><th data-i="hFunctions">Functions</th><th data-i="hLastActive">Last active</th>
-        <th data-i="hStatus">Status</th><th></th></tr></thead><tbody id="teamBody"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pMatrix">Access matrix</div><div class="pm" id="matrixNote">—</div></div>
-      <div style="overflow-x:auto"><table class="tbl" id="matrixTbl"></table></div>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pTemplates">Access templates</div><div class="pm" data-i="pmTpl">assign, then adjust one line</div></div>
-      <table class="tbl"><thead><tr><th data-i="hTemplate">Template</th><th data-i="hRoleT">Base role</th>
-        <th data-i="hGrants">Grants</th><th data-i="hDenied">Explicitly denied</th><th data-i="hUsers">In use</th>
-      </tr></thead><tbody id="tplBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-modules">
-    <div class="eyebrow" data-i="ebAdmin">Administration</div>
-    <h1 data-i="tModules">Modules &amp; Licensing</h1>
-    <p class="lede" data-i="ldModules">Thirteen of seventeen modules are licensed on Professional. The four that are not are visible on purpose — a locked door you can see is an upgrade conversation, a locked door you cannot see is a missing feature.</p>
-    <div class="rule"></div>
-    <div class="queue" id="modRow"></div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pLicensed">Licensed</div><div class="pm" id="licTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hModule">Module</th><th data-i="hCategory">Category</th>
-        <th data-i="hIncluded">Included in</th><th data-i="hSource">Source</th><th data-i="hUsers">Users with access</th>
-        <th data-i="hStatus">Status</th></tr></thead><tbody id="licBody"></tbody></table>
-    </div>
-    <div class="panel">
-      <div class="ph"><div class="pt" data-i="pAvailable">Available to add</div><div class="pm" id="addonTotal">—</div></div>
-      <table class="tbl"><thead><tr><th data-i="hModule">Module</th><th data-i="hCategory">Category</th>
-        <th data-i="hWhatFor">What it does</th><th data-i="hRequires">Requires</th><th data-i="hPrice">Price</th><th></th>
-      </tr></thead><tbody id="addonBody"></tbody></table>
-    </div>
-  </section>
-
-  <section class="view" id="v-intel">
-    <div class="locked-view">
-      <div class="mark">✦</div>
-      <h2 data-i="tIntel">Intelligence</h2>
-      <p data-i="ldIntel">Semantic search across every coaching note, pre-call briefing agents, the alumni impact graph, and voice. Available on the Sovereign tier.</p>
-      <div class="cta" data-i="ctaTalk">Talk to TechFides</div>
-    </div>
-  </section>
-</main>
+    <div id="loginMsg" class="msg" hidden></div>
+    <label for="email">Email
+      <input id="email" type="email" autocomplete="email" required placeholder="you@bcaleadership.com">
+    </label>
+    <label for="password">Password
+      <input id="password" type="password" autocomplete="current-password" required minlength="8">
+    </label>
+    <button class="btn" id="signInBtn" type="submit">Sign in</button>
+    <button class="btn ghost" id="signUpBtn" type="button">First time here? Create your account</button>
+    <a class="powered" href="https://www.techfides.com" target="_blank" rel="noopener">Powered by <b>TechFides</b></a>
+  </form>
 </div>
 
-<script>
-let CONTRACTS=[
-["BCA-C-2026-0412","Adaeze Okonkwo","Zenith Bank","Platinum",280000,"annual","2026-07-28","en"],
-["BCA-C-2026-0411","Kwame Mensah","MTN Ghana","Momentum · 12 sessions",250000,"one-time","2026-07-28","en"],
-["BCA-C-2026-0409","Nadia Benali","Attijariwafa","Executive",160000,"annual","2026-07-27","fr"],
-["BCA-C-2026-0407","Jean-Baptiste Kouassi","Ecobank CI","Platinum (monthly)",25000,"monthly","2026-07-27","fr"],
-["BCA-C-2026-0404","Ana Sofia Mendes","Sonangol","Focus · 6 sessions",140000,"one-time","2026-07-26","pt"],
-["BCA-C-2026-0401","Grace Wanjiru","Safaricom","Associate",60000,"annual","2026-07-25","en"]];
-let INVOICES=[["BCA-2026-0341","Zenith Bank",1250000,"11 Jun",47,3,"60+"],
-["BCA-2026-0352","Dangote Group",840000,"24 Jun",34,2,"30-60"],
-["BCA-2026-0364","MTN Ghana",1500000,"09 Jul",19,1,"30-60"],
-["BCA-2026-0371","Safaricom",1120000,"17 Jul",11,1,"cur"],
-["BCA-2026-0377","Ecobank CI",980000,"22 Jul",6,0,"cur"],
-["BCA-2026-0384","Econet",1400000,"28 Jul",0,0,"cur"]];
-let MEMBERS=[
-["Adaeze Okonkwo","Zenith Bank","plat","Lagos Circle 4","Dr. Ngozi Eze",9,12,"2027-03-14","ok","Lagos, NG"],
-["Kwame Mensah","MTN Ghana","exec","Accra Circle 2","Samuel Adjei",2,4,"2026-11-02","ok","Accra, GH"],
-["Fatou Diallo","Sonatel","plat","Dakar Circle 1","Aminata Sow",7,12,"2027-01-20","ok","Dakar, SN"],
-["Thabo Molefe","Standard Bank","exec","Jo'burg Circle 3","Dr. Lindiwe Dube",1,4,"2026-09-30","ok","Johannesburg, ZA"],
-["Amina Yusuf","Dangote Group","plat","Abuja Circle 1","Chidi Nwosu",4,12,"2026-08-15","warn","Kano, NG"],
-["Jean-Baptiste Kouassi","Ecobank CI","plat","Abidjan Circle 2","Aminata Sow",11,12,"2027-07-27","ok","Abidjan, CI"],
-["Grace Wanjiru","Safaricom","assoc","Nairobi Circle 5","—",0,0,"2027-07-25","ok","Nairobi, KE"],
-["Olusegun Adeyemi","Access Holdings","exec","Lagos Circle 2","Chidi Nwosu",4,4,"2026-08-03","bad","Lagos, NG"],
-["Marie-Claire Nguema","BGFIBank","plat","Libreville Circle 1","Pascal Mbadinga",6,12,"2027-02-11","ok","Libreville, GA"],
-["Nadia Benali","Attijariwafa","exec","Casablanca Circle 1","Youssef Alami",0,4,"2027-07-27","ok","Casablanca, MA"],
-["Ana Sofia Mendes","Sonangol","assoc","Luanda Circle 1","—",0,0,"2027-04-08","ok","Luanda, AO"],
-["Tendai Chikwanha","Econet","exec","Harare Circle 1","Peter Kimani",3,4,"2026-08-09","bad","Harare, ZW"]];
-const CORP=[["Zenith Bank","Enterprise — 20 seats",17,20,3000000,"2027-03-14","ok","Lagos, NG"],
-["MTN Ghana","Leadership — 10 seats",10,10,1800000,"2026-11-02","ok","Accra, GH"],
-["Standard Bank","Leadership — 10 seats",6,10,1800000,"2026-12-01","warn","Johannesburg, ZA"],
-["Safaricom","Team — 5 seats",5,5,1000000,"2027-01-15","ok","Nairobi, KE"],
-["Dangote Group","Enterprise — 20 seats",11,20,3000000,"2026-08-15","warn","Lagos, NG"],
-["Attijariwafa","Team — 5 seats",4,5,1000000,"2027-02-20","ok","Casablanca, MA"],
-["BGFIBank","Team — 5 seats",5,5,1000000,"2027-02-11","ok","Libreville, GA"],
-["Ecobank CI","Leadership — 10 seats",8,10,1800000,"2027-07-27","ok","Abidjan, CI"],
-["Sonangol","Team — 5 seats",2,5,1000000,"2027-04-08","bad","Luanda, AO"]];
-const PACKAGES=[["Alvin Emerson-Thomas","Momentum · 12","Norah Bwaya",8,12,"2026-03-11","ok"],
-["Maryam Darwich","Momentum · 12","Amal Hihi",11,12,"2026-01-22","warn"],
-["Sipho Ndlovu","Focus · 6","Sibongile Muwamba",3,6,"2026-05-30","ok"],
-["Chinwe Okafor","Starter · 4","Catherine Engmann",4,4,"2026-06-18","bad"],
-["Ibrahim Traoré","Focus · 6","Price Alan Mbida",1,6,"2026-07-14","ok"],
-["Zanele Mahlangu","Starter · 4","Nankhonde Kasonde",2,4,"2026-07-02","ok"],
-["Youssef Benkirane","Momentum · 12","Youssef Alami",5,12,"2026-04-09","ok"]];
-let REQUESTS=[
-["consulting","Dr. Emeka Nwachukwu","Federal Ministry of Finance, NG","$75k+","1–3 months","decision_maker",6,"new"],
-["business_matching","Lindiwe Mokoena","Kgosi Capital, ZA","$25k–$75k","Within 1 month","decision_maker",4,"triaging"],
-["project_management","Aicha Diop","Union Africaine, SN","$25k–$75k","3–6 months","part_of_decision",4,"new"],
-["consulting","Robert Achieng","Kenya Power","$10k–$25k","1–3 months","gathering_info",3,"triaging"],
-["corporate_proposal","Paulo Fernandes","Banco BAI, AO","20+ leaders","Within 1 month","decision_maker",2,"briefing_booked"],
-["sponsorship","Hanane El Fassi","Maroc Telecom","—","Exploring","part_of_decision",2,"new"],
-["business_matching","Kofi Boateng","Ashanti Gold Ventures","$75k+","1–3 months","decision_maker",1,"proposal_sent"],
-["bench_application","Dr. Josephine Kamau","Independent · Kenya","—","—","decision_maker",1,"new"]];
-const BENCH=[["Hugh Kweku Fraser","coach","west","Governance · Finance","EN",11,15,480000,"Sierra Leone"],
-["Catherine Engmann","consultant","west","Governance · Culture","EN",9,12,384000,"Ghana"],
-["Price Alan Mbida","coach","west","Exec retreats · Team perf.","FR · EN",12,15,520000,"Côte d'Ivoire"],
-["Amal Hihi","coach","north","Leadership · Balance","FR · AR · EN",8,12,352000,"Morocco"],
-["Norah Bwaya","coach","east","Facilitation · Training","EN · SW",14,15,600000,"Uganda"],
-["Sibongile Muwamba","consultant","southern","Board · Trusteeship","EN",10,12,420000,"Malawi"],
-["Nankhonde Kasonde van den Broek","coach","southern","Senior leadership","EN",13,15,540000,"Zambia"],
-["Dr. Ngozi Eze","coach","west","Executive · Finance","EN · FR",15,15,640000,"Nigeria"],
-["Aminata Sow","coach","west","Executive · Governance","FR · EN · WO",14,15,588000,"Senegal"],
-["Youssef Alami","consultant","north","Strategy · Growth","FR · AR · EN",7,12,308000,"Morocco"],
-["Dr. Lindiwe Dube","coach","southern","Culture · Change","EN · ZU",11,12,462000,"South Africa"],
-["Pascal Mbadinga","trainer","central","Workshops · Programs","FR · EN",6,10,252000,"Gabon"]];
-const SESSIONS=[["Wed 09:00","Adaeze Okonkwo","Dr. Ngozi Eze","plat","Platinum entitlement",3,"WAT","held"],
-["Wed 10:30","Fatou Diallo","Aminata Sow","plat","Platinum entitlement",5,"GMT","live"],
-["Wed 12:00","Alvin Emerson-Thomas","Norah Bwaya","pkg","Momentum package",4,"EAT","next"],
-["Wed 14:00","Kwame Mensah","Samuel Adjei","exec","Executive entitlement",2,"GMT","next"],
-["Wed 15:30","Nadia Benali","Youssef Alami","exec","Executive entitlement",4,"WET","next"],
-["Wed 16:00","Thabo Molefe","Dr. Lindiwe Dube","exec","Executive entitlement",3,"SAST","next"],
-["Wed 17:30","Marie-Claire Nguema","Pascal Mbadinga","plat","Platinum entitlement",6,"WAT","next"],
-["Thu 09:00","Sipho Ndlovu","Sibongile Muwamba","pkg","Focus package",3,"CAT","next"],
-["Thu 11:00","Maryam Darwich","Amal Hihi","pkg","Momentum package",1,"WET","next"]];
-const CONSULTS=[["Dr. Emeka Nwachukwu","Federal Ministry of Finance","Fri 01 Aug · 11:00","Dr. Ngozi Eze",true,"confirmed"],
-["Lindiwe Mokoena","Kgosi Capital","Fri 01 Aug · 14:00","Sibongile Muwamba",true,"confirmed"],
-["Paulo Fernandes","Banco BAI","Mon 04 Aug · 10:00","Pascal Mbadinga",false,"matched"],
-["Hanane El Fassi","Maroc Telecom","Mon 04 Aug · 15:00","—",false,"requested"],
-["Kofi Boateng","Ashanti Gold Ventures","Tue 05 Aug · 09:00","—",false,"requested"]];
-const CONF=[["Adaeze Okonkwo","plat","included",0,"registered","Lagos, NG"],
-["Fatou Diallo","plat","included",0,"registered","Dakar, SN"],
-["Kwame Mensah","exec","member_rate",95000,"paid","Accra, GH"],
-["Thabo Molefe","exec","member_rate",95000,"paid","Johannesburg, ZA"],
-["Grace Wanjiru","assoc","member_rate",95000,"registered","Nairobi, KE"],
-["Dr. Emeka Nwachukwu","—","full",165000,"registered","Abuja, NG"],
-["Maryam Darwich","—","full",165000,"paid","Beirut, LB"],
-["Catherine Engmann","—","speaker",0,"registered","Accra, GH"]];
-const NEEDS=[["need","Distributor for agri-processing equipment, West Africa","Kwame Mensah","Agriculture","west","open"],
-["lead","Series A capital available — fintech, $2–5M ticket","Lindiwe Mokoena","Financial services","southern","matched"],
-["need","Board-ready CFO, bilingual FR/EN","Marie-Claire Nguema","Financial services","central","open"],
-["lead","Manufacturing JV partner seeking East Africa entry","Grace Wanjiru","Manufacturing","east","open"],
-["need","Mediation support — shareholder dispute","Ibrahim Traoré","Mining","west","matched"],
-["lead","Warehouse capacity, Casablanca port","Nadia Benali","Logistics","north","open"]];
-const OUTCOMES=[["Adaeze Okonkwo","plat",18.4,true,true,10],["Kwame Mensah","exec",12.1,false,false,9],
-["Fatou Diallo","plat",22.7,true,false,10],["Thabo Molefe","exec",8.3,false,true,8],
-["Jean-Baptiste Kouassi","plat",14.9,true,false,9],["Marie-Claire Nguema","plat",11.2,false,true,10],
-["Grace Wanjiru","assoc",6.5,false,false,7],["Nadia Benali","exec",15.8,true,false,9]];
-const SHOP=[["Ebooks & toolkits","digital",1900],["Recordings & courses","digital",4900],["Branded merch","merch",2500]];
-const BOARD=[["Pan-African Mentorship Initiative — launch","Modupe Taylor-Pearce","30 Sep 2026","live"],
-["Foundation set-up and registration","Claudia Tete","15 Aug 2026","live"],
-["Digital platform go-live","Jacques M. Jean","31 Jul 2026","live"],
-["Corporate membership — first 10 accounts","Sales","31 Dec 2026","live"],
-["2027 budget and sensitivity model","Finance Committee","31 Oct 2026","next"]];
+<!-- ===================== APP ===================== -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="topin">
+      <div class="brand">
+        <span class="n">BCA Leadership</span>
+        <span class="t">Revenue &amp; operations</span>
+      </div>
+      <div class="who">
+        <span id="whoami" class="mono"></span>
+        <button class="btn ghost" id="signOutBtn" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
 
+  <main>
+    <div id="appMsg" class="msg" hidden></div>
 
-let LEADS=[
-["Dr. Emeka Nwachukwu","Federal Ministry of Finance","request_form","Public sector","west",92,"2026-07-30","working"],
-["Lindiwe Mokoena","Kgosi Capital","referral","Financial services","southern",88,"2026-07-30","qualified"],
-["Kofi Boateng","Ashanti Gold Ventures","member_intro","Mining","west",85,"2026-07-31","qualified"],
-["Paulo Fernandes","Banco BAI","request_form","Financial services","central",81,"2026-08-01","working"],
-["Aicha Diop","Union Africaine","request_form","Multilateral","west",76,"2026-08-03","working"],
-["Nomsa Dlamini","Eskom","linkedin","Energy","southern",68,"2026-08-04","nurturing"],
-["Hanane El Fassi","Maroc Telecom","campaign","Telecoms","north",64,"2026-08-05","nurturing"],
-["Samuel Otieno","Equity Bank","podcast","Financial services","east",59,"2026-08-06","nurturing"],
-["Chidinma Eze","Interswitch","campaign","Technology","west",54,"2026-08-07","working"],
-["Bertrand Nguema","Gabon Oil","event","Energy","central",47,"2026-08-10","nurturing"]];
+    <!-- ---------- REVENUE ---------- -->
+    <section>
+      <div class="sechead">
+        <h2>Revenue</h2>
+        <span class="note" id="revNote">Loading from your records…</span>
+      </div>
+      <div class="figs" id="figs">
+        <div class="fig"><span class="k">Invoiced to date</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
+        <div class="fig"><span class="k">Collected</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
+        <div class="fig"><span class="k">Outstanding</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
+        <div class="fig"><span class="k">Active memberships</span><span class="v skel">&nbsp;</span><span class="d">&nbsp;</span></div>
+      </div>
+      <div class="panel" id="collPanel" hidden>
+        <h3>Collection</h3>
+        <div class="bar" id="collBar"></div>
+        <div class="legend" id="collLegend"></div>
+      </div>
+    </section>
 
-const SEQ=[
-["Corporate bench — CHRO","email","EN",84,61,19,"active"],
-["Cercle Exécutif — DG francophone","email","FR",52,38,14,"active"],
-["MIALC sponsorship — CMO","linkedin","EN",26,21,9,"active"],
-["Diretores — Angola & Moçambique","email","PT",31,19,5,"active"],
-["Consejo — LatAm diaspora","email","ES",18,11,2,"paused"],
-["Bench recruitment — certified coaches","email","EN",44,33,17,"active"]];
+    <!-- ---------- INVOICES ---------- -->
+    <section>
+      <div class="sechead">
+        <h2>Invoices</h2>
+        <span class="note" id="invNote"></span>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr>
+            <th>Invoice</th><th>Billed to</th><th class="num">Amount</th>
+            <th class="num">Paid</th><th>Issued</th><th>Due</th><th>Status</th>
+          </tr></thead>
+          <tbody id="invBody"><tr><td colspan="7"><span class="skel" style="display:block;height:15px"></span></td></tr></tbody>
+        </table>
+      </div>
+    </section>
 
-const ACT=[
-["10:42","email_replied","Lindiwe Mokoena","Re: Kgosi Capital — bench for the investment team","in"],
-["09:58","meeting","Paulo Fernandes","Private briefing — Banco BAI, 20 seats","out"],
-["09:15","email_sent","Dr. Emeka Nwachukwu","Governance diagnostic — proposed scope","out"],
-["08:30","proposal_sent","Ashanti Gold Ventures","Business matching mandate — capital introduction","out"],
-["Yesterday","call","Aicha Diop","Union Africaine — retreat scoping","out"],
-["Yesterday","payment_received","MTN Ghana","Leadership tier renewal","in"],
-["Yesterday","email_opened","Nomsa Dlamini","The room your successor needs","out"]];
+    <!-- ---------- MEMBERSHIPS ---------- -->
+    <section>
+      <div class="sechead">
+        <h2>Memberships</h2>
+        <span class="note" id="memNote"></span>
+      </div>
+      <div class="figs" id="memFigs"></div>
+    </section>
 
-const OPPS=[
-["Federal Ministry of Finance — governance diagnostic","consulting","proposal",8500000,45,"2026-09-30",3,"Await procurement sign-off"],
-["Banco BAI — Enterprise 20 seats","corporate_membership","negotiation",3000000,70,"2026-08-29",1,"Legal review of seat terms"],
-["Kgosi Capital — Leadership 10 seats","corporate_membership","verbal",1800000,90,"2026-08-15",0,"Contract out for signature"],
-["Ashanti Gold — capital introduction","business_matching","proposal",4500000,40,"2026-10-15",2,"Proposal opened, no reply"],
-["Union Africaine — leadership retreat","project_management","briefing",6200000,30,"2026-11-20",4,"Book planning call"],
-["Eskom — Team 5 seats","corporate_membership","qualifying",1000000,20,"2026-10-01",6,"Confirm budget holder"],
-["Maroc Telecom — MIALC headline sponsor","sponsorship","briefing",2500000,35,"2026-09-15",2,"Send rate card"],
-["Equity Bank — Leadership 10 seats","corporate_membership","qualifying",1800000,20,"2026-11-30",9,"Re-engage after quiet period"],
-["Interswitch — Platinum x4","individual_membership","proposal",1120000,50,"2026-08-31",1,"Confirm cohort placement"],
-["Gabon Oil — org design","consulting","qualifying",3500000,15,"2026-12-15",11,"Stalled — decide or drop"],
-["Sonangol — seat expansion 5→10","corporate_membership","briefing",1000000,35,"2026-09-30",5,"Usage review first"],
-["Standard Bank — coaching packages x6","coaching_package",'negotiation',1500000,65,"2026-08-22",1,"Agree per-session rate"]];
+    <!-- ---------- SITE ANALYTICS ---------- -->
+    <section>
+      <div class="sechead">
+        <h2>Website traffic</h2>
+        <span class="note">bcaleadership.com</span>
+      </div>
+      <div id="trafficWrap"></div>
+    </section>
 
-const PROPS=[
-["BCA-P-2026-041","Federal Ministry of Finance","Governance diagnostic",8500000,2,"2026-07-24","2026-07-25","2026-08-24","viewed"],
-["BCA-P-2026-039","Ashanti Gold Ventures","Capital introduction mandate",4500000,1,"2026-07-22","2026-07-23","2026-08-22","viewed"],
-["BCA-P-2026-038","Maroc Telecom","MIALC headline sponsorship",2500000,1,"2026-07-21",null,"2026-08-21","sent"],
-["BCA-P-2026-036","Interswitch","Platinum × 4",1120000,1,"2026-07-18","2026-07-18","2026-08-18","accepted"],
-["BCA-P-2026-034","Union Africaine","Leadership retreat — Kigali",6200000,3,"2026-07-15","2026-07-16","2026-08-15","viewed"],
-["BCA-P-2026-031","Kgosi Capital","Leadership 10 seats",1800000,1,"2026-07-09","2026-07-09","2026-08-09","accepted"]];
+    <footer>
+      <span>Read live from BCA's own database. Figures are not estimates.</span>
+      <a href="https://www.techfides.com" target="_blank" rel="noopener">Powered by <b style="color:var(--gold)">TechFides</b></a>
+    </footer>
+  </main>
+</div>
 
-let CAMPS=[
-["Own Your Bench — corporate Q3","membership","LinkedIn · Email",380000,14,"running"],
-["MIALC 2026 — delegate drive","conference","LinkedIn · Newsletter · Podcast",520000,23,"running"],
-["Success in Africa — podcast growth","awareness","Podcast · X · Instagram",180000,6,"running"],
-["Cercle Exécutif — francophone West","leads","LinkedIn · Email",240000,11,"running"],
-["Bench recruitment — certified coaches","recruitment","LinkedIn",120000,9,"running"],
-["Legacies of Africa — launch teaser","launch","Instagram · Facebook · Newsletter",90000,3,"planned"]];
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
-const POSTS=[
-["linkedin","Wed 10:30","EN","Making it to the top isn't success. It's the starting line.",18400,1240,7,"published"],
-["linkedin","Wed 10:30","FR","Arriver au sommet n'est pas la réussite. C'est la ligne de départ.",9100,610,4,"published"],
-["facebook","Wed 09:00","EN","Your leadership bench is your succession plan.",7300,320,2,"published"],
-["instagram","Wed 18:00","EN","40+ coaches. Five regions. Africa is our country.",11200,890,3,"published"],
-["x","Fri 10:30","EN","63% of our member CEOs grew revenue above 10%. Here is what they did differently.",0,0,0,"scheduled"],
-["newsletter","Fri 08:00","EN","MIALC 2026 — the room, the agenda, the passes",0,0,0,"approved"],
-["podcast","Mon 06:00","EN","Success in Africa — I failed spectacularly (Dr. Modupe Taylor-Pearce)",0,0,0,"scheduled"]];
+const SUPABASE_URL  = "https://uojsxmdnpwskxeueftgp.supabase.co";
+const PUBLISHABLE   = "sb_publishable_Z2DVEpLgOb2PkH4ng-Yh5Q__VuY7cKB";
 
-const REVLINE=[
-["Individual membership",39960000,0],["Corporate membership",15400000,0],
-["Coaching packages",0,11750000],["Consulting",0,8500000],
-["Project management",0,6200000],["Conference (MIALC)",0,1520000],
-["Sponsorship",0,2500000],["Shop",0,0]];
+// The browser only ever holds the publishable key. Every query below runs as the
+// signed-in person and is filtered by row level security in Postgres, using the
+// tenant_id stamped into their token. No service role key is shipped to the client
+// and there is no shared access code.
+const sb = createClient(SUPABASE_URL, PUBLISHABLE);
 
-const MONTHS=[["Feb",8200000,7100000,14,3],["Mar",9600000,8900000,19,2],["Apr",11200000,9400000,22,5],
-["May",10400000,9800000,17,4],["Jun",12800000,10200000,24,3],["Jul",13600000,4190000,14,2]];
+const $ = (id) => document.getElementById(id);
+const gate = $("gate"), app = $("app");
 
-const PAYOUTS=[["Dr. Ngozi Eze",640000],["Norah Bwaya",600000],["Aminata Sow",588000],
-["Nankhonde Kasonde",540000],["Price Alan Mbida",520000],["Dr. Lindiwe Dube",462000]];
+const money = (minor, ccy = "USD") =>
+  (Number(minor || 0) / 100).toLocaleString("en-US", { style: "currency", currency: ccy, maximumFractionDigits: 0 });
+const money2 = (minor, ccy = "USD") =>
+  (Number(minor || 0) / 100).toLocaleString("en-US", { style: "currency", currency: ccy });
+const day = (iso) => iso ? new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-const INVMGMT=[
-["BCA-2026-0341","Zenith Bank","Enterprise 20 seats",1250000,0,"11 Jun",47,3,"wire","60+"],
-["BCA-2026-0352","Dangote Group","Enterprise 20 seats",840000,400000,"24 Jun",34,2,"wire","30-60"],
-["BCA-2026-0364","MTN Ghana","Leadership 10 seats",1500000,0,"09 Jul",19,1,"wire","30-60"],
-["BCA-2026-0371","Safaricom","Team 5 seats",1120000,0,"17 Jul",11,1,"mobile_money","cur"],
-["BCA-2026-0377","Ecobank CI","Leadership 10 seats",980000,0,"22 Jul",6,0,"wire","cur"],
-["BCA-2026-0384","Econet","Leadership 10 seats",1400000,0,"28 Jul",0,0,"card","cur"]];
-
-const INVESTORS=[
-["Aiya Family Office","family_office","invested",2500000,2500000,4.500,"quarterly","2026-09-30",false],
-["Sahel Growth Partners","vc","invested",5000000,5000000,8.200,"quarterly","2026-08-15",true],
-["Proparco","dfi","in_diligence",7500000,0,null,"quarterly","2026-08-08",true],
-["Mauritius Angel Syndicate","angel_syndicate","invested",1200000,1200000,2.100,"semiannual","2026-12-31",false],
-["Kgosi Capital","pe","prospect",0,0,null,"on_request",null,false],
-["Tony Elumelu Foundation","foundation","committed",3000000,0,null,"annual","2026-11-30",false]];
-
-
-const TEAM=[
-["Dr. Modupe Taylor-Pearce","owner","Chief Executive",13,"2026-07-29 07:41","active"],
-["Claudia Tete","admin","Chief Executive",13,"2026-07-29 07:12","active"],
-["Dr. Kasthuri Henry","admin","Finance & Admin",6,"2026-07-28 19:04","active"],
-["Amara Nwosu","admin","Growth & Sales",6,"2026-07-29 06:55","active"],
-["Joseph Mwangi","admin","Programme Manager",4,"2026-07-28 16:30","active"],
-["Dr. Ngozi Eze","coach","Coach",3,"2026-07-29 07:02","active"],
-["Aminata Sow","coach","Coach",3,"2026-07-28 21:15","active"],
-["Sir Emeka Anyaoku","board","Board Member",4,"2026-07-20 11:20","active"],
-["Tobi Balogun","admin","Growth & Sales",6,"2026-05-14 09:10","inactive"]];
-
-const TPL=[
-["Chief Executive","admin",13,[],2],
-["Finance & Admin","admin",6,["session_vault"],1],
-["Growth & Sales","admin",6,["financials","session_vault"],2],
-["Programme Manager","admin",4,["billing","financials","session_vault"],1],
-["Coach","coach",3,[],2],
-["Board Member","board",4,["session_vault"],1]];
-
-const MATRIX_MODS=[["directory","Directory"],["scheduling","Scheduling"],["session_vault","Vault"],
-["billing","Billing"],["invoices","Invoices"],["contracts","Contracts"],["financials","Financial"],
-["leads","Leads"],["pipeline","Pipeline"],["proposals","Proposals"],["accounts","Accounts"],["board_portal","Board"]];
-const MATRIX={
-"Dr. Modupe Taylor-Pearce":["admin","admin","view","admin","admin","admin","admin","admin","admin","admin","admin","admin"],
-"Dr. Kasthuri Henry":      ["view","none","none","admin","admin","edit","admin","none","none","none","view","none"],
-"Amara Nwosu":             ["view","none","none","none","none","view","none","admin","admin","edit","edit","none"],
-"Joseph Mwangi":           ["edit","admin","none","none","none","none","none","none","none","none","view","none"],
-"Dr. Ngozi Eze":           ["view","edit","edit","none","none","none","none","none","none","none","none","none"],
-"Sir Emeka Anyaoku":       ["view","none","none","none","none","none","view","none","none","none","none","view"]};
-
-const MODULES=[
-["directory","Members & Directory","core","essential",0,"Member, coach and organisation records",9,true,"tier"],
-["scheduling","Scheduling","core","essential",0,"Timezone-aware sessions and calendar sync",5,true,"tier"],
-["session_vault","Session Vault","core","essential",0,"Confidential notes, coach-only by default",3,true,"tier"],
-["billing","Billing","core","essential",0,"Invoices, payments, reminders, multi-currency",3,true,"tier"],
-["invoices","Invoice Management","finance","essential",0,"Ageing, reminder cadence, collection actions",3,true,"tier"],
-["contracts","Contract Management","finance","professional",0,"Contract lifecycle and e-signature trail",4,true,"tier"],
-["financials","Financial Dashboard","finance","professional",0,"Revenue by line, ageing, payouts, collection",4,true,"tier"],
-["leads","Leads","growth","professional",0,"Lead capture, scoring and follow-up",3,true,"tier"],
-["pipeline","Pipeline","growth","professional",0,"Opportunities, stages, weighted forecast",3,true,"tier"],
-["proposals","Proposals","growth","professional",0,"Versions, send and view tracking",3,true,"tier"],
-["accounts","Corporate Accounts","relationships","professional",0,"Seats, health, contacts, reviews",6,true,"tier"],
-["board_portal","Board Room","governance","professional",0,"Mandates and append-only resolutions",2,true,"tier"],
-["esign","E-Signature","finance","professional",0,"Native document signing",4,true,"tier"],
-["outreach","Outreach","growth","sovereign",45000,"Multilingual sequences, enrolments, activity feed",0,false,null],
-["campaigns","Campaign Management","growth","sovereign",55000,"Social campaigns, posts, cost per lead",0,false,null],
-["investors","Investor Relations","relationships","sovereign",35000,"Register, commitments, reporting cadence",0,false,null],
-["intelligence","Intelligence","intelligence","sovereign",95000,"Semantic search, briefing agents, alumni graph, voice",0,false,null]];
-
-const FR={lToday:"Bureau",today:"Aujourd'hui",lRev:"Revenus",authorise:"Autoriser et facturer",members:"Membres",corporate:"Entreprises",coaching:"Coaching",requests:"Demandes",lOps:"Opérations",bench:"Le Banc",sessions:"Séances",consults:"Consultations",mialc:"MIALC",lComm:"Communauté",needs:"Besoins et Opportunités",outcomes:"Résultats",shop:"Boutique",lGov:"Gouvernance",board:"Salle du Conseil",intel:"Intelligence",ebToday:"Le bureau · mercredi 29 juillet 2026",ldToday:"Six contrats signés attendent votre autorisation avant l'émission d'une facture. C'est la seule file de cette page où attendre coûte de l'argent.",pAwait:"En attente d'autorisation",pAging:"Demandes sans réponse",pToday:"Séances du jour",hContract:"Contrat",hWho:"Signataire",hProduct:"Produit",hValue:"Valeur",hSigned:"Signé",hTime:"Heure",hMember:"Membre",hCoach:"Coach",hTier:"Formule",hCredits:"Crédits restants",hZone:"Fuseau",hStatus:"Statut",ebFin:"Finance",tAuth:"Autoriser et facturer",ldAuth:"Le site promet à chaque acheteur que BCA autorisera et émettra sa facture. C'est ici que cela se passe. Un contrat signé sans facture est un client engagé qui n'a jamais été facturé.",pSigned:"Signés, en attente d'autorisation",pIssued:"Émises ce mois",hBilling:"Facturation",hLang:"Langue",hInvoice:"Facture",hPayer:"Payeur",hAmount:"Montant",hDue:"Échéance",hAge:"Ancienneté",hRem:"Relances",ebDir:"Répertoire",tMembers:"Membres",ldMembers:"Trois formules individuelles. Les crédits de coaching sont un droit, pas un calendrier — le solde affiché est ce que chaque membre peut encore utiliser.",pAll:"Tous les membres",hName:"Nom",hCohort:"Cohorte",hRenews:"Renouvellement",hStanding:"Statut",hLoc:"Localisation",ebCorp:"Nouveau en 2026",tCorp:"Adhésion entreprise",ldCorp:"Par siège. La question qui compte chaque semaine n'est pas qui a acheté, mais combien de sièges restent vides — un siège inutilisé est un renouvellement qui n'aura pas lieu.",pAccounts:"Comptes entreprises",hOrg:"Organisation",hPlan:"Formule",hSeats:"Sièges utilisés",ebCoach:"Vendu séparément de l'adhésion",tCoaching:"Forfaits de coaching",ldCoaching:"Starter, Focus et Momentum sont des crédits de séances, pas des abonnements. Chaque séance tenue en consomme un. Le registre rend le solde du client incontestable.",pClients:"Clients forfaits",hPackage:"Forfait",hUsed:"Utilisés",hPurchased:"Acheté",ebPipe:"Entrant",tRequests:"Demandes",ldRequests:"Le conseil, la gestion de projet et le business matching arrivent déjà qualifiés — budget, délai, et pouvoir de décision. Triés par temps d'attente, car c'est ce chiffre qui fait perdre des affaires.",pOpen:"Demandes ouvertes",hKind:"Type",hBudget:"Budget",hTimeline:"Délai",hAuthority:"Décision",hWaiting:"Attente",ebBench:"Corps professoral",ldBench:"Quarante-deux coachs, consultants, facilitateurs et formateurs dans les cinq régions africaines. La charge est à surveiller — un coach surchargé est la cause discrète d'une baisse de qualité.",pBench:"Effectif du banc",hType:"Type",hRegion:"Région",hDisc:"Disciplines",hLangs:"Langues",hLoad:"Charge",hPayout:"Rémunération · juil.",ebCal:"Calendrier",tSessions:"Séances",ldSessions:"Enregistrées comme instant absolu avec le fuseau convenu. Marquer une séance tenue retire un crédit du solde du membre — les deux ne peuvent jamais divorcer.",pWeek:"Cette semaine",hWhen:"Quand",hSource:"Imputé sur",ebMatch:"Mise en relation",tConsults:"Consultations",ldConsults:"L'appel de trente minutes qui transforme un visiteur en client. Réservé en GMT, deux à cinq jours ouvrés à l'avance, et le coach assigné doit être prévenu — le site le promet.",pBookings:"Réservations",hSlot:"Créneau demandé",hNotified:"Coach prévenu",ebConf:"Conférence",ldMialc:"Platinum inclut un pass. Executive et Associate paient le tarif membre. Les autres paient plein tarif. Bien le déterminer à l'inscription évite un e-mail gênant.",pRegs:"Inscriptions",hPass:"Pass",ebOnline:"BCAOnline",ldNeeds:"Un membre publie son besoin ; un autre publie son opportunité. Les rapprocher, c'est le réseau qui travaille entre les réunions — et la raison la plus citée de renouveler.",pOpenItems:"Éléments ouverts",hTitle:"Intitulé",hSector:"Secteur",ebProof:"Preuve",tOutcomes:"Résultats des membres",ldOutcomes:"Le site affirme que 63% des membres PDG voient une croissance supérieure à 10%. Une telle affirmation exige un tableau derrière. Le voici — et c'est aussi le meilleur argument de renouvellement de BCA.",pRecorded:"Résultats enregistrés",hGrowth:"Croissance",hPromo:"Promotion",hBoard:"Siège au conseil",hNps:"NPS",ebShop:"Boutique",tShop:"Boutique",ldShop:"Ebooks, enregistrements et produits dérivés — la porte d'entrée pour les dirigeants pas encore prêts à adhérer. La boutique est en configuration ; le catalogue et les commandes sont prêts.",pCatalogue:"Catalogue",pmSetup:"boutique en configuration",hLine:"Ligne",hFrom:"À partir de",ebGov:"Gouvernance",tBoard:"Salle du Conseil",ldBoard:"Les résolutions et votes sont inscrits dans un journal inaltérable. Aucun administrateur ne peut modifier ni supprimer une entrée — c'est ce qui rend le registre opposable.",pMandates:"Mandats stratégiques",hMandate:"Mandat",hOwner:"Responsable",hDue:"Échéance",tIntel:"Intelligence",ldIntel:"Recherche sémantique sur toutes les notes de coaching, agents de briefing, graphe d'impact des anciens, et la voix. Offre Souveraine.",ctaTalk:"Parler à TechFides",lAdmin:"Administration",team:"Équipe et accès",modules:"Modules et licences",ebAdmin:"Administration",ldTeam:"L'accès est accordé par fonction, pas par ancienneté. Un responsable financier a besoin des factures et jamais d'une note de coaching — et c'est à BCA d'en décider, sans nous appeler.",pTeam:"Membres de l'équipe",pMatrix:"Matrice d'accès",pTemplates:"Modèles d'accès",pmTpl:"assigner, puis ajuster une ligne",hRoleT:"Rôle",hTemplate:"Modèle",hFunctions:"Fonctions",hLastActive:"Dernière activité",hGrants:"Droits",hDenied:"Refusé explicitement",hUsers:"Utilisateurs",tModules:"Modules et licences",ldModules:"Treize des dix-sept modules sont sous licence en Professional. Les quatre restants sont visibles volontairement — une porte fermée qu'on voit est une conversation commerciale, une porte fermée qu'on ne voit pas est une fonctionnalité manquante.",pLicensed:"Sous licence",pAvailable:"Disponibles en option",hModule:"Module",hCategory:"Catégorie",hIncluded:"Inclus dans",hWhatFor:"Fonction",hRequires:"Nécessite",hPrice:"Prix",lGrowth:"Croissance",lFin:"Finance",lRel:"Relations",leads:"Prospects",outreach:"Prospection",pipeline:"Pipeline",proposals:"Propositions",campaigns:"Campagnes",invoices:"Factures",contracts:"Contrats",financial:"Tableau financier",investors:"Investisseurs",ebGrowth:"Croissance",ebMkt:"Marketing",ebLegal:"Juridique",ebIR:"Relations investisseurs",tLeads:"Prospects",ldLeads:"Notés sur l'adéquation et le pouvoir de décision, pas sur la chaleur de la conversation. Un dirigeant avec un budget vaut mieux qu'un contact enthousiaste qui ne peut pas signer.",pLeads:"Liste de travail",hScore:"Score",hNextTouch:"Prochain contact",tOutreach:"Prospection",ldOutreach:"Séquences en quatre langues. Le taux de réponse est la seule colonne à optimiser — le taux d'ouverture flatte une séquence à laquelle personne ne répond.",pSeq:"Séquences",pTouches:"Contacts récents",hSequence:"Séquence",hChannel:"Canal",hEnrolled:"Inscrits",hOpened:"Ouverts",hReplied:"Réponses",hReplyRate:"Taux de réponse",hKindA:"Type",hSubject:"Objet",hDir:"Sens",tPipeline:"Pipeline",ldPipeline:"La valeur pondérée est ce sur quoi planifier. Le chiffre brut est ce qui se dit en réunion, et il est presque toujours faux.",pStages:"Par étape",pOpps:"Opportunités ouvertes",hStage:"Étape",hCount:"Affaires",hWeighted:"Pondéré",hOpp:"Opportunité",hProb:"Prob.",hClose:"Clôture",hIdle:"Inactif",hNextStep:"Prochaine étape",tProposals:"Propositions",ldProposals:"Envoyée et jamais ouverte, ce n'est pas le même problème qu'ouverte et sans réponse. Se tromper de relance, c'est la perdre.",pProps:"Propositions ouvertes",hProposal:"Proposition",hVer:"Vers.",hSent:"Envoyée",hViewed:"Ouverte",hValid:"Valable jusqu'au",tCampaigns:"Campagnes",ldCampaigns:"Le coût par prospect décide si un canal continue. Les impressions sont une colonne de vanité, gardée parce qu'on la demande toujours.",pCamps:"Campagnes",pPosts:"Programmés et publiés",hCampaign:"Campagne",hObjective:"Objectif",hChannels:"Canaux",hSpend:"Dépense",hLeads:"Prospects",hCPL:"Coût / prospect",hBody:"Publication",hImpr:"Impr.",hEng:"Eng.",tFinancial:"Tableau financier",ldFinancial:"Chaque chiffre ici est calculé depuis les factures, les paiements, les rémunérations et les adhésions. Rien n'est stocké deux fois — un total conservé à part des lignes qui le produisent finira par les contredire.",pByLine:"Revenus par ligne",pmAnnual:"annualisé",pPayouts:"Rémunérations coachs · juil.",pMonths:"Six derniers mois",hRecurring:"Récurrent",hOneOff:"Ponctuel",hTotal:"Total",hMonth:"Mois",hInvoiced:"Facturé",hCollected:"Encaissé",hRate:"Taux de recouvrement",hNewMem:"Nouveaux membres",hChurn:"Perdus",tInvoices:"Gestion des factures",ldInvoices:"Les relances partent dans la langue de chaque payeur, à 3, 7, 14 et 21 jours. Les délais sont de 14 jours. Au-delà de 60, il faut un appel, pas un quatrième e-mail.",pAllInv:"Toutes les factures",hPaid:"Payé",hMethod:"Moyen",tContracts:"Gestion des contrats",ldContracts:"Chaque contrat porte sa trace de signature — nom saisi, horodatage, adresse. C'est ce trio qui rend une signature électronique opposable si elle est contestée.",pAllCon:"Tous les contrats",hSigTrail:"Trace de signature",tInvestors:"Investisseurs",ldInvestors:"Un registre d'investisseurs est d'abord une obligation de reporting, ensuite une source de financement. La colonne à surveiller est la prochaine échéance — un rapport manqué coûte plus de confiance qu'un trimestre manqué ne coûte d'argent.",pInvestors:"Registre",hInvestor:"Investisseur",hKind:"Type",hRel:"Relation",hCommitted:"Engagé",hInvested:"Investi",hOwn:"Participation",hCadence:"Cadence",hNextUpd:"Prochain rapport"};
-const ES={lToday:"Mesa",today:"Hoy",lRev:"Ingresos",authorise:"Autorizar y facturar",members:"Miembros",corporate:"Corporativo",coaching:"Coaching",requests:"Solicitudes",lOps:"Operaciones",bench:"El Banco",sessions:"Sesiones",consults:"Consultas",mialc:"MIALC",lComm:"Comunidad",needs:"Necesidades y Oportunidades",outcomes:"Resultados",shop:"Tienda",lGov:"Gobernanza",board:"Sala del Consejo",intel:"Inteligencia",ebToday:"La mesa · miércoles 29 de julio de 2026",ldToday:"Seis contratos firmados esperan su autorización antes de emitir una factura. Es la única cola de esta página donde esperar cuesta dinero.",pAwait:"Pendiente de autorización",pAging:"Solicitudes sin respuesta",pToday:"Sesiones de hoy",hContract:"Contrato",hWho:"Firmante",hProduct:"Producto",hValue:"Valor",hSigned:"Firmado",hTime:"Hora",hMember:"Miembro",hCoach:"Coach",hTier:"Nivel",hCredits:"Créditos",hZone:"Zona",hStatus:"Estado",ebFin:"Finanzas",tAuth:"Autorizar y facturar",ldAuth:"El sitio promete a cada comprador que BCA autorizará y emitirá su factura. Aquí ocurre. Un contrato firmado sin factura es un cliente comprometido al que nunca se le cobró.",pSigned:"Firmados, pendientes de autorización",pIssued:"Emitidas este mes",hBilling:"Facturación",hLang:"Idioma",hInvoice:"Factura",hPayer:"Pagador",hAmount:"Importe",hDue:"Vence",hAge:"Antigüedad",hRem:"Recordatorios",ebDir:"Directorio",tMembers:"Miembros",ldMembers:"Tres niveles individuales. Los créditos de coaching son un derecho, no un calendario — el saldo mostrado es lo que cada miembro aún puede usar.",pAll:"Todos los miembros",hName:"Nombre",hCohort:"Cohorte",hRenews:"Renueva",hStanding:"Situación",hLoc:"Ubicación",ebCorp:"Nuevo en 2026",tCorp:"Membresía corporativa",ldCorp:"Por asiento. La pregunta semanal no es quién compró, sino cuántos asientos están vacíos — un asiento sin usar es una renovación que no ocurrirá.",pAccounts:"Cuentas corporativas",hOrg:"Organización",hPlan:"Plan",hSeats:"Asientos usados",ebCoach:"Se vende aparte de la membresía",tCoaching:"Paquetes de coaching",ldCoaching:"Starter, Focus y Momentum son créditos de sesión, no suscripciones. Cada sesión celebrada consume uno. El libro mayor hace el saldo indiscutible.",pClients:"Clientes de paquete",hPackage:"Paquete",hUsed:"Usadas",hPurchased:"Comprado",ebPipe:"Entrante",tRequests:"Solicitudes",ldRequests:"Consultoría, gestión de proyectos y business matching llegan ya cualificados — presupuesto, plazo y capacidad de decidir. Ordenados por espera, porque ese número pierde negocios.",pOpen:"Solicitudes abiertas",hKind:"Tipo",hBudget:"Presupuesto",hTimeline:"Plazo",hAuthority:"Decisión",hWaiting:"Espera",ebBench:"Facultad",ldBench:"Cuarenta y dos coaches, consultores, facilitadores y formadores en las cinco regiones africanas. La carga es lo que hay que vigilar.",pBench:"Plantilla",hType:"Tipo",hRegion:"Región",hDisc:"Disciplinas",hLangs:"Idiomas",hLoad:"Carga",hPayout:"Pago · jul.",ebCal:"Calendario",tSessions:"Sesiones",ldSessions:"Guardadas como instante absoluto junto a la zona acordada. Marcar una sesión como celebrada retira un crédito del saldo.",pWeek:"Esta semana",hWhen:"Cuándo",hSource:"Cargado a",ebMatch:"Emparejamiento",tConsults:"Consultas",ldConsults:"La llamada de treinta minutos que convierte a un visitante en cliente. En GMT, de dos a cinco días hábiles, y hay que avisar al coach asignado.",pBookings:"Reservas",hSlot:"Franja solicitada",hNotified:"Coach avisado",ebConf:"Conferencia",ldMialc:"Platinum incluye pase. Executive y Associate pagan tarifa de miembro. El resto paga completa.",pRegs:"Inscripciones",hPass:"Pase",ebOnline:"BCAOnline",ldNeeds:"Un miembro publica lo que necesita; otro publica lo que tiene. Emparejarlos es la red trabajando entre reuniones.",pOpenItems:"Elementos abiertos",hTitle:"Título",hSector:"Sector",ebProof:"Prueba",tOutcomes:"Resultados de miembros",ldOutcomes:"El sitio afirma que 63% de los CEO miembros crecen más del 10%. Una afirmación así necesita una tabla detrás. Esta es esa tabla.",pRecorded:"Resultados registrados",hGrowth:"Crecimiento",hPromo:"Ascenso",hBoard:"Puesto en consejo",hNps:"NPS",ebShop:"Tienda",tShop:"Tienda",ldShop:"Ebooks, grabaciones y merchandising — la entrada para líderes que aún no están listos para la membresía.",pCatalogue:"Catálogo",pmSetup:"tienda en configuración",hLine:"Línea",hFrom:"Desde",ebGov:"Gobernanza",tBoard:"Sala del Consejo",ldBoard:"Las resoluciones y votos se escriben en un registro inalterable. Ningún administrador puede editarlo ni borrarlo.",pMandates:"Mandatos estratégicos",hMandate:"Mandato",hOwner:"Responsable",hDue:"Vence",tIntel:"Inteligencia",ldIntel:"Búsqueda semántica en todas las notas, agentes de briefing, grafo de impacto de alumni, y voz. Nivel Soberano.",ctaTalk:"Hablar con TechFides",lAdmin:"Administración",team:"Equipo y accesos",modules:"Módulos y licencias",ebAdmin:"Administración",ldTeam:"El acceso se concede por función, no por antigüedad. Un responsable financiero necesita las facturas y nunca una nota de coaching — y eso lo decide BCA, sin llamarnos.",pTeam:"Miembros del equipo",pMatrix:"Matriz de accesos",pTemplates:"Plantillas de acceso",pmTpl:"asignar y ajustar una línea",hRoleT:"Rol",hTemplate:"Plantilla",hFunctions:"Funciones",hLastActive:"Última actividad",hGrants:"Permisos",hDenied:"Denegado explícitamente",hUsers:"Usuarios",tModules:"Módulos y licencias",ldModules:"Trece de diecisiete módulos están licenciados en Professional. Los cuatro restantes se ven a propósito — una puerta cerrada que se ve es una conversación comercial; una que no se ve es una función que falta.",pLicensed:"Licenciados",pAvailable:"Disponibles para añadir",hModule:"Módulo",hCategory:"Categoría",hIncluded:"Incluido en",hWhatFor:"Función",hRequires:"Requiere",hPrice:"Precio",lGrowth:"Crecimiento",lFin:"Finanzas",lRel:"Relaciones",leads:"Prospectos",outreach:"Prospección",pipeline:"Pipeline",proposals:"Propuestas",campaigns:"Campañas",invoices:"Facturas",contracts:"Contratos",financial:"Panel financiero",investors:"Inversores",ebGrowth:"Crecimiento",ebMkt:"Marketing",ebLegal:"Legal",ebIR:"Relación con inversores",tLeads:"Prospectos",ldLeads:"Puntuados por encaje y capacidad de decidir, no por lo cálida que fue la conversación. Un directivo con presupuesto vale más que un contacto entusiasta que no puede firmar.",pLeads:"Lista de trabajo",hScore:"Puntuación",hNextTouch:"Próximo contacto",tOutreach:"Prospección",ldOutreach:"Secuencias en cuatro idiomas. La tasa de respuesta es la única columna que merece optimizarse — la de apertura halaga a una secuencia que nadie contesta.",pSeq:"Secuencias",pTouches:"Contactos recientes",hSequence:"Secuencia",hChannel:"Canal",hEnrolled:"Inscritos",hOpened:"Abiertos",hReplied:"Respuestas",hReplyRate:"Tasa de respuesta",hKindA:"Tipo",hSubject:"Asunto",hDir:"Sentido",tPipeline:"Pipeline",ldPipeline:"El valor ponderado es lo que hay que planificar. La cifra bruta es la que se cita en reuniones y casi siempre está mal.",pStages:"Por etapa",pOpps:"Oportunidades abiertas",hStage:"Etapa",hCount:"Negocios",hWeighted:"Ponderado",hOpp:"Oportunidad",hProb:"Prob.",hClose:"Cierre",hIdle:"Inactivo",hNextStep:"Siguiente paso",tProposals:"Propuestas",ldProposals:"Enviada y nunca abierta no es el mismo problema que abierta y sin respuesta. Perseguir la equivocada desperdicia el seguimiento.",pProps:"Propuestas abiertas",hProposal:"Propuesta",hVer:"Ver.",hSent:"Enviada",hViewed:"Abierta",hValid:"Válida hasta",tCampaigns:"Campañas",ldCampaigns:"El coste por prospecto decide si un canal continúa. Las impresiones son una columna de vanidad que se mantiene porque siempre alguien la pide.",pCamps:"Campañas",pPosts:"Programadas y publicadas",hCampaign:"Campaña",hObjective:"Objetivo",hChannels:"Canales",hSpend:"Gasto",hLeads:"Prospectos",hCPL:"Coste / prospecto",hBody:"Publicación",hImpr:"Impr.",hEng:"Interac.",tFinancial:"Panel financiero",ldFinancial:"Cada cifra aquí se calcula desde facturas, pagos, retribuciones y membresías. Nada se guarda dos veces — un total separado de las filas que lo producen acabará contradiciéndolas.",pByLine:"Ingresos por línea",pmAnnual:"anualizado",pPayouts:"Pagos a coaches · jul.",pMonths:"Últimos seis meses",hRecurring:"Recurrente",hOneOff:"Puntual",hTotal:"Total",hMonth:"Mes",hInvoiced:"Facturado",hCollected:"Cobrado",hRate:"Tasa de cobro",hNewMem:"Nuevos miembros",hChurn:"Perdidos",tInvoices:"Gestión de facturas",ldInvoices:"Los recordatorios se envían en el idioma de cada pagador a los 3, 7, 14 y 21 días. El plazo es de 14 días. Más de 60 requiere una llamada, no un cuarto correo.",pAllInv:"Todas las facturas",hPaid:"Pagado",hMethod:"Método",tContracts:"Gestión de contratos",ldContracts:"Cada contrato lleva su rastro de firma — nombre escrito, fecha y hora, dirección. Ese trío es lo que hace defendible una firma electrónica si se cuestiona.",pAllCon:"Todos los contratos",hSigTrail:"Rastro de firma",tInvestors:"Inversores",ldInvestors:"Un registro de inversores es una obligación de reporte antes que una fuente de financiación. La columna a vigilar es el próximo informe — uno perdido cuesta más confianza que un trimestre malo cuesta dinero.",pInvestors:"Registro",hInvestor:"Inversor",hKind:"Tipo",hRel:"Relación",hCommitted:"Comprometido",hInvested:"Invertido",hOwn:"Participación",hCadence:"Cadencia",hNextUpd:"Próximo informe"};
-const PT={lToday:"Mesa",today:"Hoje",lRev:"Receita",authorise:"Autorizar e faturar",members:"Membros",corporate:"Corporativo",coaching:"Coaching",requests:"Pedidos",lOps:"Operações",bench:"O Banco",sessions:"Sessões",consults:"Consultas",mialc:"MIALC",lComm:"Comunidade",needs:"Necessidades e Oportunidades",outcomes:"Resultados",shop:"Loja",lGov:"Governança",board:"Sala do Conselho",intel:"Inteligência",ebToday:"A mesa · quarta-feira, 29 de julho de 2026",ldToday:"Seis contratos assinados aguardam a sua autorização antes da emissão de fatura. É a única fila desta página em que esperar custa dinheiro.",pAwait:"A aguardar autorização",pAging:"Pedidos sem resposta",pToday:"Sessões de hoje",hContract:"Contrato",hWho:"Signatário",hProduct:"Produto",hValue:"Valor",hSigned:"Assinado",hTime:"Hora",hMember:"Membro",hCoach:"Coach",hTier:"Nível",hCredits:"Créditos",hZone:"Fuso",hStatus:"Estado",ebFin:"Finanças",tAuth:"Autorizar e faturar",ldAuth:"O site promete a cada comprador que a BCA autorizará e emitirá a fatura. É aqui que isso acontece. Um contrato assinado sem fatura é um cliente comprometido que nunca foi cobrado.",pSigned:"Assinados, a aguardar autorização",pIssued:"Emitidas este mês",hBilling:"Faturação",hLang:"Idioma",hInvoice:"Fatura",hPayer:"Pagador",hAmount:"Montante",hDue:"Vencimento",hAge:"Antiguidade",hRem:"Lembretes",ebDir:"Diretório",tMembers:"Membros",ldMembers:"Três níveis individuais. Os créditos de coaching são um direito, não um calendário — o saldo é o que cada membro ainda pode usar.",pAll:"Todos os membros",hName:"Nome",hCohort:"Coorte",hRenews:"Renova",hStanding:"Situação",hLoc:"Localização",ebCorp:"Novo em 2026",tCorp:"Adesão corporativa",ldCorp:"Por lugar. A pergunta semanal não é quem comprou, é quantos lugares estão vazios — um lugar sem uso é uma renovação que não vai acontecer.",pAccounts:"Contas corporativas",hOrg:"Organização",hPlan:"Plano",hSeats:"Lugares usados",ebCoach:"Vendido separadamente da adesão",tCoaching:"Pacotes de coaching",ldCoaching:"Starter, Focus e Momentum são créditos de sessão, não subscrições. Cada sessão realizada consome um.",pClients:"Clientes de pacote",hPackage:"Pacote",hUsed:"Usadas",hPurchased:"Comprado",ebPipe:"Entrada",tRequests:"Pedidos",ldRequests:"Consultoria, gestão de projetos e business matching chegam já qualificados — orçamento, prazo e poder de decisão. Ordenados por espera.",pOpen:"Pedidos abertos",hKind:"Tipo",hBudget:"Orçamento",hTimeline:"Prazo",hAuthority:"Decisão",hWaiting:"Espera",ebBench:"Corpo docente",ldBench:"Quarenta e dois coaches, consultores, facilitadores e formadores nas cinco regiões africanas. A carga é o que vigiar.",pBench:"Quadro do banco",hType:"Tipo",hRegion:"Região",hDisc:"Disciplinas",hLangs:"Idiomas",hLoad:"Carga",hPayout:"Pagamento · jul.",ebCal:"Calendário",tSessions:"Sessões",ldSessions:"Guardadas como instante absoluto com o fuso acordado. Marcar uma sessão como realizada retira um crédito do saldo.",pWeek:"Esta semana",hWhen:"Quando",hSource:"Imputado a",ebMatch:"Correspondência",tConsults:"Consultas",ldConsults:"A chamada de trinta minutos que transforma um visitante em cliente. Em GMT, dois a cinco dias úteis, e o coach designado tem de ser avisado.",pBookings:"Marcações",hSlot:"Horário pedido",hNotified:"Coach avisado",ebConf:"Conferência",ldMialc:"Platinum inclui passe. Executive e Associate pagam tarifa de membro. Os restantes pagam tarifa cheia.",pRegs:"Inscrições",hPass:"Passe",ebOnline:"BCAOnline",ldNeeds:"Um membro publica o que precisa; outro publica o que tem. Ligar os dois é a rede a trabalhar entre reuniões.",pOpenItems:"Itens abertos",hTitle:"Título",hSector:"Setor",ebProof:"Prova",tOutcomes:"Resultados dos membros",ldOutcomes:"O site afirma que 63% dos CEO membros crescem acima de 10%. Uma afirmação assim precisa de uma tabela por trás. Esta é essa tabela.",pRecorded:"Resultados registados",hGrowth:"Crescimento",hPromo:"Promoção",hBoard:"Assento no conselho",hNps:"NPS",ebShop:"Loja",tShop:"Loja",ldShop:"Ebooks, gravações e merchandising — a porta de entrada para líderes ainda não prontos para a adesão.",pCatalogue:"Catálogo",pmSetup:"loja em configuração",hLine:"Linha",hFrom:"A partir de",ebGov:"Governança",tBoard:"Sala do Conselho",ldBoard:"As resoluções e votos são escritos num registo inalterável. Nenhum administrador pode editar ou apagar.",pMandates:"Mandatos estratégicos",hMandate:"Mandato",hOwner:"Responsável",hDue:"Vencimento",tIntel:"Inteligência",ldIntel:"Pesquisa semântica em todas as notas, agentes de briefing, grafo de impacto de alumni, e voz. Nível Soberano.",ctaTalk:"Falar com a TechFides",lAdmin:"Administração",team:"Equipa e acessos",modules:"Módulos e licenças",ebAdmin:"Administração",ldTeam:"O acesso é concedido por função, não por antiguidade. Um responsável financeiro precisa das faturas e nunca de uma nota de coaching — e é a BCA que decide, sem nos ligar.",pTeam:"Membros da equipa",pMatrix:"Matriz de acessos",pTemplates:"Modelos de acesso",pmTpl:"atribuir e ajustar uma linha",hRoleT:"Função",hTemplate:"Modelo",hFunctions:"Funções",hLastActive:"Última atividade",hGrants:"Permissões",hDenied:"Negado explicitamente",hUsers:"Utilizadores",tModules:"Módulos e licenças",ldModules:"Treze dos dezassete módulos estão licenciados no Professional. Os quatro restantes são visíveis de propósito — uma porta fechada que se vê é uma conversa comercial; uma que não se vê é uma funcionalidade que falta.",pLicensed:"Licenciados",pAvailable:"Disponíveis para adicionar",hModule:"Módulo",hCategory:"Categoria",hIncluded:"Incluído em",hWhatFor:"Função",hRequires:"Requer",hPrice:"Preço",lGrowth:"Crescimento",lFin:"Finanças",lRel:"Relações",leads:"Contactos",outreach:"Prospeção",pipeline:"Pipeline",proposals:"Propostas",campaigns:"Campanhas",invoices:"Faturas",contracts:"Contratos",financial:"Painel financeiro",investors:"Investidores",ebGrowth:"Crescimento",ebMkt:"Marketing",ebLegal:"Jurídico",ebIR:"Relação com investidores",tLeads:"Contactos",ldLeads:"Pontuados por adequação e poder de decisão, não pelo calor da conversa. Um dirigente com orçamento vale mais do que um contacto entusiasmado que não pode assinar.",pLeads:"Lista de trabalho",hScore:"Pontuação",hNextTouch:"Próximo contacto",tOutreach:"Prospeção",ldOutreach:"Sequências em quatro idiomas. A taxa de resposta é a única coluna que vale otimizar — a de abertura lisonjeia uma sequência que ninguém responde.",pSeq:"Sequências",pTouches:"Contactos recentes",hSequence:"Sequência",hChannel:"Canal",hEnrolled:"Inscritos",hOpened:"Abertos",hReplied:"Respostas",hReplyRate:"Taxa de resposta",hKindA:"Tipo",hSubject:"Assunto",hDir:"Sentido",tPipeline:"Pipeline",ldPipeline:"O valor ponderado é o que se deve planear. O número bruto é o que se cita em reuniões e está quase sempre errado.",pStages:"Por etapa",pOpps:"Oportunidades abertas",hStage:"Etapa",hCount:"Negócios",hWeighted:"Ponderado",hOpp:"Oportunidade",hProb:"Prob.",hClose:"Fecho",hIdle:"Inativo",hNextStep:"Passo seguinte",tProposals:"Propostas",ldProposals:"Enviada e nunca aberta não é o mesmo problema que aberta e sem resposta. Perseguir a errada desperdiça o seguimento.",pProps:"Propostas abertas",hProposal:"Proposta",hVer:"Ver.",hSent:"Enviada",hViewed:"Aberta",hValid:"Válida até",tCampaigns:"Campanhas",ldCampaigns:"O custo por contacto decide se um canal continua. As impressões são uma coluna de vaidade mantida porque alguém sempre a pede.",pCamps:"Campanhas",pPosts:"Agendadas e publicadas",hCampaign:"Campanha",hObjective:"Objetivo",hChannels:"Canais",hSpend:"Gasto",hLeads:"Contactos",hCPL:"Custo / contacto",hBody:"Publicação",hImpr:"Impr.",hEng:"Interaç.",tFinancial:"Painel financeiro",ldFinancial:"Cada número aqui é calculado a partir de faturas, pagamentos, remunerações e adesões. Nada é guardado duas vezes — um total mantido à parte das linhas que o produzem acabará por contradizê-las.",pByLine:"Receita por linha",pmAnnual:"anualizado",pPayouts:"Pagamentos a coaches · jul.",pMonths:"Últimos seis meses",hRecurring:"Recorrente",hOneOff:"Pontual",hTotal:"Total",hMonth:"Mês",hInvoiced:"Faturado",hCollected:"Recebido",hRate:"Taxa de cobrança",hNewMem:"Novos membros",hChurn:"Perdidos",tInvoices:"Gestão de faturas",ldInvoices:"Os lembretes seguem no idioma de cada pagador aos 3, 7, 14 e 21 dias. O prazo é de 14 dias. Acima de 60 exige uma chamada, não um quarto e-mail.",pAllInv:"Todas as faturas",hPaid:"Pago",hMethod:"Método",tContracts:"Gestão de contratos",ldContracts:"Cada contrato traz o seu rasto de assinatura — nome escrito, data e hora, endereço. Esse trio é o que torna uma assinatura eletrónica defensável se for contestada.",pAllCon:"Todos os contratos",hSigTrail:"Rasto de assinatura",tInvestors:"Investidores",ldInvestors:"Um registo de investidores é uma obrigação de reporte antes de ser uma fonte de financiamento. A coluna a vigiar é o próximo relatório — um perdido custa mais confiança do que um trimestre fraco custa dinheiro.",pInvestors:"Registo",hInvestor:"Investidor",hKind:"Tipo",hRel:"Relação",hCommitted:"Comprometido",hInvested:"Investido",hOwn:"Participação",hCadence:"Cadência",hNextUpd:"Próximo relatório"};
-const EN={};document.querySelectorAll('[data-i]').forEach(e=>EN[e.dataset.i]=e.textContent);
-const DICT={en:EN,fr:FR,es:ES,pt:PT};const LI={en:0,fr:1,es:2,pt:3};
-let L='en';
-const t=k=>(DICT[L]&&DICT[L][k])||EN[k]||k;
-const LOC={en:'en-US',fr:'fr-FR',es:'es-ES',pt:'pt-PT'};
-const m=v=>new Intl.NumberFormat(LOC[L],{style:'currency',currency:'USD',minimumFractionDigits:0}).format(v/100);
-const dt=iso=>new Intl.DateTimeFormat(L==='en'?'en-GB':LOC[L],{day:'2-digit',month:'short',year:'2-digit'}).format(new Date(iso+'T12:00:00'));
-const du={en:'d',fr:'j',es:'d',pt:'d'};
-const ini=n=>n.replace(/^(Dr\.)\s+/,'').split(/[\s-]/).filter(Boolean).slice(0,2).map(w=>w[0]).join('');
-const P=(a,b,c,d)=>[a,b,c,d][LI[L]];
-const TIER={plat:['plat','Platinum'],exec:['exec','Executive'],assoc:['','Associate'],pkg:['','Package'],'—':['','—']};
-const tierTag=k=>{const x=TIER[k]||TIER['—'];return `<span class="tag ${x[0]}">${x[1]}</span>`};
-const ST={ok:['s-ok','Active','Actif','Activo','Ativo'],warn:['s-warn','Watch','À surveiller','Vigilar','Atenção'],
-bad:['s-bad','Lapsed','En défaut','Vencido','Em falta'],idle:['s-idle','Dormant','Dormant','Inactivo','Inativo'],
-new:['s-new','New','Nouveau','Nuevo','Novo']};
-const stDot=k=>{const x=ST[k]||ST.idle;return `<span class="dot ${x[0]}"><i></i>${P(x[1],x[2],x[3],x[4])}</span>`};
-const SS={held:['s-ok','Held','Tenue','Celebrada','Realizada'],live:['s-new','In session','En cours','En sesión','Em curso'],
-next:['s-idle','Scheduled','Prévue','Programada','Agendada']};
-const ssDot=k=>{const x=SS[k]||SS.next;return `<span class="dot ${x[0]}"><i></i>${P(x[1],x[2],x[3],x[4])}</span>`};
-const KIND={consulting:['Consulting','Conseil','Consultoría','Consultoria'],
-project_management:['Project mgmt','Gestion de projet','Gestión de proyectos','Gestão de projetos'],
-business_matching:['Business matching','Business matching','Business matching','Business matching'],
-sponsorship:['Sponsorship','Parrainage','Patrocinio','Patrocínio'],
-corporate_proposal:['Corporate','Entreprise','Corporativo','Corporativo'],
-bench_application:['Bench application','Candidature banc','Solicitud banco','Candidatura banco']};
-const AUTH={decision_maker:['Decision maker','Décideur','Decisor','Decisor'],
-part_of_decision:['Part of decision','Participe','Participa','Participa'],
-gathering_info:['Gathering info','Se renseigne','Recopilando','A recolher']};
-const RST={new:'s-new',triaging:'s-warn',briefing_booked:'s-ok',proposal_sent:'s-ok',declined:'s-bad',dormant:'s-idle'};
-const RSTL={new:['New','Nouveau','Nuevo','Novo'],triaging:['Triaging','En triage','Clasificando','Em triagem'],
-briefing_booked:['Briefing booked','Briefing prévu','Briefing agendado','Briefing marcado'],
-proposal_sent:['Proposal sent','Proposition envoyée','Propuesta enviada','Proposta enviada']};
-const BT={coach:['Coach','Coach','Coach','Coach'],consultant:['Consultant','Consultant','Consultor','Consultor'],
-trainer:['Trainer','Formateur','Formador','Formador']};
-const REG={west:['West','Ouest','Oeste','Oeste'],north:['North','Nord','Norte','Norte'],east:['East','Est','Este','Leste'],
-southern:['Southern','Australe','Austral','Austral'],central:['Central','Centre','Central','Central']};
-const PASS={included:['Included','Inclus','Incluido','Incluído'],member_rate:['Member rate','Tarif membre','Tarifa socio','Tarifa membro'],
-full:['Full','Plein tarif','Completa','Cheia'],speaker:['Speaker','Intervenant','Ponente','Orador']};
-const AG={cur:['s-ok','Current','À jour','Al día','Em dia'],'30-60':['s-warn','30–60','30–60','30–60','30–60'],
-'60+':['s-bad','60+','60+','60+','60+']};
-const TL={'1–3 months':['1–3 months','1–3 mois','1–3 meses','1–3 meses'],
-'Within 1 month':['Within 1 month','Sous 1 mois','En 1 mes','Dentro de 1 mês'],
-'3–6 months':['3–6 months','3–6 mois','3–6 meses','3–6 meses'],
-'Exploring':['Exploring','Exploratoire','Explorando','A explorar'],
-'—':['—','—','—','—']};
-const tl=v=>(TL[v]?TL[v][LI[L]]:v);
-const BB={'20+ leaders':['20+ leaders','20+ dirigeants','20+ líderes','20+ líderes'],'—':['—','—','—','—']};
-const bb=v=>(BB[v]?BB[v][LI[L]]:v);
-const authorised=new Set();
-const stag=id=>{const b=document.getElementById(id);if(b)[...b.children].forEach((r,i)=>r.style.animationDelay=(i*28)+'ms')};
-const $=id=>document.getElementById(id);
-
-function render(){
-  const pend=CONTRACTS.filter(c=>!authorised.has(c[0]));
-  const pv=pend.reduce((a,c)=>a+c[4],0);
-  const unans=REQUESTS.filter(r=>r[7]==='new').length;
-  const oldest=Math.max(...REQUESTS.map(r=>r[6]));
-
-  $('qRow').innerHTML=`
-   <div class="q urgent" data-go="authorise"><div class="qk">${t('pAwait')}</div>
-    <div class="qv">${pend.length}</div><div class="qn"><b class="money">${m(pv)}</b> ${P('uninvoiced','non facturé','sin facturar','não faturado')}</div></div>
-   <div class="q" data-go="requests"><div class="qk">${t('pAging')}</div>
-    <div class="qv">${unans}</div><div class="qn"><b>${oldest}${du[L]}</b> ${P('oldest','le plus ancien','el más antiguo','o mais antigo')}</div></div>
-   <div class="q" data-go="consults"><div class="qk">${t('consults')}</div>
-    <div class="qv">${CONSULTS.filter(c=>c[5]!=='confirmed').length}</div><div class="qn">${P('to match','à assigner','por asignar','a atribuir')}</div></div>
-   <div class="q" data-go="sessions"><div class="qk">${t('pToday')}</div>
-    <div class="qv">7</div><div class="qn">4 ${P('zones','fuseaux','zonas','fusos')}</div></div>
-   <div class="q" data-go="members"><div class="qk">${P('Renewals · 30d','Renouvellements · 30j','Renovaciones · 30d','Renovações · 30d')}</div>
-    <div class="qv">4</div><div class="qn"><b class="money">${m(760000)}</b></div></div>`;
-
-  const arow=(c,full)=>{const done=authorised.has(c[0]);
-   return `<tr><td class="num">${c[0]}</td>
-    <td><div class="who"><div class="ini">${ini(c[1])}</div><div><div class="wn">${c[1]}</div><div class="ws">${c[2]}</div></div></div></td>
-    <td><span class="tag">${c[3]}</span></td><td class="num money">${m(c[4])}</td>
-    ${full?`<td class="flag">${c[5]}</td>`:''}<td class="flag">${dt(c[6])}</td>
-    ${full?`<td class="flag">${c[7].toUpperCase()}</td>`:''}
-    <td style="text-align:right"><button class="act ${done?'done':''}" data-auth="${c[0]}">${done
-      ?P('✓ Invoiced','✓ Facturé','✓ Facturado','✓ Faturado')
-      :P('Authorise','Autoriser','Autorizar','Autorizar')}</button></td></tr>`};
-  $('authBody').innerHTML=CONTRACTS.map(c=>arow(c,false)).join('');
-  $('authBody2').innerHTML=CONTRACTS.map(c=>arow(c,true)).join('');
-  const lbl=`${pend.length} · ${m(pv)}`;$('awaitTotal').textContent=lbl;$('authTotal2').textContent=lbl;
-
-  $('ageWrap').innerHTML=REQUESTS.slice(0,6).map((r,i)=>{
-   const cls=r[6]>=5?'hot':r[6]>=3?'warm':'';
-   return `<div style="display:flex;gap:14px;padding:13px 20px;border-bottom:1px solid var(--soft);animation:fi .45s var(--ease) ${i*45}ms both">
-    <div class="age ${cls}" style="width:34px;flex:none">${r[6]}${du[L]}</div>
-    <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:500">${r[1]}</div>
-    <div style="font-size:10.5px;color:var(--mute);margin-top:2px">${KIND[r[0]][LI[L]]} · ${r[3]}</div></div>
-    ${stDot(r[7]==='new'?'new':'warn')}</div>`}).join('');
-
-  $('sessBody').innerHTML=SESSIONS.slice(0,7).map(s=>
-   `<tr><td class="num" style="color:var(--gold-lt)">${s[0].split(' ')[1]}</td><td>${s[1]}</td><td>${s[2]}</td>
-    <td>${tierTag(s[3])}</td><td class="num">${s[5]}</td><td class="flag">${s[6]}</td><td>${ssDot(s[7])}</td></tr>`).join('');
-  $('allSessBody').innerHTML=SESSIONS.map(s=>
-   `<tr><td class="num" style="color:var(--gold-lt)">${s[0]}</td><td>${s[1]}</td><td>${s[2]}</td>
-    <td><span class="tag">${s[4]}</span></td><td class="flag">${s[6]}</td><td>${ssDot(s[7])}</td></tr>`).join('');
-
-  $('invBody').innerHTML=INVOICES.map(v=>{const a=AG[v[6]];
-   return `<tr><td class="num">${v[0]}</td><td>${v[1]}</td><td class="num money">${m(v[2])}</td>
-    <td class="flag">${v[3]}</td><td class="num">${v[4]}${du[L]}</td><td class="num">${v[5]}</td>
-    <td><span class="dot ${a[0]}"><i></i>${P(a[1],a[2],a[3],a[4])}</span></td></tr>`}).join('');
-
-  $('tierRow').innerHTML=`
-   <div class="q"><div class="qk">Platinum · $2,800</div><div class="qv">86</div><div class="qn">12 ${P('sessions/yr','séances/an','sesiones/año','sessões/ano')}</div></div>
-   <div class="q"><div class="qk">Executive · $1,600</div><div class="qv">74</div><div class="qn">4 ${P('sessions/yr','séances/an','sesiones/año','sessões/ano')}</div></div>
-   <div class="q"><div class="qk">Associate · $600</div><div class="qv">58</div><div class="qn">${P('cohort + BCAOnline','cohorte + BCAOnline','cohorte + BCAOnline','coorte + BCAOnline')}</div></div>
-   <div class="q"><div class="qk">${P('Annualised','Revenu annualisé','Ingreso anualizado','Receita anualizada')}</div>
-    <div class="qv money" style="font-size:29px">${m(39960000)}</div><div class="qn">${P('individual memberships','adhésions individuelles','membresías individuales','adesões individuais')}</div></div>`;
-
-  $('memBody').innerHTML=MEMBERS.map(x=>
-   `<tr><td><div class="who"><div class="ini">${ini(x[0])}</div><div><div class="wn">${x[0]}</div><div class="ws">${x[1]}</div></div></div></td>
-    <td>${tierTag(x[2])}</td><td class="flag">${x[3]}</td><td>${x[4]}</td>
-    <td class="num">${x[6]?`${x[5]} / ${x[6]}`:'—'}</td><td class="flag">${dt(x[7])}</td>
-    <td>${stDot(x[8])}</td><td class="flag">${x[9]}</td></tr>`).join('');
-
-  const su=CORP.reduce((a,c)=>a+c[2],0),st=CORP.reduce((a,c)=>a+c[3],0);
-  $('seatSummary').textContent=`${su}/${st} ${P('seats','sièges','asientos','lugares')} · ${m(CORP.reduce((a,c)=>a+c[4],0))}`;
-  $('corpBody').innerHTML=CORP.map(c=>{const p=Math.round(c[2]/c[3]*100);
-   return `<tr><td class="wn">${c[0]}</td><td><span class="tag">${c[1]}</span></td><td class="num">${c[2]} / ${c[3]}</td>
-    <td><div class="bar"><i style="width:${p}%;background:${p<60?'var(--rust)':p<85?'var(--amber)':'var(--sage)'}"></i></div></td>
-    <td class="num money">${m(c[4])}</td><td class="flag">${dt(c[5])}</td><td>${stDot(c[6])}</td><td class="flag">${c[7]}</td></tr>`}).join('');
-
-  $('pkgRow').innerHTML=`
-   <div class="q"><div class="qk">Starter · $1,000</div><div class="qv">14</div><div class="qn">4 sessions</div></div>
-   <div class="q"><div class="qk">Focus · $1,400</div><div class="qv">18</div><div class="qn">6 sessions</div></div>
-   <div class="q"><div class="qk">Momentum · $2,500</div><div class="qv">15</div><div class="qn">12 sessions</div></div>
-   <div class="q urgent"><div class="qk">${P('Credits outstanding','Crédits en circulation','Créditos pendientes','Créditos em aberto')}</div>
-    <div class="qv">213</div><div class="qn">${P('sessions owed','séances dues','sesiones debidas','sessões devidas')}</div></div>`;
-  $('pkgTotal').textContent=`${PACKAGES.length} ${P('shown','affichés','mostrados','mostrados')} · 47 ${P('active','actifs','activos','ativos')}`;
-  $('pkgBody').innerHTML=PACKAGES.map(p=>{const pc=Math.round(p[3]/p[4]*100);
-   return `<tr><td><div class="who"><div class="ini">${ini(p[0])}</div><div class="wn">${p[0]}</div></div></td>
-    <td><span class="tag">${p[1]}</span></td><td>${p[2]}</td><td class="num">${p[3]} / ${p[4]}</td>
-    <td><div class="bar"><i style="width:${pc}%;background:${pc>=100?'var(--rust)':pc>=80?'var(--amber)':'var(--gold)'}"></i></div></td>
-    <td class="num" style="color:${p[4]-p[3]===0?'var(--rust)':'var(--gold-lt)'}">${p[4]-p[3]}</td>
-    <td class="flag">${dt(p[5])}</td><td>${stDot(p[6])}</td></tr>`}).join('');
-
-  $('reqTotal').textContent=`${REQUESTS.length} ${P('open','ouverts','abiertos','abertos')} · ${unans} ${P('unanswered','sans réponse','sin responder','sem resposta')}`;
-  $('reqBody').innerHTML=[...REQUESTS].sort((a,b)=>b[6]-a[6]).map(r=>{
-   const cls=r[6]>=5?'hot':r[6]>=3?'warm':'';
-   return `<tr><td><span class="tag">${KIND[r[0]][LI[L]]}</span></td>
-    <td><div class="who"><div class="ini">${ini(r[1])}</div><div class="wn">${r[1]}</div></div></td>
-    <td class="flag">${r[2]}</td><td class="num money">${bb(r[3])}</td><td class="flag">${tl(r[4])}</td>
-    <td class="flag">${r[5]==='—'?'—':AUTH[r[5]][LI[L]]}</td><td class="age ${cls}">${r[6]}${du[L]}</td>
-    <td><span class="dot ${RST[r[7]]}"><i></i>${RSTL[r[7]][LI[L]]}</span></td></tr>`}).join('');
-
-  $('benBody').innerHTML=BENCH.map(b=>{const p=Math.round(b[5]/b[6]*100);
-   return `<tr><td><div class="who"><div class="ini">${ini(b[0])}</div><div><div class="wn">${b[0]}</div><div class="ws">${b[8]}</div></div></div></td>
-    <td><span class="tag">${BT[b[1]][LI[L]]}</span></td><td class="flag">${REG[b[2]][LI[L]]}</td>
-    <td class="flag">${b[3]}</td><td class="flag">${b[4]}</td><td class="num">${b[5]} / ${b[6]}</td>
-    <td><div class="bar"><i style="width:${p}%;background:${p>=95?'var(--rust)':p>=80?'var(--amber)':'var(--sage)'}"></i></div></td>
-    <td class="num money">${m(b[7])}</td></tr>`}).join('');
-
-  $('consTotal').textContent=`${CONSULTS.length} · GMT`;
-  $('consBody').innerHTML=CONSULTS.map(c=>
-   `<tr><td><div class="who"><div class="ini">${ini(c[0])}</div><div class="wn">${c[0]}</div></div></td>
-    <td class="flag">${c[1]}</td><td class="num" style="color:var(--gold-lt)">${c[2]}</td><td>${c[3]}</td>
-    <td>${c[4]?stDot('ok'):stDot('bad')}</td>
-    <td>${stDot(c[5]==='confirmed'?'ok':c[5]==='matched'?'warn':'new')}</td>
-    <td style="text-align:right">${c[4]?'':`<button class="act">${P('Notify','Prévenir','Avisar','Avisar')}</button>`}</td></tr>`).join('');
-
-  const paid=CONF.filter(c=>c[4]==='paid').reduce((a,c)=>a+c[3],0);
-  const owed=CONF.filter(c=>c[4]==='registered'&&c[3]>0).reduce((a,c)=>a+c[3],0);
-  $('confRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Registered','Inscrits','Inscritos','Inscritos')}</div><div class="qv">${CONF.length}</div><div class="qn">MIALC 2026</div></div>
-   <div class="q"><div class="qk">${P('Included passes','Pass inclus','Pases incluidos','Passes incluídos')}</div>
-    <div class="qv">${CONF.filter(c=>c[2]==='included').length}</div><div class="qn">Platinum</div></div>
-   <div class="q"><div class="qk">${P('Collected','Encaissé','Cobrado','Recebido')}</div>
-    <div class="qv money" style="font-size:29px">${m(paid)}</div><div class="qn">&nbsp;</div></div>
-   <div class="q urgent"><div class="qk">${P('Unbilled','À facturer','Por facturar','A faturar')}</div>
-    <div class="qv" style="font-size:29px">${m(owed)}</div><div class="qn">${P('registered, unpaid','inscrits non payés','inscritos sin pagar','inscritos não pagos')}</div></div>`;
-  $('confBody').innerHTML=CONF.map(c=>
-   `<tr><td><div class="who"><div class="ini">${ini(c[0])}</div><div class="wn">${c[0]}</div></div></td>
-    <td>${tierTag(c[1])}</td><td><span class="tag ${c[2]==='included'?'plat':''}">${PASS[c[2]][LI[L]]}</span></td>
-    <td class="num ${c[3]?'money':''}">${c[3]?m(c[3]):'—'}</td>
-    <td>${stDot(c[4]==='paid'?'ok':'warn')}</td><td class="flag">${c[5]}</td></tr>`).join('');
-
-  $('nlTotal').textContent=`${NEEDS.filter(n=>n[5]==='open').length} ${P('open','ouverts','abiertos','abertos')} · ${NEEDS.filter(n=>n[5]==='matched').length} ${P('matched','rapprochés','emparejados','ligados')}`;
-  $('nlBody').innerHTML=NEEDS.map(n=>
-   `<tr><td><span class="tag ${n[0]==='lead'?'plat':''}">${n[0]==='need'
-     ?P('Need','Besoin','Necesidad','Necessidade'):P('Lead','Opportunité','Oportunidad','Oportunidade')}</span></td>
-    <td>${n[1]}</td><td class="flag">${n[2]}</td><td class="flag">${n[3]}</td><td class="flag">${REG[n[4]][LI[L]]}</td>
-    <td>${stDot(n[5]==='matched'?'ok':'new')}</td>
-    <td style="text-align:right">${n[5]==='open'?`<button class="act">${P('Match','Rapprocher','Emparejar','Ligar')}</button>`:''}</td></tr>`).join('');
-
-  const a10=OUTCOMES.filter(o=>o[2]>10).length;
-  $('outRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Growth above 10%','Croissance > 10%','Crecimiento > 10%','Crescimento > 10%')}</div>
-    <div class="qv">${Math.round(a10/OUTCOMES.length*100)}%</div>
-    <div class="qn">${a10} ${P('of','sur','de','de')} ${OUTCOMES.length} ${P('recorded','enregistrés','registrados','registados')}</div></div>
-   <div class="q"><div class="qk">${P('Median growth','Croissance médiane','Crecimiento medio','Crescimento mediano')}</div>
-    <div class="qv">13.5<span style="font-size:20px;color:var(--mute)">%</span></div><div class="qn">H1 2026</div></div>
-   <div class="q"><div class="qk">${P('Promotions','Promotions','Ascensos','Promoções')}</div>
-    <div class="qv">${OUTCOMES.filter(o=>o[3]).length}</div><div class="qn">&nbsp;</div></div>
-   <div class="q"><div class="qk">NPS</div><div class="qv">9.0</div><div class="qn">${P('average','moyenne','promedio','média')}</div></div>`;
-  $('outBody').innerHTML=OUTCOMES.map(o=>
-   `<tr><td><div class="who"><div class="ini">${ini(o[0])}</div><div class="wn">${o[0]}</div></div></td>
-    <td>${tierTag(o[1])}</td><td class="num" style="color:${o[2]>10?'var(--sage)':'var(--mute)'}">+${o[2].toFixed(1)}%</td>
-    <td>${o[3]?'<span class="dot s-ok"><i></i></span>':'<span class="flag">—</span>'}</td>
-    <td>${o[4]?'<span class="dot s-ok"><i></i></span>':'<span class="flag">—</span>'}</td>
-    <td class="num">${o[5]}</td></tr>`).join('');
-
-  $('shopBody').innerHTML=SHOP.map(s=>
-   `<tr><td class="wn">${s[0]}</td><td><span class="tag">${s[1]}</span></td>
-    <td class="num money">${m(s[2])}</td><td>${stDot('idle')}</td></tr>`).join('');
-
-  $('brdBody').innerHTML=BOARD.map(b=>
-   `<tr><td>${b[0]}</td><td>${b[1]}</td><td class="flag">${b[2]}</td><td>${ssDot(b[3]==='live'?'live':'next')}</td></tr>`).join('');
-
-
-  /* ── leads ── */
-  const hotLeads=LEADS.filter(l=>l[5]>=80).length;
-  $('leadRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Open leads','Prospects ouverts','Prospectos abiertos','Contactos abertos')}</div>
-    <div class="qv">31</div><div class="qn">${hotLeads} ${P('scored 80+','notés 80+','con 80+','com 80+')}</div></div>
-   <div class="q"><div class="qk">${P('Qualified','Qualifiés','Cualificados','Qualificados')}</div>
-    <div class="qv">${LEADS.filter(l=>l[7]==='qualified').length}</div><div class="qn">${P('ready for pipeline','prêts pour le pipeline','listos para pipeline','prontos para pipeline')}</div></div>
-   <div class="q"><div class="qk">${P('Top source','Meilleure source','Mejor fuente','Melhor fonte')}</div>
-    <div class="qv" style="font-size:26px">${P('Request form','Formulaire','Formulario','Formulário')}</div><div class="qn">4 ${P('this week','cette semaine','esta semana','esta semana')}</div></div>
-   <div class="q"><div class="qk">${P('Due today','À faire aujourd\'hui','Para hoy','Para hoje')}</div>
-    <div class="qv">2</div><div class="qn">${P('follow-ups','relances','seguimientos','seguimentos')}</div></div>`;
-  $('leadTotal').textContent=`${LEADS.length} ${P('shown','affichés','mostrados','mostrados')} · 31 ${P('open','ouverts','abiertos','abertos')}`;
-  const SRC={request_form:['Request form','Formulaire','Formulario','Formulário'],referral:['Referral','Recommandation','Referencia','Indicação'],
-   member_intro:['Member intro','Intro membre','Intro socio','Intro membro'],linkedin:['LinkedIn','LinkedIn','LinkedIn','LinkedIn'],
-   campaign:['Campaign','Campagne','Campaña','Campanha'],podcast:['Podcast','Podcast','Podcast','Podcast'],event:['Event','Événement','Evento','Evento']};
-  const LST={new:'s-new',working:'s-warn',nurturing:'s-idle',qualified:'s-ok',converted:'s-ok',disqualified:'s-bad'};
-  const LSTL={working:['Working','En cours','En curso','Em curso'],nurturing:['Nurturing','À maturer','Madurando','A maturar'],
-   qualified:['Qualified','Qualifié','Cualificado','Qualificado'],new:['New','Nouveau','Nuevo','Novo']};
-  $('leadBody').innerHTML=[...LEADS].sort((a,b)=>b[5]-a[5]).map(l=>
-   `<tr><td><div class="who"><div class="ini">${ini(l[0])}</div><div class="wn">${l[0]}</div></div></td>
-    <td class="flag">${l[1]}</td><td><span class="tag">${SRC[l[2]][LI[L]]}</span></td>
-    <td class="flag">${l[3]}</td><td class="flag">${REG[l[4]][LI[L]]}</td>
-    <td class="num" style="color:${l[5]>=80?'var(--gold-lt)':l[5]>=60?'var(--parch2)':'var(--mute)'}">${l[5]}</td>
-    <td><div class="bar"><i style="width:${l[5]}%;background:${l[5]>=80?'var(--sage)':l[5]>=60?'var(--gold)':'var(--mute2)'}"></i></div></td>
-    <td class="flag">${l[6]?dt(l[6]):'—'}</td><td><span class="dot ${LST[l[7]]}"><i></i>${LSTL[l[7]][LI[L]]}</span></td></tr>`).join('');
-
-  /* ── outreach ── */
-  const totEn=SEQ.reduce((a,q)=>a+q[3],0),totRe=SEQ.reduce((a,q)=>a+q[5],0);
-  $('outreachRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Enrolled','Inscrits','Inscritos','Inscritos')}</div><div class="qv">${totEn}</div>
-    <div class="qn">${SEQ.filter(q=>q[6]==='active').length} ${P('active sequences','séquences actives','secuencias activas','sequências ativas')}</div></div>
-   <div class="q"><div class="qk">${P('Replies','Réponses','Respuestas','Respostas')}</div><div class="qv">${totRe}</div>
-    <div class="qn"><b class="money">${(totRe/totEn*100).toFixed(1)}%</b> ${P('reply rate','taux de réponse','tasa de respuesta','taxa de resposta')}</div></div>
-   <div class="q"><div class="qk">${P('Best performer','Meilleure','Mejor','Melhor')}</div>
-    <div class="qv" style="font-size:24px">${P('Bench recruit','Recrut. banc','Recluta banco','Recruta banco')}</div>
-    <div class="qn">38.6% ${P('reply','réponse','respuesta','resposta')}</div></div>
-   <div class="q"><div class="qk">${P('Languages live','Langues actives','Idiomas activos','Idiomas ativos')}</div><div class="qv">4</div>
-    <div class="qn">EN · FR · ES · PT</div></div>`;
-  $('seqTotal').textContent=`${SEQ.length} · ${totEn} ${P('enrolled','inscrits','inscritos','inscritos')}`;
-  const CH={email:['Email','E-mail','Correo','E-mail'],linkedin:['LinkedIn','LinkedIn','LinkedIn','LinkedIn'],phone:['Phone','Téléphone','Teléfono','Telefone']};
-  $('seqBody').innerHTML=SEQ.map(q=>{const rr=(q[5]/q[3]*100);
-   return `<tr><td class="wn">${q[0]}</td><td><span class="tag">${CH[q[1]][LI[L]]}</span></td>
-    <td class="flag">${q[2]}</td><td class="num">${q[3]}</td><td class="num">${q[4]}</td><td class="num">${q[5]}</td>
-    <td class="num" style="color:${rr>=25?'var(--sage)':rr>=15?'var(--gold-lt)':'var(--rust)'}">${rr.toFixed(1)}%</td>
-    <td>${stDot(q[6]==='active'?'ok':'warn')}</td></tr>`}).join('');
-  const AK={email_sent:['Email sent','E-mail envoyé','Correo enviado','E-mail enviado'],email_opened:['Opened','Ouvert','Abierto','Aberto'],
-   email_replied:['Replied','Réponse','Respondió','Respondeu'],call:['Call','Appel','Llamada','Chamada'],
-   meeting:['Meeting','Réunion','Reunión','Reunião'],proposal_sent:['Proposal sent','Proposition envoyée','Propuesta enviada','Proposta enviada'],
-   payment_received:['Payment','Paiement','Pago','Pagamento']};
-  $('actBody').innerHTML=ACT.map(a=>
-   `<tr><td class="flag">${a[0]}</td><td><span class="tag">${AK[a[1]][LI[L]]}</span></td>
-    <td class="wn">${a[2]}</td><td class="flag" style="white-space:normal">${a[3]}</td>
-    <td>${a[4]==='in'?stDot('ok'):stDot('idle')}</td></tr>`).join('');
-
-  /* ── pipeline ── */
-  const open_=OPPS.filter(o=>!['won','lost'].includes(o[2]));
-  const gross=open_.reduce((a,o)=>a+o[3],0);
-  const wtd=open_.reduce((a,o)=>a+Math.round(o[3]*o[4]/100),0);
-  const stalled=open_.filter(o=>o[6]>=5).length;
-  $('pipeRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Open value','Valeur brute','Valor bruto','Valor bruto')}</div>
-    <div class="qv money" style="font-size:30px">${m(gross)}</div><div class="qn">${open_.length} ${P('deals','affaires','negocios','negócios')}</div></div>
-   <div class="q"><div class="qk">${P('Weighted','Pondéré','Ponderado','Ponderado')}</div>
-    <div class="qv" style="font-size:30px">${m(wtd)}</div><div class="qn">${P('plan against this','planifier sur ceci','planificar con esto','planear com isto')}</div></div>
-   <div class="q"><div class="qk">${P('Closing 30d','Clôture 30j','Cierre 30d','Fecho 30d')}</div>
-    <div class="qv money" style="font-size:30px">${m(OPPS.filter(o=>o[5]<='2026-08-31'&&!['won','lost'].includes(o[2])).reduce((a,o)=>a+o[3],0))}</div>
-    <div class="qn">&nbsp;</div></div>
-   <div class="q urgent"><div class="qk">${P('Stalled 5d+','Bloqués 5j+','Parados 5d+','Parados 5d+')}</div>
-    <div class="qv">${stalled}</div><div class="qn">${P('no movement','sans mouvement','sin movimiento','sem movimento')}</div></div>`;
-  const STG=['qualifying','briefing','proposal','negotiation','verbal'];
-  const STGL={qualifying:['Qualifying','Qualification','Cualificando','Qualificação'],briefing:['Briefing','Briefing','Briefing','Briefing'],
-   proposal:['Proposal','Proposition','Propuesta','Proposta'],negotiation:['Negotiation','Négociation','Negociación','Negociação'],
-   verbal:['Verbal','Accord verbal','Verbal','Verbal']};
-  $('stageTotal').textContent=`${m(gross)} · ${m(wtd)} ${P('weighted','pondéré','ponderado','ponderado')}`;
-  $('stageBody').innerHTML=STG.map(st=>{
-   const rows=open_.filter(o=>o[2]===st);const v=rows.reduce((a,o)=>a+o[3],0);
-   const w=rows.reduce((a,o)=>a+Math.round(o[3]*o[4]/100),0);
-   return `<tr><td><span class="tag ${st==='verbal'?'plat':''}">${STGL[st][LI[L]]}</span></td>
-    <td class="num">${rows.length}</td><td class="num money">${m(v)}</td><td class="num">${m(w)}</td>
-    <td><div class="bar" style="width:150px"><i style="width:${gross?Math.round(v/gross*100):0}%"></i></div></td></tr>`}).join('');
-  $('oppTotal').textContent=`${open_.length} ${P('open','ouvertes','abiertas','abertas')}`;
-  $('oppBody').innerHTML=[...open_].sort((a,b)=>b[3]*b[4]-a[3]*a[4]).map(o=>{
-   const cls=o[6]>=9?'hot':o[6]>=5?'warm':'';
-   return `<tr><td class="wn" style="white-space:normal">${o[0]}</td>
-    <td><span class="tag">${(KIND[o[1]]||[o[1],o[1],o[1],o[1]])[LI[L]]}</span></td>
-    <td><span class="tag ${o[2]==='verbal'?'plat':''}">${STGL[o[2]][LI[L]]}</span></td>
-    <td class="num money">${m(o[3])}</td><td class="num">${o[4]}%</td><td class="flag">${dt(o[5])}</td>
-    <td class="age ${cls}">${o[6]}${du[L]}</td><td class="flag" style="white-space:normal">${o[7]}</td></tr>`}).join('');
-
-  /* ── proposals ── */
-  const openProps=PROPS.filter(x=>['sent','viewed'].includes(x[8]));
-  $('propRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Out for decision','En attente','En decisión','Em decisão')}</div>
-    <div class="qv">${openProps.length}</div><div class="qn"><b class="money">${m(openProps.reduce((a,x)=>a+x[3],0))}</b></div></div>
-   <div class="q urgent"><div class="qk">${P('Sent, never opened','Envoyée, non ouverte','Enviada, sin abrir','Enviada, não aberta')}</div>
-    <div class="qv">${PROPS.filter(x=>x[8]==='sent'&&!x[6]).length}</div>
-    <div class="qn">${P('resend, do not chase','renvoyer, ne pas relancer','reenviar, no perseguir','reenviar, não perseguir')}</div></div>
-   <div class="q"><div class="qk">${P('Accepted','Acceptées','Aceptadas','Aceites')}</div>
-    <div class="qv">${PROPS.filter(x=>x[8]==='accepted').length}</div>
-    <div class="qn"><b class="money">${m(PROPS.filter(x=>x[8]==='accepted').reduce((a,x)=>a+x[3],0))}</b></div></div>
-   <div class="q"><div class="qk">${P('Win rate','Taux de succès','Tasa de éxito','Taxa de sucesso')}</div>
-    <div class="qv">33<span style="font-size:20px;color:var(--mute)">%</span></div><div class="qn">${P('last 90 days','90 derniers jours','últimos 90 días','últimos 90 dias')}</div></div>`;
-  $('propTotal').textContent=`${PROPS.length} ${P('total','total','total','total')} · ${openProps.length} ${P('open','ouvertes','abiertas','abertas')}`;
-  const PST={sent:'s-warn',viewed:'s-new',accepted:'s-ok',declined:'s-bad',draft:'s-idle'};
-  const PSTL={sent:['Sent','Envoyée','Enviada','Enviada'],viewed:['Opened','Ouverte','Abierta','Aberta'],
-   accepted:['Accepted','Acceptée','Aceptada','Aceite'],declined:['Declined','Refusée','Rechazada','Recusada']};
-  $('propBody').innerHTML=PROPS.map(x=>
-   `<tr><td class="num">${x[0]}</td><td class="wn">${x[1]}</td><td class="num money">${m(x[3])}</td>
-    <td class="num">v${x[4]}</td><td class="flag">${dt(x[5])}</td>
-    <td class="flag" style="color:${x[6]?'var(--sage)':'var(--rust)'}">${x[6]?dt(x[6]):P('never','jamais','nunca','nunca')}</td>
-    <td class="flag">${dt(x[7])}</td><td><span class="dot ${PST[x[8]]}"><i></i>${PSTL[x[8]][LI[L]]}</span></td>
-    <td style="text-align:right">${['sent','viewed'].includes(x[8])?`<button class="act">${P('Follow up','Relancer','Seguir','Seguir')}</button>`:''}</td></tr>`).join('');
-
-  /* ── campaigns ── */
-  const spend=CAMPS.reduce((a,c)=>a+c[3],0),cleads=CAMPS.reduce((a,c)=>a+c[4],0);
-  $('campRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Spend · Q3','Dépense · T3','Gasto · T3','Gasto · T3')}</div>
-    <div class="qv money" style="font-size:30px">${m(spend)}</div><div class="qn">${CAMPS.filter(c=>c[5]==='running').length} ${P('running','en cours','activas','ativas')}</div></div>
-   <div class="q"><div class="qk">${P('Leads generated','Prospects générés','Prospectos generados','Contactos gerados')}</div>
-    <div class="qv">${cleads}</div><div class="qn">&nbsp;</div></div>
-   <div class="q"><div class="qk">${P('Blended cost / lead','Coût moyen / prospect','Coste medio / prospecto','Custo médio / contacto')}</div>
-    <div class="qv" style="font-size:30px">${m(Math.round(spend/cleads))}</div><div class="qn">&nbsp;</div></div>
-   <div class="q"><div class="qk">${P('Posts this week','Publications','Publicaciones','Publicações')}</div>
-    <div class="qv">${POSTS.length}</div><div class="qn">${POSTS.filter(x=>x[7]==='published').length} ${P('published','publiées','publicadas','publicadas')}</div></div>`;
-  $('campTotal').textContent=`${CAMPS.length} · ${m(spend)}`;
-  const OBJ={membership:['Membership','Adhésion','Membresía','Adesão'],conference:['Conference','Conférence','Conferencia','Conferência'],
-   awareness:['Awareness','Notoriété','Notoriedad','Notoriedade'],leads:['Leads','Prospects','Prospectos','Contactos'],
-   recruitment:['Recruitment','Recrutement','Reclutamiento','Recrutamento'],launch:['Launch','Lancement','Lanzamiento','Lançamento']};
-  $('campBody').innerHTML=CAMPS.map(c=>{const cpl=c[4]?Math.round(c[3]/c[4]):0;
-   return `<tr><td class="wn" style="white-space:normal">${c[0]}</td><td><span class="tag">${OBJ[c[1]][LI[L]]}</span></td>
-    <td class="flag">${c[2]}</td><td class="num money">${m(c[3])}</td><td class="num">${c[4]}</td>
-    <td class="num" style="color:${cpl&&cpl<30000?'var(--sage)':cpl<45000?'var(--gold-lt)':'var(--rust)'}">${c[4]?m(cpl):'—'}</td>
-    <td><div class="bar"><i style="width:${Math.min(100,Math.round(c[3]/spend*400))}%"></i></div></td>
-    <td>${stDot(c[5]==='running'?'ok':'idle')}</td></tr>`}).join('');
-  $('postBody').innerHTML=POSTS.map(x=>
-   `<tr><td><span class="tag">${x[0]}</span></td><td class="flag">${x[1]}</td><td class="flag">${x[2]}</td>
-    <td class="flag" style="white-space:normal;color:var(--parch2)">${x[3]}</td>
-    <td class="num">${x[4]?x[4].toLocaleString(LOC[L]):'—'}</td><td class="num">${x[5]?x[5].toLocaleString(LOC[L]):'—'}</td>
-    <td class="num" style="color:${x[6]?'var(--gold-lt)':'var(--mute2)'}">${x[6]||'—'}</td>
-    <td>${stDot(x[7]==='published'?'ok':x[7]==='scheduled'?'new':'warn')}</td></tr>`).join('');
-
-  /* ── financial dashboard ── */
-  const recur=REVLINE.reduce((a,r)=>a+r[1],0), oneoff=REVLINE.reduce((a,r)=>a+r[2],0);
-  const outstanding=INVMGMT.reduce((a,v)=>a+(v[3]-v[4]),0);
-  const collectedJul=MONTHS[MONTHS.length-1][2];
-  $('finRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Annual recurring','Récurrent annuel','Recurrente anual','Recorrente anual')}</div>
-    <div class="qv money" style="font-size:30px">${m(recur)}</div><div class="qn">${P('memberships','adhésions','membresías','adesões')}</div></div>
-   <div class="q"><div class="qk">${P('One-off booked','Ponctuel engagé','Puntual contratado','Pontual contratado')}</div>
-    <div class="qv" style="font-size:30px">${m(oneoff)}</div><div class="qn">${P('packages, consulting, events','forfaits, conseil, événements','paquetes, consultoría, eventos','pacotes, consultoria, eventos')}</div></div>
-   <div class="q urgent"><div class="qk">${P('Outstanding','Encours','Pendiente','Em dívida')}</div>
-    <div class="qv" style="font-size:30px">${m(outstanding)}</div><div class="qn">${P('across 6 invoices','sur 6 factures','en 6 facturas','em 6 faturas')}</div></div>
-   <div class="q"><div class="qk">${P('Collected · July','Encaissé · juil.','Cobrado · jul.','Recebido · jul.')}</div>
-    <div class="qv money" style="font-size:30px">${m(collectedJul)}</div><div class="qn">&nbsp;</div></div>
-   <div class="q"><div class="qk">${P('Coach payouts','Rémunérations','Pagos coaches','Pagamentos')}</div>
-    <div class="qv" style="font-size:30px">${m(PAYOUTS.reduce((a,x)=>a+x[1],0))}</div><div class="qn">${P('July','juillet','julio','julho')}</div></div>`;
-  const maxLine=Math.max(...REVLINE.map(r=>r[1]+r[2]));
-  $('lineBody').innerHTML=REVLINE.map(r=>{const tot=r[1]+r[2];
-   return `<tr><td class="wn">${r[0]}</td><td class="num ${r[1]?'money':''}">${r[1]?m(r[1]):'—'}</td>
-    <td class="num">${r[2]?m(r[2]):'—'}</td><td class="num money">${tot?m(tot):'—'}</td>
-    <td><div class="bar" style="width:100px"><i style="width:${maxLine?Math.round(tot/maxLine*100):0}%"></i></div></td></tr>`}).join('');
-  const bands=[[P('Current','À jour','Al día','Em dia'),INVMGMT.filter(v=>v[9]==='cur').reduce((a,v)=>a+v[3]-v[4],0),'var(--sage)'],
-   ['30–60',INVMGMT.filter(v=>v[9]==='30-60').reduce((a,v)=>a+v[3]-v[4],0),'var(--amber)'],
-   ['60+',INVMGMT.filter(v=>v[9]==='60+').reduce((a,v)=>a+v[3]-v[4],0),'var(--rust)']];
-  $('agingWrap').innerHTML=`<div style="padding:18px 20px">
-   <div class="bar" style="width:100%;height:6px;margin-bottom:14px">${bands.map(b=>
-     `<i style="width:${Math.round(b[1]/outstanding*100)}%;background:${b[2]}"></i>`).join('')}</div>
-   ${bands.map(b=>`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:12px">
-     <span style="display:flex;align-items:center;gap:8px"><i style="width:7px;height:2px;background:${b[2]};display:inline-block"></i>${b[0]}</span>
-     <span class="num" style="color:${b[2]}">${m(b[1])}</span></div>`).join('')}</div>`;
-  $('payoutWrap').innerHTML=`<div style="padding:14px 20px">${PAYOUTS.map(x=>
-   `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px">
-    <span>${x[0]}</span><span class="num money">${m(x[1])}</span></div>`).join('')}</div>`;
-  $('monthBody').innerHTML=MONTHS.map(x=>{const rate=x[2]/x[1]*100;
-   return `<tr><td class="wn">${x[0]}</td><td class="num">${m(x[1])}</td><td class="num money">${m(x[2])}</td>
-    <td class="num" style="color:${rate>=85?'var(--sage)':rate>=60?'var(--amber)':'var(--rust)'}">${rate.toFixed(0)}%</td>
-    <td><div class="bar" style="width:90px"><i style="width:${Math.min(100,rate)}%;background:${rate>=85?'var(--sage)':rate>=60?'var(--amber)':'var(--rust)'}"></i></div></td>
-    <td class="num" style="color:var(--sage)">+${x[3]}</td><td class="num" style="color:var(--rust)">−${x[4]}</td></tr>`}).join('');
-
-  /* ── invoice management ── */
-  $('invRow').innerHTML=`
-   <div class="q urgent"><div class="qk">${P('Over 60 days','Plus de 60 jours','Más de 60 días','Mais de 60 dias')}</div>
-    <div class="qv" style="font-size:30px">${m(INVMGMT.filter(v=>v[9]==='60+').reduce((a,v)=>a+v[3]-v[4],0))}</div>
-    <div class="qn">${P('call, do not email','appeler, pas e-mail','llamar, no correo','ligar, não e-mail')}</div></div>
-   <div class="q"><div class="qk">${P('Outstanding','Encours','Pendiente','Em dívida')}</div>
-    <div class="qv money" style="font-size:30px">${m(outstanding)}</div><div class="qn">${INVMGMT.length} ${P('invoices','factures','facturas','faturas')}</div></div>
-   <div class="q"><div class="qk">${P('Reminders sent','Relances','Recordatorios','Lembretes')}</div>
-    <div class="qv">${INVMGMT.reduce((a,v)=>a+v[7],0)}</div><div class="qn">3 · 7 · 14 · 21 ${du[L]}</div></div>
-   <div class="q"><div class="qk">${P('Part paid','Partiellement payé','Pago parcial','Pago parcial')}</div>
-    <div class="qv">${INVMGMT.filter(v=>v[4]>0&&v[4]<v[3]).length}</div><div class="qn">&nbsp;</div></div>`;
-  $('invTotal').textContent=`${INVMGMT.length} · ${m(outstanding)} ${P('outstanding','en souffrance','pendiente','em dívida')}`;
-  const MTH={wire:['Wire','Virement','Transferencia','Transferência'],card:['Card','Carte','Tarjeta','Cartão'],
-   mobile_money:['Mobile money','Mobile money','Mobile money','Mobile money'],ach:['ACH','ACH','ACH','ACH']};
-  $('invMgmtBody').innerHTML=INVMGMT.map(v=>{const a=AG[v[9]];
-   return `<tr><td class="num">${v[0]}</td><td class="wn">${v[1]}</td><td class="flag">${v[2]}</td>
-    <td class="num money">${m(v[3])}</td><td class="num" style="color:${v[4]?'var(--sage)':'var(--mute2)'}">${v[4]?m(v[4]):'—'}</td>
-    <td class="flag">${v[5]}</td><td class="age ${v[6]>=60?'hot':v[6]>=30?'warm':''}">${v[6]}${du[L]}</td>
-    <td class="num">${v[7]}</td><td><span class="tag">${MTH[v[8]][LI[L]]}</span></td>
-    <td><span class="dot ${a[0]}"><i></i>${P(a[1],a[2],a[3],a[4])}</span></td>
-    <td style="text-align:right">${v[6]>=60?`<button class="act">${P('Call','Appeler','Llamar','Ligar')}</button>`
-      :v[6]>=14?`<button class="act">${P('Remind','Relancer','Recordar','Lembrar')}</button>`:''}</td></tr>`}).join('');
-
-  /* ── contract management ── */
-  const signedAll=CONTRACTS.length;
-  $('conRow').innerHTML=`
-   <div class="q" data-go="authorise"><div class="qk">${P('Awaiting authorisation','En attente d\'autorisation','Pendiente autorización','A aguardar autorização')}</div>
-    <div class="qv">${pend.length}</div><div class="qn"><b class="money">${m(pv)}</b></div></div>
-   <div class="q"><div class="qk">${P('Signed · July','Signés · juil.','Firmados · jul.','Assinados · jul.')}</div>
-    <div class="qv">${signedAll}</div><div class="qn">${P('all e-signed','tous signés en ligne','todos con e-firma','todos com e-assinatura')}</div></div>
-   <div class="q"><div class="qk">${P('Authorised','Autorisés','Autorizados','Autorizados')}</div>
-    <div class="qv">${authorised.size}</div><div class="qn">${P('invoice issued','facture émise','factura emitida','fatura emitida')}</div></div>
-   <div class="q"><div class="qk">${P('Languages','Langues','Idiomas','Idiomas')}</div><div class="qv">3</div>
-    <div class="qn">EN · FR · PT</div></div>`;
-  $('conTotal').textContent=`${signedAll} · ${authorised.size} ${P('authorised','autorisés','autorizados','autorizados')}`;
-  $('conBody').innerHTML=CONTRACTS.map(c=>{const done=authorised.has(c[0]);
-   return `<tr><td class="num">${c[0]}</td>
-    <td><div class="who"><div class="ini">${ini(c[1])}</div><div><div class="wn">${c[1]}</div><div class="ws">${c[2]}</div></div></div></td>
-    <td><span class="tag">${c[3]}</span></td><td class="num money">${m(c[4])}</td>
-    <td class="flag">${c[1].split(' ')[0]} · ${dt(c[6])} · 102.89.x.x</td>
-    <td class="flag">${dt(c[6])}</td>
-    <td>${done?stDot('ok'):stDot('warn')}</td></tr>`}).join('');
-
-  /* ── investors ── */
-  const committed=INVESTORS.reduce((a,x)=>a+x[3],0), invested=INVESTORS.reduce((a,x)=>a+x[4],0);
-  const dueSoon=INVESTORS.filter(x=>x[7]&&x[7]<='2026-08-31'&&['committed','invested','in_diligence'].includes(x[2])).length;
-  $('invstRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Invested','Investi','Invertido','Investido')}</div>
-    <div class="qv money" style="font-size:30px">${m(invested)}</div>
-    <div class="qn">${INVESTORS.filter(x=>x[2]==='invested').length} ${P('investors','investisseurs','inversores','investidores')}</div></div>
-   <div class="q"><div class="qk">${P('Committed, unfunded','Engagé, non versé','Comprometido, no aportado','Comprometido, não pago')}</div>
-    <div class="qv" style="font-size:30px">${m(committed-invested)}</div><div class="qn">&nbsp;</div></div>
-   <div class="q"><div class="qk">${P('In diligence','En diligence','En diligencia','Em diligência')}</div>
-    <div class="qv">${INVESTORS.filter(x=>x[2]==='in_diligence').length}</div>
-    <div class="qn"><b class="money">${m(INVESTORS.filter(x=>x[2]==='in_diligence').reduce((a,x)=>a+x[3],0))}</b></div></div>
-   <div class="q urgent"><div class="qk">${P('Reports due 30d','Rapports dus 30j','Informes 30d','Relatórios 30d')}</div>
-    <div class="qv">${dueSoon}</div><div class="qn">${P('do not miss these','ne pas les manquer','no fallar','não falhar')}</div></div>`;
-  $('invstTotal').textContent=`${INVESTORS.length} · ${m(invested)} ${P('invested','investi','invertido','investido')}`;
-  const IK={family_office:['Family office','Family office','Family office','Family office'],vc:['VC','VC','VC','VC'],
-   pe:['PE','PE','PE','PE'],dfi:['DFI','IFD','IFD','IFD'],foundation:['Foundation','Fondation','Fundación','Fundação'],
-   angel_syndicate:['Angel syndicate','Syndicat business angels','Sindicato ángeles','Sindicato de anjos'],individual:['Individual','Particulier','Individual','Individual']};
-  const IR={invested:['s-ok','Invested','Investi','Invertido','Investido'],committed:['s-warn','Committed','Engagé','Comprometido','Comprometido'],
-   in_diligence:['s-new','In diligence','En diligence','En diligencia','Em diligência'],prospect:['s-idle','Prospect','Prospect','Prospecto','Potencial'],
-   declined:['s-bad','Declined','Refusé','Rechazado','Recusado']};
-  const CAD={quarterly:['Quarterly','Trimestriel','Trimestral','Trimestral'],semiannual:['Semiannual','Semestriel','Semestral','Semestral'],
-   annual:['Annual','Annuel','Anual','Anual'],on_request:['On request','Sur demande','A petición','A pedido']};
-  $('invstBody').innerHTML=INVESTORS.map(x=>{const r=IR[x[2]];
-   const soon=x[7]&&x[7]<='2026-08-31';
-   return `<tr><td><div class="who"><div class="ini">${ini(x[0])}</div><div class="wn">${x[0]}</div></div></td>
-    <td><span class="tag">${IK[x[1]][LI[L]]}</span></td>
-    <td><span class="dot ${r[0]}"><i></i>${P(r[1],r[2],r[3],r[4])}</span></td>
-    <td class="num">${x[3]?m(x[3]):'—'}</td><td class="num money">${x[4]?m(x[4]):'—'}</td>
-    <td class="num">${x[5]!=null?x[5].toFixed(2)+'%':'—'}</td><td class="flag">${CAD[x[6]][LI[L]]}</td>
-    <td class="flag" style="color:${soon?'var(--amber)':'var(--mute2)'}">${x[7]?dt(x[7]):'—'}</td>
-    <td style="text-align:right">${soon?`<button class="act">${P('Draft update','Rédiger','Redactar','Redigir')}</button>`:''}</td></tr>`}).join('');
-
-
-  /* ── team & access ── */
-  const LVL={admin:['Admin','var(--gold-lt)'],edit:['Edit','var(--sage)'],view:['View','var(--sky)'],none:['—','var(--mute2)']};
-  const LVLL={admin:['Admin','Admin','Admin','Admin'],edit:['Edit','Modifier','Editar','Editar'],
-   view:['View','Lecture','Lectura','Leitura'],none:['—','—','—','—']};
-  const licensed=MODULES.filter(x=>x[7]).length;
-  $('teamRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Team members','Membres','Miembros','Membros')}</div>
-    <div class="qv">${TEAM.filter(x=>x[5]==='active').length}</div>
-    <div class="qn">${TEAM.filter(x=>x[5]!=='active').length} ${P('deactivated','désactivés','desactivados','desativados')}</div></div>
-   <div class="q"><div class="qk">${P('Full access','Accès complet','Acceso total','Acesso total')}</div>
-    <div class="qv">${TEAM.filter(x=>x[3]>=13).length}</div>
-    <div class="qn">${P('of','sur','de','de')} ${licensed} ${P('licensed modules','modules licenciés','módulos','módulos')}</div></div>
-   <div class="q"><div class="qk">${P('Vault access','Accès coffre','Acceso bóveda','Acesso cofre')}</div>
-    <div class="qv">${Object.values(MATRIX).filter(r=>r[2]!=='none').length}</div>
-    <div class="qn">${P('can read coaching notes','peuvent lire les notes','pueden leer notas','podem ler notas')}</div></div>
-   <div class="q urgent"><div class="qk">${P('Idle 60d+','Inactifs 60j+','Inactivos 60d+','Inativos 60d+')}</div>
-    <div class="qv">1</div><div class="qn">${P('review access','revoir l\'accès','revisar acceso','revisar acesso')}</div></div>`;
-  $('teamTotal').textContent=`${TEAM.length} · ${licensed} ${P('modules licensed','modules licenciés','módulos licenciados','módulos licenciados')}`;
-  const RLBL={owner:['Owner','Propriétaire','Propietario','Proprietário'],admin:['Admin','Admin','Admin','Admin'],
-   coach:['Coach','Coach','Coach','Coach'],board:['Board','Conseil','Consejo','Conselho'],member:['Member','Membre','Miembro','Membro']};
-  $('teamBody').innerHTML=TEAM.map(x=>
-   `<tr><td><div class="who"><div class="ini">${ini(x[0])}</div><div><div class="wn">${x[0]}</div></div></div></td>
-    <td><span class="tag ${x[1]==='owner'?'plat':''}">${RLBL[x[1]][LI[L]]}</span></td>
-    <td class="flag">${x[2]}</td>
-    <td class="num">${x[3]} / ${licensed}</td>
-    <td class="flag">${x[4]}</td><td>${stDot(x[5]==='active'?'ok':'idle')}</td>
-    <td style="text-align:right">${x[1]==='owner'?`<span class="flag">${P('cannot edit self','non modifiable','no editable','não editável')}</span>`
-      :`<button class="act">${P('Edit access','Modifier','Editar','Editar')}</button>`}</td></tr>`).join('');
-
-  $('matrixNote').textContent=`${Object.keys(MATRIX).length} ${P('users','utilisateurs','usuarios','utilizadores')} × ${MATRIX_MODS.length} ${P('functions','fonctions','funciones','funções')}`;
-  $('matrixTbl').innerHTML=
-   `<thead><tr><th>${P('Member','Membre','Miembro','Membro')}</th>${MATRIX_MODS.map(mm=>
-     `<th style="text-align:center">${mm[1]}</th>`).join('')}</tr></thead><tbody>`+
-   Object.entries(MATRIX).map(([who,lv])=>
-     `<tr><td class="wn">${who}</td>${lv.map(l=>
-       `<td style="text-align:center"><span style="font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:${LVL[l][1]};
-        ${l==='none'?'':'border:1px solid '+LVL[l][1]+'44;padding:2px 5px;border-radius:2px;background:'+LVL[l][1]+'12'}">
-        ${LVLL[l][LI[L]]}</span></td>`).join('')}</tr>`).join('')+'</tbody>';
-
-  $('tplBody').innerHTML=TPL.map(x=>
-   `<tr><td class="wn">${x[0]}</td><td><span class="tag">${RLBL[x[1]][LI[L]]}</span></td>
-    <td class="num">${x[2]} ${P('functions','fonctions','funciones','funções')}</td>
-    <td class="flag" style="color:${x[3].length?'var(--rust)':'var(--mute2)'}">${x[3].length?x[3].join(' · '):'—'}</td>
-    <td class="num">${x[4]}</td></tr>`).join('');
-
-  /* ── modules & licensing ── */
-  const lic=MODULES.filter(x=>x[7]), avail=MODULES.filter(x=>!x[7]);
-  const addonSum=avail.reduce((a,x)=>a+x[4],0);
-  $('modRow').innerHTML=`
-   <div class="q"><div class="qk">${P('Licensed','Sous licence','Licenciados','Licenciados')}</div>
-    <div class="qv">${lic.length}<span style="font-size:20px;color:var(--mute)"> / ${MODULES.length}</span></div>
-    <div class="qn">Professional</div></div>
-   <div class="q"><div class="qk">${P('Platform fee','Abonnement','Cuota','Mensalidade')}</div>
-    <div class="qv money" style="font-size:29px">${m(375000)}</div><div class="qn">${P('per month','par mois','al mes','por mês')}</div></div>
-   <div class="q"><div class="qk">${P('Available to add','En option','Para añadir','Para adicionar')}</div>
-    <div class="qv">${avail.length}</div><div class="qn"><b class="money">${m(addonSum)}</b> ${P('per month','par mois','al mes','por mês')}</div></div>
-   <div class="q"><div class="qk">${P('Sovereign tier','Offre Souveraine','Nivel Soberano','Nível Soberano')}</div>
-    <div class="qv money" style="font-size:29px">${m(450000)}</div>
-    <div class="qn">${P('all 17 included','les 17 inclus','los 17 incluidos','os 17 incluídos')}</div></div>`;
-  const CAT={core:['Core','Cœur','Núcleo','Núcleo'],finance:['Finance','Finance','Finanzas','Finanças'],
-   growth:['Growth','Croissance','Crecimiento','Crescimento'],relationships:['Relationships','Relations','Relaciones','Relações'],
-   governance:['Governance','Gouvernance','Gobernanza','Governança'],intelligence:['Intelligence','Intelligence','Inteligencia','Inteligência']};
-  const TIERN={essential:'Essential',professional:'Professional',sovereign:'Sovereign'};
-  $('licTotal').textContent=`${lic.length} ${P('of','sur','de','de')} ${MODULES.length}`;
-  $('licBody').innerHTML=lic.map(x=>
-   `<tr><td class="wn">${x[1]}</td><td><span class="tag">${CAT[x[2]][LI[L]]}</span></td>
-    <td class="flag">${TIERN[x[3]]}</td><td class="flag">${P('tier','offre','nivel','nível')}</td>
-    <td class="num">${x[6]}</td><td>${stDot('ok')}</td></tr>`).join('');
-  $('addonTotal').textContent=`${avail.length} · ${m(addonSum)}/${P('mo','mois','mes','mês')}`;
-  $('addonBody').innerHTML=avail.map(x=>
-   `<tr><td class="wn">${x[1]}</td><td><span class="tag">${CAT[x[2]][LI[L]]}</span></td>
-    <td class="flag" style="white-space:normal">${x[5]}</td>
-    <td><span class="tag plat">${TIERN[x[3]]}</span></td>
-    <td class="num money">${m(x[4])}<span style="color:var(--mute2)">/${P('mo','mois','mes','mês')}</span></td>
-    <td style="text-align:right"><button class="act">${P('Request','Demander','Solicitar','Solicitar')}</button></td></tr>`).join('');
-
-  ['teamBody','tplBody','licBody','addonBody','leadBody','seqBody','actBody','stageBody','oppBody','propBody','campBody','postBody','lineBody','monthBody','invMgmtBody','conBody','invstBody','authBody','authBody2','memBody','corpBody','pkgBody','reqBody','benBody','consBody','confBody',
-   'nlBody','outBody','shopBody','brdBody','sessBody','allSessBody','invBody'].forEach(stag);
-  wire();
+function say(el, text, ok = false) {
+  el.textContent = text;
+  el.className = "msg" + (ok ? " ok" : "");
+  el.hidden = !text;
 }
-function wire(){
-  document.querySelectorAll('[data-auth]').forEach(b=>b.onclick=()=>{
-    if(authorised.has(b.dataset.auth))return; authorised.add(b.dataset.auth); render()});
-  document.querySelectorAll('[data-go]').forEach(q=>q.onclick=()=>go(q.dataset.go));
-}
-function go(v){
-  document.querySelectorAll('.ni').forEach(x=>x.classList.toggle('on',x.dataset.v===v));
-  document.querySelectorAll('.view').forEach(s=>s.classList.remove('on'));
-  const el=$('v-'+v); if(el)el.classList.add('on');
-  document.querySelector('.main').scrollTop=0;
-}
-document.querySelectorAll('.ni').forEach(n=>n.onclick=()=>go(n.dataset.v));
-document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.lang button').forEach(x=>x.classList.toggle('on',x===b));
-  L=b.dataset.l; document.documentElement.lang=L;
-  document.querySelectorAll('[data-i]').forEach(e=>{const v=t(e.dataset.i); if(v)e.textContent=v});
-  tick(); render();
+
+/* ---------------- auth ---------------- */
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = $("signInBtn");
+  btn.disabled = true; btn.textContent = "Signing in…";
+  const { error } = await sb.auth.signInWithPassword({
+    email: $("email").value.trim(), password: $("password").value,
+  });
+  btn.disabled = false; btn.textContent = "Sign in";
+  if (error) say($("loginMsg"), error.message);
 });
-function tick(){
-  const n=new Date();
-  $('now').textContent=n.toLocaleString('en-GB',{timeZone:'Indian/Mauritius',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const h=+n.toLocaleString('en-GB',{timeZone:'Indian/Mauritius',hour:'2-digit',hour12:false});
-  const g=h<12?['Good morning','Bonjour','Buenos días','Bom dia']
-        :h<17?['Good afternoon','Bon après-midi','Buenas tardes','Boa tarde']
-              :['Good evening','Bonsoir','Buenas noches','Boa noite'];
-  $('greet').textContent=g[LI[L]];
-}
-tick(); setInterval(tick,1000); render();
 
-/* ── LIVE DATA: pull real records from the BCA backend and replace sample data ── */
-const CONSOLE_EP="https://uojsxmdnpwskxeueftgp.supabase.co/functions/v1/bca-console";
-const MARKET_EP="https://uojsxmdnpwskxeueftgp.supabase.co/functions/v1/bca-marketing-data";
-function usd(n){return "$"+(n||0).toLocaleString();}
-function esc2(x){return String(x==null?"":x).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
-function renderMarketing(d){
-  if(!d||!d.kpis){return;}
-  var k=d.kpis, el=function(id){return document.getElementById(id);};
-  if(el("mkKpi")) el("mkKpi").innerHTML=
-   '<div class="q"><div class="qk">Active members</div><div class="qv">'+k.activeMembers+'</div><div class="qn money">'+usd(k.activeARR)+' ARR</div></div>'+
-   '<div class="q"><div class="qk">Win-back</div><div class="qv money" style="font-size:29px">'+usd(k.winbackValue)+'</div><div class="qn">'+k.winbackCount+' lapsed</div></div>'+
-   '<div class="q"><div class="qk">Renewals \u00b7 90d</div><div class="qv">'+k.renewalsCount+'</div><div class="qn money">'+usd(k.renewalsValue)+'</div></div>'+
-   '<div class="q"><div class="qk">Pipeline</div><div class="qv">'+(k.leadsTotal||0).toLocaleString()+'</div><div class="qn">prospects</div></div>';
-  var camps=d.campaigns||[];
-  if(el("mkCampTot")) el("mkCampTot").textContent=camps.length+" active";
-  if(el("mkCampBody")) el("mkCampBody").innerHTML=camps.map(function(c){
-    return '<tr><td class="wn">'+esc2(c.name)+'</td><td><span class="tag">'+esc2(c.objective)+'</span></td><td class="flag">'+esc2((c.channels||[]).join(" \u00b7 "))+'</td><td class="flag">'+esc2(c.status)+'</td></tr>';}).join('');
-  var ren=d.renewals||[];
-  if(el("mkRenTot")) el("mkRenTot").textContent=usd(k.renewalsValue);
-  if(el("mkRenBody")) el("mkRenBody").innerHTML=ren.length?ren.map(function(r){
-    return '<tr><td class="wn">'+esc2(r.name)+'</td><td class="flag">'+esc2((r.product||"").replace("BCA ","").replace(" Membership",""))+'</td><td class="flag">'+esc2(r.renews_on)+'</td><td class="num money">'+usd(r.value)+'</td></tr>';}).join(''):'<tr><td colspan="4" class="flag">None due in this window.</td></tr>';
-  var wb=d.winback||[];
-  if(el("mkWbTot")) el("mkWbTot").textContent=usd(wb.reduce(function(a,x){return a+x.value;},0))+"+";
-  if(el("mkWbBody")) el("mkWbBody").innerHTML=wb.map(function(r){
-    return '<tr><td class="wn">'+esc2(r.name)+'</td><td class="flag">'+esc2(r.region||"\u2014")+'</td><td class="num money">'+usd(r.value)+'</td></tr>';}).join('');
-}
-function setBadge(v,n){var e=document.querySelector('[data-v="'+v+'"] .badge');if(e)e.textContent=n;}
-async function bootLive(){
-  var code=null; try{code=localStorage.getItem('ce_code');}catch(_){}
-  if(!code){ code=window.prompt('Coaching Engine — access code'); if(code){try{localStorage.setItem('ce_code',code);}catch(_){}} }
-  if(!code) return;
-  try{
-    var r=await fetch(CONSOLE_EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})});
-    if(!r.ok){ try{localStorage.removeItem('ce_code');}catch(_){} return; }
-    var d=await r.json();
-    if(d.MEMBERS) MEMBERS=d.MEMBERS;
-    if(d.INVOICES) INVOICES=d.INVOICES;
-    if(d.CONTRACTS) CONTRACTS=d.CONTRACTS;
-    if(d.CAMPS) CAMPS=d.CAMPS;
-    if(d.LEADS) LEADS=d.LEADS;
-    if(d.REQUESTS) REQUESTS=d.REQUESTS;
-    if(d.counts){var c=d.counts;
-      setBadge('members',c.members); setBadge('invoices',c.invoices);
-      setBadge('campaigns',c.campaigns); setBadge('requests',c.requests);
-      setBadge('authorise',c.contracts); setBadge('leads',c.leads);}
-    document.title='Coaching Engine · BCA (live)';
-    render();
-    try{ var rm=await fetch(MARKET_EP,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})}); if(rm.ok){ renderMarketing(await rm.json()); } }catch(_){}
-  }catch(e){ /* keep sample data on any failure */ }
-}
-bootLive();
+$("signUpBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim(), password = $("password").value;
+  if (!email || password.length < 8) {
+    return say($("loginMsg"), "Enter your email and a password of at least 8 characters, then press this button again.");
+  }
+  const btn = $("signUpBtn");
+  btn.disabled = true; btn.textContent = "Creating…";
+  const { error } = await sb.auth.signUp({ email, password });
+  btn.disabled = false; btn.textContent = "First time here? Create your account";
+  if (error) return say($("loginMsg"), error.message);
+  say($("loginMsg"), "Account created. If a confirmation email arrives, open it, then sign in here.", true);
+});
 
+$("signOutBtn").addEventListener("click", async () => { await sb.auth.signOut(); location.reload(); });
+
+sb.auth.onAuthStateChange((_e, session) => { session ? start(session) : showGate(); });
+sb.auth.getSession().then(({ data }) => { data.session ? start(data.session) : showGate(); });
+
+function showGate() { app.hidden = true; gate.hidden = false; }
+
+/* ---------------- boot ---------------- */
+async function start(session) {
+  gate.hidden = true; app.hidden = false;
+  $("whoami").textContent = session.user.email;
+
+  // tenant_id is stamped into the token by the access-token hook. Without it every
+  // policy compares against null and the person correctly sees nothing, so say so
+  // plainly rather than rendering an empty dashboard that looks broken.
+  let claims = {};
+  try { claims = JSON.parse(atob(session.access_token.split(".")[1])); } catch { /* ignore */ }
+  if (!claims.tenant_id && !claims.platform_admin) {
+    say($("appMsg"), "Your account is not yet linked to BCA. Ask your administrator to add you, then sign out and back in.");
+    return;
+  }
+
+  loadRevenue();
+  loadInvoices();
+  loadMemberships();
+  loadTraffic();
+}
+
+/* ---------------- revenue ---------------- */
+async function loadRevenue() {
+  const { data, error } = await sb.from("invoices").select("total_minor, paid_minor, status, currency");
+  if (error) return say($("appMsg"), "Could not load revenue: " + error.message);
+
+  const rows = data || [];
+  const invoiced  = rows.reduce((s, r) => s + Number(r.total_minor || 0), 0);
+  const collected = rows.reduce((s, r) => s + Number(r.paid_minor || 0), 0);
+  const open      = rows.filter((r) => r.status !== "paid");
+  const outstanding = open.reduce((s, r) => s + (Number(r.total_minor || 0) - Number(r.paid_minor || 0)), 0);
+
+  const { count: activeMem } = await sb.from("memberships")
+    .select("id", { count: "exact", head: true }).eq("status", "active");
+  const { count: allMem } = await sb.from("memberships")
+    .select("id", { count: "exact", head: true });
+
+  const pct = invoiced ? Math.round((collected / invoiced) * 100) : 0;
+
+  $("figs").innerHTML = `
+    <div class="fig"><span class="k">Invoiced to date</span><span class="v">${money(invoiced)}</span><span class="d">${rows.length} invoices</span></div>
+    <div class="fig olive"><span class="k">Collected</span><span class="v">${money(collected)}</span><span class="d">${pct}% of invoiced</span></div>
+    <div class="fig clay"><span class="k">Outstanding</span><span class="v">${money(outstanding)}</span><span class="d">${open.length} invoice${open.length === 1 ? "" : "s"} open</span></div>
+    <div class="fig gold"><span class="k">Active memberships</span><span class="v">${activeMem ?? "—"}</span><span class="d">of ${allMem ?? "—"} on record</span></div>`;
+
+  $("revNote").textContent = "Live from your records";
+
+  const outPct = 100 - pct;
+  $("collBar").innerHTML =
+    `<span style="width:${pct}%;background:var(--green)"></span>` +
+    `<span style="width:${outPct}%;background:var(--clay)"></span>`;
+  $("collLegend").innerHTML =
+    `<span><i style="background:var(--green)"></i>Collected ${money2(collected)}</span>` +
+    `<span><i style="background:var(--clay)"></i>Outstanding ${money2(outstanding)}</span>`;
+  $("collPanel").hidden = false;
+}
+
+/* ---------------- invoices ---------------- */
+async function loadInvoices() {
+  const { data, error } = await sb.from("invoices")
+    .select("number,total_minor,paid_minor,currency,status,issued_on,due_on,people(first_name,last_name),organizations(name)")
+    .order("issued_on", { ascending: false })
+    .limit(300);
+
+  const body = $("invBody");
+  if (error) { body.innerHTML = `<tr><td colspan="7">Could not load invoices: ${esc(error.message)}</td></tr>`; return; }
+  const rows = data || [];
+  if (!rows.length) { body.innerHTML = `<tr><td colspan="7">No invoices yet.</td></tr>`; return; }
+
+  const today = new Date().toISOString().slice(0, 10);
+  body.innerHTML = rows.map((r) => {
+    const who = [r.people?.first_name, r.people?.last_name].filter(Boolean).join(" ") || r.organizations?.name || "—";
+    const overdue = r.status !== "paid" && r.due_on && r.due_on < today;
+    const cls = overdue ? "over" : (r.status === "paid" ? "paid" : r.status === "sent" ? "sent" : "draft");
+    const label = overdue ? "Overdue" : (r.status || "—");
+    return `<tr>
+      <td class="mono">${esc(r.number)}</td>
+      <td class="who">${esc(who)}</td>
+      <td class="num">${money2(r.total_minor, r.currency || "USD")}</td>
+      <td class="num">${money2(r.paid_minor, r.currency || "USD")}</td>
+      <td>${day(r.issued_on)}</td>
+      <td>${day(r.due_on)}</td>
+      <td><span class="pill ${cls}">${esc(label)}</span></td>
+    </tr>`;
+  }).join("");
+
+  $("invNote").textContent = `${rows.length} shown, newest first`;
+}
+
+/* ---------------- memberships ---------------- */
+async function loadMemberships() {
+  const { data, error } = await sb.from("memberships").select("status, renews_on, products(name)");
+  if (error) { $("memNote").textContent = "Could not load memberships"; return; }
+  const rows = data || [];
+  const by = {};
+  rows.forEach((r) => { by[r.status || "unknown"] = (by[r.status || "unknown"] || 0) + 1; });
+
+  const today = new Date().toISOString().slice(0, 10);
+  const in60 = new Date(Date.now() + 60 * 864e5).toISOString().slice(0, 10);
+  const renewing = rows.filter((r) => r.status === "active" && r.renews_on && r.renews_on > today && r.renews_on <= in60).length;
+
+  const order = ["active", "lapsed", "cancelled", "pending", "unknown"];
+  const cls = { active: "", lapsed: "clay", cancelled: "clay", pending: "gold", unknown: "" };
+  $("memFigs").innerHTML =
+    order.filter((k) => by[k]).map((k) =>
+      `<div class="fig ${cls[k] || ""}"><span class="k">${k}</span><span class="v">${by[k]}</span><span class="d">${Math.round((by[k] / rows.length) * 100)}% of ${rows.length}</span></div>`
+    ).join("") +
+    `<div class="fig gold"><span class="k">Renewing in 60 days</span><span class="v">${renewing}</span><span class="d">active memberships due</span></div>`;
+
+  $("memNote").textContent = `${rows.length} on record`;
+}
+
+/* ---------------- website traffic ---------------- */
+async function loadTraffic() {
+  const wrap = $("trafficWrap");
+  try {
+    const res = await fetch(SUPABASE_URL + "/functions/v1/bca-traffic", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + (await sb.auth.getSession()).data.session.access_token,
+      },
+      body: JSON.stringify({ range: "30d" }),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    const t = await res.json();
+    if (!t || t.unavailable) throw new Error("unconfigured");
+
+    wrap.innerHTML = `<div class="figs">
+      <div class="fig"><span class="k">Visitors</span><span class="v">${Number(t.visitors).toLocaleString()}</span><span class="d">last 30 days</span></div>
+      <div class="fig olive"><span class="k">Page views</span><span class="v">${Number(t.pageviews).toLocaleString()}</span><span class="d">last 30 days</span></div>
+      <div class="fig gold"><span class="k">Bounce rate</span><span class="v">${t.bounce ?? "—"}%</span><span class="d">last 30 days</span></div>
+    </div>`;
+  } catch {
+    wrap.innerHTML = `<div class="panel flag">
+      <h3>Measurement started 14 September 2026</h3>
+      <p>Traffic analytics were installed on every page of bcaleadership.com on 14 September. Before that date the site was never measured, so there is no history to show.</p>
+      <p>Figures appear here once a full period has been collected. Nothing is estimated.</p>
+    </div>`;
+  }
+}
 </script>
 </body>
 </html>
