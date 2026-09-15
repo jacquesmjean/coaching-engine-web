@@ -857,23 +857,78 @@ async function loadBoard(){
 /* ───────── website traffic ───────── */
 async function loadWebsite(){
   const wrap = $("webWrap");
-  try{
-    const res = await fetch(API+"/functions/v1/bca-traffic", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json", Authorization:"Bearer "+session.access_token, apikey:KEY },
-      body: JSON.stringify({ range:"30d" }) });
-    if (!res.ok) throw new Error(String(res.status));
-    const t = await res.json();
-    if (!t || t.unavailable) throw new Error("unconfigured");
-    wrap.innerHTML = `<div class="stats">
-      <div class="stat"><span class="stat-k">Visitors</span><span class="stat-v">${Number(t.visitors).toLocaleString()}</span><span class="stat-n">last 30 days</span></div>
-      <div class="stat sage"><span class="stat-k">Page views</span><span class="stat-v">${Number(t.pageviews).toLocaleString()}</span><span class="stat-n">last 30 days</span></div>
-      <div class="stat amber"><span class="stat-k">Bounce rate</span><span class="stat-v">${t.bounce ?? "—"}%</span><span class="stat-n">last 30 days</span></div></div>`;
-  }catch{
+  const res = await fetch(API+"/functions/v1/bca-traffic", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", Authorization:"Bearer "+session.access_token, apikey:KEY },
+    body: JSON.stringify({ range:"30d" }) });
+  const t = res.ok ? await res.json() : { unavailable:true, reason:"http_"+res.status };
+
+  if (!t || t.unavailable){
     wrap.innerHTML = `<div class="empty"><b>Measurement began 14 September 2026</b>
       <p class="panel-m">Traffic analytics were installed across every page of bcaleadership.com on 14 September. The site was never measured before that date, so there is no history to show.</p>
-      <p class="panel-m">Figures appear here once a full period has been collected. Nothing on this page is estimated.</p></div>`;
+      <p class="panel-m">Figures appear here once a period has been collected. Nothing on this page is estimated.</p></div>`;
+    return;
   }
+
+  const days = (t.daily || []).filter(d => d.pageviews > 0);
+  const peak = Math.max(1, ...days.map(d => d.pageviews));
+  const pagesSum = (t.pages || []).reduce((n,p) => n + p.pageviews, 0);
+  const partial = pagesSum < t.pageviews;
+
+  $("webLede").textContent =
+    `${Number(t.pageviews).toLocaleString()} page views from ${Number(t.visitors).toLocaleString()} visitors, `
+    + `across ${days.length} ${days.length === 1 ? "day" : "days"} of measurement.`;
+
+  wrap.innerHTML = `
+    <div class="stats">
+      <div class="stat"><span class="stat-k">Visitors</span>
+        <span class="stat-v">${Number(t.visitors).toLocaleString()}</span>
+        <span class="stat-n">since 14 September</span></div>
+      <div class="stat sage"><span class="stat-k">Page views</span>
+        <span class="stat-v">${Number(t.pageviews).toLocaleString()}</span>
+        <span class="stat-n">${(t.pageviews/Math.max(1,t.visitors)).toFixed(1)} per visitor</span></div>
+      <div class="stat amber"><span class="stat-k">Days measured</span>
+        <span class="stat-v">${days.length}</span>
+        <span class="stat-n">measurement began 14 Sept</span></div>
+    </div>
+
+    <div class="rule"></div>
+    <h2 class="sec">By day</h2>
+    ${days.length ? `<div class="tblwrap"><table class="tbl">
+      <thead><tr><th>Date</th><th class="num">Page views</th><th class="num">Visitors</th><th style="width:38%"></th></tr></thead>
+      <tbody>${days.map(d=>`<tr>
+        <td>${esc(day(d.date))}</td>
+        <td class="num">${d.pageviews.toLocaleString()}</td>
+        <td class="num">${d.visitors.toLocaleString()}</td>
+        <td><div class="bar"><span style="width:${Math.round(d.pageviews/peak*100)}%;background:var(--gold)"></span></div></td>
+      </tr>`).join("")}</tbody></table></div>`
+      : `<p class="panel-m">No traffic recorded yet.</p>`}
+
+    <div class="rule"></div>
+    <h2 class="sec">Most visited pages</h2>
+    ${(t.pages||[]).length ? `<div class="tblwrap"><table class="tbl">
+      <thead><tr><th>Page</th><th class="num">Page views</th><th class="num">Visitors</th></tr></thead>
+      <tbody>${t.pages.map(p=>`<tr>
+        <td class="wrap">${esc(p.path)}</td>
+        <td class="num">${p.pageviews.toLocaleString()}</td>
+        <td class="num">${p.visitors.toLocaleString()}</td>
+      </tr>`).join("")}</tbody></table></div>
+      ${partial ? `<p class="panel-m" style="margin-top:8px">This breakdown covers ${pagesSum} of ${t.pageviews} page views. Vercel compiles the per-page figures on a delay, so the most recent traffic is counted in the totals above before it appears here.</p>` : ""}`
+      : `<p class="panel-m">The per-page breakdown is still being compiled.</p>`}
+
+    <div class="rule"></div>
+    <h2 class="sec">Where visitors came from</h2>
+    ${(t.referrers||[]).length ? `<div class="tblwrap"><table class="tbl">
+      <thead><tr><th>Source</th><th class="num">Page views</th><th class="num">Visitors</th></tr></thead>
+      <tbody>${t.referrers.map(r=>`<tr>
+        <td class="wrap">${esc(r.source)}</td>
+        <td class="num">${r.pageviews.toLocaleString()}</td>
+        <td class="num">${r.visitors.toLocaleString()}</td>
+      </tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty"><b>All traffic so far is direct</b>
+          <p class="panel-m">No visits have arrived from a search engine, a social platform or another website yet. Once a campaign or a link starts sending people here, the source appears in this table.</p></div>`}
+
+    <p class="panel-m" style="margin-top:18px">Measured with cookieless analytics on every page of bcaleadership.com. No visitor is identified and nothing here is estimated. Figures as at ${esc((t.generated_at||"").slice(0,16).replace("T"," "))} UTC.</p>`;
 }
 
 /* ─────────────────────────────────────────────────────────────
