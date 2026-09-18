@@ -316,6 +316,22 @@ select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px so
       <div id="webWrap"></div>
     </section>
 
+    <!-- ───── inbound requests ───── -->
+    <section class="view" id="v-requests" hidden>
+      <div class="eyebrow">Operations</div>
+      <h1>Inbound requests</h1>
+      <p class="lede" id="reqLede">—</p>
+      <div class="rule"></div>
+      <div class="stats" id="reqStats"></div>
+      <div class="rule"></div>
+      <div class="tblwrap"><table class="tbl">
+        <caption>Waiting longest first. Answered requests are listed below the open ones.</caption>
+        <thead><tr><th>Who</th><th>Asked for</th><th>Owner</th><th>Received</th><th class="num">Waiting</th><th>Status</th></tr></thead>
+        <tbody id="reqBody"><tr><td colspan="6"><span class="sk"></span></td></tr></tbody>
+      </table></div>
+      <p class="panel-m" style="margin-top:10px">Owner mailboxes follow BCA's routing rules: info@ for website enquiries and the Concierge, admin@ for applications, bookings and proposals, support@ for existing clients. The target is the response time BCA set; anything past it shows in red.</p>
+    </section>
+
     <!-- ───── leads ───── -->
     <section class="view" id="v-leads" hidden>
       <div class="eyebrow">Growth</div>
@@ -517,11 +533,7 @@ const MODULES = [
   { g:"ops", v:"members",  i:"users", en:"Members",   fr:"Membres", live:true },
   { g:"ops", v:"bench",    i:"star",  en:"The Bench", fr:"Le Banc", live:true },
   { g:"ops", v:"sessions", i:"cal",   en:"Sessions",  fr:"Séances", live:true },
-  { g:"ops", v:"requests", i:"chat",  en:"Inbound requests", fr:"Demandes entrantes",
-    what:{en:"Every enquiry from the website in one queue, routed to the right person, with nothing left unanswered.",
-          fr:"Toutes les demandes du site dans une seule file, dirigées vers la bonne personne."},
-    needs:{en:["Who should receive each type of enquiry","A response time BCA wants to hold itself to"],
-           fr:["Qui reçoit chaque type de demande","Le délai de réponse que BCA veut tenir"]} },
+  { g:"ops", v:"requests", i:"chat",  en:"Inbound requests", fr:"Demandes entrantes", live:true },
 
   { g:"fin", v:"billing",  i:"book",  en:"Billing",   fr:"Facturation", live:true },
   { g:"fin", v:"payments", i:"card",  en:"Payments",  fr:"Paiements",
@@ -701,6 +713,7 @@ async function start(){
   guard(loadBilling, "billing",  "billMoney");
   guard(loadMembers, "members",  "memStats");
   guard(loadLeads,   "leads",    "leadStats");
+  guard(loadRequests,"requests", "reqStats");
   guard(loadPipeline,"pipeline", "pipWrap");
   guard(loadTeam,    "team",     "teamWrap");
   guard(loadBench,   "bench",    "benchWrap");
@@ -792,6 +805,86 @@ async function loadMembers(){
 }
 
 /* ───────── leads ───────── */
+/* ───────── inbound requests ─────────
+   One queue for every reach-out from the website. Each row is owned by a
+   mailbox (BCA's routing rules, held in tenant_config) and carries a clock
+   from received_at. The target response time is a setting, not a constant. */
+const REQ_STATUS = ["new","answered","triaging","briefing_booked","proposal_sent","won","declined","dormant"];
+let REQ_TARGET_H = 24;
+const hoursBetween = (a, b) => Math.max(0, (new Date(b) - new Date(a)) / 36e5);
+const fmtWait = (h) => h < 1 ? `${Math.round(h*60)} min` : h < 48 ? `${h.toFixed(h<10?1:0)} h` : `${(h/24).toFixed(1)} d`;
+const when = (iso) => iso ? new Date(iso).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+
+async function loadRequests(){
+  const cfg = (await q("tenant_config?select=business_rules&limit=1"))[0];
+  REQ_TARGET_H = Number(cfg?.business_rules?.inbound_response_hours || 24);
+  const rows = await q("requests?select=id,kind,topic,full_name,work_email,organization,country,owner_mailbox,status,received_at,first_response_at&order=received_at.desc&limit=300");
+  const now = new Date();
+  const open = rows.filter(r => !r.first_response_at);
+  const done = rows.filter(r => !!r.first_response_at);
+  const late = open.filter(r => hoursBetween(r.received_at, now) > REQ_TARGET_H);
+  const onTime = done.filter(r => hoursBetween(r.received_at, r.first_response_at) <= REQ_TARGET_H);
+  const resp = done.map(r => hoursBetween(r.received_at, r.first_response_at)).sort((a,b)=>a-b);
+  const median = resp.length ? resp[Math.floor(resp.length/2)] : null;
+  const last30 = rows.filter(r => hoursBetween(r.received_at, now) <= 24*30).length;
+
+  $("reqLede").textContent = rows.length
+    ? `${rows.length} request${rows.length===1?"":"s"} recorded, ${last30} in the last 30 days. ${open.length} waiting for a first reply${late.length ? `, ${late.length} past the ${REQ_TARGET_H}-hour target` : ""}.`
+    : "No requests recorded yet. Every website form and Concierge hand-off lands here.";
+  $("reqStats").innerHTML =
+    `<div class="stat ${late.length?"rust":"sage"}"><span class="stat-k">Waiting</span><span class="stat-v">${open.length}</span><span class="stat-n">${late.length} past target</span></div>
+     <div class="stat amber"><span class="stat-k">Target</span><span class="stat-v">${REQ_TARGET_H} h</span><span class="stat-n">first reply, set by BCA</span></div>
+     <div class="stat sage"><span class="stat-k">Answered on time</span><span class="stat-v">${done.length ? Math.round(onTime.length/done.length*100)+"%" : "—"}</span><span class="stat-n">of ${done.length} answered</span></div>
+     <div class="stat"><span class="stat-k">Median reply</span><span class="stat-v">${median==null ? "—" : fmtWait(median)}</span><span class="stat-n">received to first reply</span></div>`;
+
+  const ordered = [...open.sort((a,b)=>new Date(a.received_at)-new Date(b.received_at)), ...done];
+  $("reqBody").innerHTML = ordered.length ? ordered.map(r => {
+    const h = hoursBetween(r.received_at, r.first_response_at || now);
+    const isLate = !r.first_response_at && h > REQ_TARGET_H;
+    const pill = r.first_response_at ? `<span class="pill cur">${esc(label(r.status==="new"?"answered":r.status))}</span>`
+               : isLate ? `<span class="pill d60">Past target</span>` : `<span class="pill d30">Waiting</span>`;
+    return `<tr class="click" data-req="${esc(r.id)}"><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}${r.organization?` <span class="panel-m">· ${esc(r.organization)}</span>`:""}</td>
+      <td class="wrap">${esc(r.topic || label(r.kind))}</td>
+      <td>${esc((r.owner_mailbox||"—").replace("@bcaleadership.com","@"))}</td>
+      <td>${esc(when(r.received_at))}</td>
+      <td class="num" style="${isLate?"color:var(--rust)":""}">${fmtWait(h)}</td><td>${pill}</td></tr>`;
+  }).join("") : `<tr><td colspan="6">No requests yet.</td></tr>`;
+  $("reqBody").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openRequest(tr.dataset.req)));
+}
+
+async function openRequest(id){
+  const [r] = await q(`requests?select=*&id=eq.${id}`);
+  if (!r) return;
+  const hist = r.person_id ? await q(`invoices?select=number,total_minor,paid_minor,currency,status,issued_on&person_id=eq.${r.person_id}&order=issued_on.desc&limit=8`) : [];
+  const waited = hoursBetween(r.received_at, r.first_response_at || new Date());
+  const d = drawer(r.full_name || "Request", `${r.topic || label(r.kind)} · received ${when(r.received_at)}`, `
+    <p class="panel-m"><b style="color:var(--parch)">${esc(r.work_email||"")}</b>${r.organization?` · ${esc(r.organization)}`:""}${r.country?` · ${esc(r.country)}`:""}</p>
+    <p class="panel-m" style="margin-top:8px;white-space:pre-wrap">${esc(r.summary || "No message left.")}</p>
+    ${r.page_url ? `<p class="panel-m" style="margin-top:6px">From: ${esc(r.page_url)}</p>` : ""}
+    <div class="rule"></div>
+    <p class="panel-m">Owner: <b style="color:var(--parch)">${esc(r.owner_mailbox||"—")}</b> · ${r.first_response_at ? `answered ${when(r.first_response_at)} after ${fmtWait(waited)}` : `waiting ${fmtWait(waited)} of a ${REQ_TARGET_H}-hour target`}</p>
+    ${r.first_response_at ? "" : `<div class="row-btn" style="margin:10px 0 14px"><button class="btn" id="reqAnswered" type="button">Mark as answered now</button></div>`}
+    <label class="fld"><span>Status</span><select id="reqStatus">${optsFor(REQ_STATUS, r.status)}</select></label>
+    <label class="fld"><span>Notes</span><textarea id="reqNotes" placeholder="What was said, what happens next">${esc(r.notes||"")}</textarea></label>
+    <div class="row-btn"><button class="btn" id="reqSave" type="button">Save</button></div>
+    <p class="note" id="reqMsg" hidden></p>
+    <div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Billing history</b></p>
+    ${hist.length ? `<table class="tbl"><tbody>${hist.map(i=>`<tr><td class="num">${esc(i.number)}</td><td class="num">${money2(i.total_minor,i.currency||"USD")}</td><td><span class="pill ${i.status==="paid"?"cur":"mut"}">${esc(i.status)}</span></td></tr>`).join("")}</tbody></table>`
+                  : `<p class="panel-m">No invoices on record for this person. A new prospect.</p>`}`);
+  const save = async (extra={}) => {
+    const body = { status: d.querySelector("#reqStatus").value, notes: d.querySelector("#reqNotes").value || null, updated_at: new Date().toISOString(), ...extra };
+    try { await w("PATCH", `requests?id=eq.${id}`, body); note(d.querySelector("#reqMsg"), "Saved.", true); await loadRequests(); }
+    catch (e) { note(d.querySelector("#reqMsg"), e.message); }
+  };
+  d.querySelector("#reqSave").addEventListener("click", () => save());
+  d.querySelector("#reqAnswered")?.addEventListener("click", async () => {
+    if (d.querySelector("#reqStatus").value === "new") d.querySelector("#reqStatus").value = "answered";
+    await save({ first_response_at: new Date().toISOString(), answered_by: claimsOf(session)?.sub || null });
+    closeDrawer(); openRequest(id);
+  });
+}
+
 async function loadLeads(){
   const total = await count("leads");
   const rows = await q("leads?select=id,full_name,organization,source,sector,region,score,status,owner_id,next_touch_on&order=score.desc&limit=120");
