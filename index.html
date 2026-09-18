@@ -109,6 +109,10 @@ h2.sec{font-size:22px;margin-bottom:13px}
 
 .tblwrap{overflow-x:auto;border:1px solid var(--line-soft);background:var(--navy)}
 table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
+.search{width:100%;max-width:420px;font-family:var(--ui);font-size:14px;padding:9px 12px 9px 34px;border:1px solid var(--line);background:var(--ink) url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%237E889E%27 stroke-width=%271.8%27%3E%3Ccircle cx=%2711%27 cy=%2711%27 r=%276.5%27/%3E%3Cpath d=%27M16 16l4.5 4.5%27/%3E%3C/svg%3E") 11px center/15px no-repeat;color:var(--parch);border-radius:3px;margin:0 0 12px}
+.search::placeholder{color:#4A5570}
+.search-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.search-n{font-size:12.5px;color:var(--mute);margin-bottom:12px}
 .tbl caption{text-align:left;padding:13px 16px;color:var(--mute);font-size:13px;border-bottom:1px solid var(--line-soft)}
 .tbl th,.tbl td{text-align:left;padding:9px 16px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
 .tbl th{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:500;background:var(--navy-2)}
@@ -324,6 +328,7 @@ select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px so
       <div class="rule"></div>
       <div class="stats" id="reqStats"></div>
       <div class="rule"></div>
+      <div class="search-row"><input class="search" id="reqSearch" type="search" placeholder="Search name, email, organisation, topic, country, owner or status" autocomplete="off"><span class="search-n" id="reqCount"></span></div>
       <div class="tblwrap"><table class="tbl">
         <caption>Waiting longest first. Click a request to reply, assign it, or turn it into a consultation or opportunity.</caption>
         <thead><tr><th>Who</th><th>Asked for</th><th>Owner</th><th>Received</th><th class="num">Waiting</th><th>Status</th></tr></thead>
@@ -340,6 +345,7 @@ select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px so
       <div class="rule"></div>
       <div class="stats" id="leadStats"></div>
       <div class="rule"></div>
+      <div class="search-row"><input class="search" id="leadSearch" type="search" placeholder="Search name, organisation, source, sector, region or status" autocomplete="off"><span class="search-n" id="leadCount"></span></div>
       <div class="tblwrap"><table class="tbl">
         <caption>Highest scoring first</caption>
         <thead><tr><th>Name</th><th>Organisation</th><th>Source</th><th>Sector</th><th>Region</th><th class="num">Score</th><th>Status</th></tr></thead>
@@ -805,6 +811,27 @@ async function loadMembers(){
 }
 
 /* ───────── leads ───────── */
+/* Client-side search over a rendered table: each row carries data-search, filtering is instant. */
+function wireSearch(inputId, bodyId, countId){
+  const input = $(inputId), body = $(bodyId), count = $(countId);
+  if (!input || !body || input.dataset.wired) return;
+  input.dataset.wired = "1";
+  const run = () => {
+    const terms = input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    let shown = 0, total = 0;
+    body.querySelectorAll("tr[data-search]").forEach(tr => {
+      total++;
+      const hay = tr.dataset.search;
+      const ok = terms.every(t => hay.includes(t));
+      tr.hidden = !ok; if (ok) shown++;
+    });
+    if (count) count.textContent = terms.length ? `${shown} of ${total}` : "";
+  };
+  input.addEventListener("input", run);
+  input.runSearch = run;
+}
+const searchKey = (...parts) => parts.map(p => String(p ?? "")).join(" ").toLowerCase().replace(/"/g, "&quot;");
+
 /* ───────── inbound requests ─────────
    One queue for every reach-out from the website. Each row is owned by a
    mailbox (BCA's routing rules, held in tenant_config) and, once someone
@@ -881,13 +908,14 @@ async function loadRequests(){
                : isOpen ? (isLate ? `<span class="pill d60">Past target</span>` : `<span class="pill d30">Waiting</span>`)
                : `<span class="pill mut">${esc(label(r.status))}</span>`;
     const who = staffName(r.owner_id);
-    return `<tr class="click" data-req="${esc(r.id)}"><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}${r.organization?` <span class="panel-m">· ${esc(r.organization)}</span>`:""}</td>
+    return `<tr class="click" data-req="${esc(r.id)}" data-search="${searchKey(r.full_name, r.work_email, r.organization, r.topic, label(r.kind), r.country, r.owner_mailbox, who, r.first_response_at ? "answered" : (isOpen ? (isLate ? "past target late" : "waiting") : r.status), r.status)}"><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}${r.organization?` <span class="panel-m">· ${esc(r.organization)}</span>`:""}</td>
       <td class="wrap">${esc(r.topic || label(r.kind))}</td>
       <td>${who ? `<b>${esc(who)}</b><br>` : ""}<span class="panel-m">${esc((r.owner_mailbox||"—").replace("@bcaleadership.com","@"))}</span></td>
       <td>${esc(when(r.received_at))}</td>
       <td class="num" style="${isLate?"color:var(--rust)":""}">${fmtWait(h)}</td><td>${pill}</td></tr>`;
   }).join("") : `<tr><td colspan="6">No requests yet.</td></tr>`;
   $("reqBody").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openRequest(tr.dataset.req)));
+  wireSearch("reqSearch", "reqBody", "reqCount"); $("reqSearch").runSearch?.();
 }
 
 async function openRequest(id){
@@ -1015,7 +1043,7 @@ async function loadLeads(){
     Object.keys(bySrc).sort((a,b)=>bySrc[b]-bySrc[a]).slice(0,3).map(s=>
       `<div class="stat amber"><span class="stat-k">${esc(s)}</span><span class="stat-v">${bySrc[s]}</span><span class="stat-n">of the top ${rows.length} by score</span></div>`).join("");
   $("leadBody").innerHTML = rows.length ? rows.map(r=>
-    `<tr class="click" data-lead="${esc(r.id)}"><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}</td>
+    `<tr class="click" data-lead="${esc(r.id)}" data-search="${searchKey(r.full_name, r.organization, r.source, r.sector, r.region, r.status)}"><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}</td>
      <td class="wrap">${esc(r.organization||"—")}</td><td>${esc(r.source||"—")}</td>
      <td>${esc(r.sector||"—")}</td><td>${esc(r.region||"—")}</td>
      <td class="num">${esc(r.score ?? "—")}</td><td><span class="pill mut">${esc(r.status||"—")}</span></td></tr>`).join("")
@@ -1023,6 +1051,7 @@ async function loadLeads(){
   // Every lead row opens the working drawer. A register you cannot act on is a report.
   $("leadBody").querySelectorAll("tr.click").forEach(tr =>
     tr.addEventListener("click", () => openLead(tr.dataset.lead)));
+  wireSearch("leadSearch", "leadBody", "leadCount"); $("leadSearch").runSearch?.();
 }
 
 /* ───────── bench ───────── */
@@ -1128,6 +1157,30 @@ async function loadWebsite(){
       </tr>`).join("")}</tbody></table></div>
       ${partial ? `<p class="panel-m" style="margin-top:8px">This breakdown covers ${pagesSum} of ${t.pageviews} page views. Vercel compiles the per-page figures on a delay, so the most recent traffic is counted in the totals above before it appears here.</p>` : ""}`
       : `<p class="panel-m">The per-page breakdown is still being compiled.</p>`}
+
+    <div class="rule"></div>
+    <h2 class="sec">Where in the world</h2>
+    ${(t.countries||[]).length ? (() => {
+      const AFRICA = new Set(["DZ","AO","BJ","BW","BF","BI","CM","CV","CF","TD","KM","CG","CD","CI","DJ","EG","GQ","ER","SZ","ET","GA","GM","GH","GN","GW","KE","LS","LR","LY","MG","MW","ML","MR","MU","MA","MZ","NA","NE","NG","RW","ST","SN","SC","SL","SO","ZA","SS","SD","TZ","TG","TN","UG","ZM","ZW","EH","RE","YT","SH"]);
+      const names = (() => { try { return new Intl.DisplayNames(["en"], { type: "region" }); } catch { return null; } })();
+      const name = (c) => { try { return names ? names.of(c) : c; } catch { return c; } };
+      const flag = (c) => /^[A-Z]{2}$/.test(c) ? String.fromCodePoint(...[...c].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65)) : "";
+      const rows = t.countries.slice().sort((a,b)=>b.visitors-a.visitors);
+      const top = Math.max(1, ...rows.map(r=>r.visitors));
+      const afr = rows.filter(r=>AFRICA.has(r.code)).reduce((n,r)=>n+r.visitors,0);
+      const tot = rows.reduce((n,r)=>n+r.visitors,0);
+      return `<div class="stats" style="margin-bottom:14px">
+        <div class="stat sage"><span class="stat-k">From Africa</span><span class="stat-v">${afr}</span><span class="stat-n">${tot ? Math.round(afr/tot*100) : 0}% of visitors · ${rows.filter(r=>AFRICA.has(r.code)).length} countries</span></div>
+        <div class="stat"><span class="stat-k">Rest of world</span><span class="stat-v">${tot-afr}</span><span class="stat-n">${rows.filter(r=>!AFRICA.has(r.code)).length} countries</span></div>
+        <div class="stat amber"><span class="stat-k">Countries</span><span class="stat-v">${rows.length}</span><span class="stat-n">with at least one visit</span></div>
+      </div>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Country</th><th class="num">Visitors</th><th class="num">Page views</th><th style="width:34%"></th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td class="wrap">${flag(r.code)} ${esc(name(r.code))}${AFRICA.has(r.code) ? ` <span class="pill cur" style="margin-left:6px">Africa</span>` : ""}</td>
+          <td class="num">${r.visitors.toLocaleString()}</td><td class="num">${r.pageviews.toLocaleString()}</td>
+          <td><div class="bar"><span style="width:${Math.round(r.visitors/top*100)}%;background:${AFRICA.has(r.code) ? "var(--sage)" : "var(--mute)"}"></span></div></td></tr>`).join("")}</tbody></table></div>
+      ${(t.devices||[]).length ? `<p class="panel-m" style="margin-top:10px">Devices: ${t.devices.map(d=>`${esc(d.device)} ${d.visitors}`).join(" · ")}. A country with many visitors and one page view each is usually automated traffic, not people.</p>` : ""}`;
+    })() : `<p class="panel-m">Country data appears once Vercel has compiled it.</p>`}
 
     <div class="rule"></div>
     <h2 class="sec">Where visitors came from</h2>
