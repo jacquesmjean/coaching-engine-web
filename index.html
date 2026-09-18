@@ -325,11 +325,11 @@ select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px so
       <div class="stats" id="reqStats"></div>
       <div class="rule"></div>
       <div class="tblwrap"><table class="tbl">
-        <caption>Waiting longest first. Answered requests are listed below the open ones.</caption>
+        <caption>Waiting longest first. Click a request to reply, assign it, or turn it into a consultation or opportunity.</caption>
         <thead><tr><th>Who</th><th>Asked for</th><th>Owner</th><th>Received</th><th class="num">Waiting</th><th>Status</th></tr></thead>
         <tbody id="reqBody"><tr><td colspan="6"><span class="sk"></span></td></tr></tbody>
       </table></div>
-      <p class="panel-m" style="margin-top:10px">Owner mailboxes follow BCA's routing rules: info@ for website enquiries and the Concierge, admin@ for applications, bookings and proposals, support@ for existing clients. The target is the response time BCA set; anything past it shows in red.</p>
+      <p class="panel-m" style="margin-top:10px">Every visitor gets an automatic acknowledgment in their language. Owner mailboxes follow BCA's routing rules: info@ for website enquiries and the Concierge, admin@ for applications, bookings and proposals. Replies from this screen go out as that mailbox. Anything past the target shows in red, and the owner gets a reminder each weekday morning.</p>
     </section>
 
     <!-- ───── leads ───── -->
@@ -807,26 +807,60 @@ async function loadMembers(){
 /* ───────── leads ───────── */
 /* ───────── inbound requests ─────────
    One queue for every reach-out from the website. Each row is owned by a
-   mailbox (BCA's routing rules, held in tenant_config) and carries a clock
-   from received_at. The target response time is a setting, not a constant. */
+   mailbox (BCA's routing rules, held in tenant_config) and, once someone
+   picks it up, by a named person. The clock runs from received_at until the
+   first reply, which is sent from this screen as the owner mailbox. */
 const REQ_STATUS = ["new","answered","triaging","briefing_booked","proposal_sent","won","declined","dormant"];
+const REQ_LINE = { membership_application:"individual_membership", consultation:"coaching_package", coach_booking:"coaching_package",
+  corporate_proposal:"corporate_membership", sponsorship:"sponsorship", consulting:"consulting", project_management:"project_management",
+  business_matching:"business_matching", bench_application:"other", concierge:"other", general:"other", newsletter:"other", podcast:"other" };
+const REQ_TEMPLATES = {
+  consultation: { subject: "Your leadership consultation with BCA", body:
+`Hello {first},
+
+Thank you for reaching out. I would be glad to set up your 30-minute leadership consultation.
+
+Could you share two or three windows over the coming week that suit you, with your time zone? I will confirm within the day and match you with the right coach for your situation.
+
+Looking forward to it.` },
+  membership: { subject: "Your BCA membership application", body:
+`Hello {first},
+
+Thank you for applying to BCA. Your application has reached me and I am reviewing it now.
+
+The next step is a short call so we can place you in the right cohort. Could you share a couple of times that work for you this week? Once we speak, I will send the invoice and your onboarding details.
+
+Welcome to the room.` },
+  general: { subject: "Re: your message to BCA Leadership", body:
+`Hello {first},
+
+Thank you for getting in touch with BCA Leadership.
+
+[Your answer here.]
+
+If a call would be easier, tell me when suits you and I will set it up.` },
+};
 let REQ_TARGET_H = 24;
+let REQ_STAFF = [];
 const hoursBetween = (a, b) => Math.max(0, (new Date(b) - new Date(a)) / 36e5);
 const fmtWait = (h) => h < 1 ? `${Math.round(h*60)} min` : h < 48 ? `${h.toFixed(h<10?1:0)} h` : `${(h/24).toFixed(1)} d`;
 const when = (iso) => iso ? new Date(iso).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+const firstName = (s) => (s||"").trim().split(/\s+/)[0] || "there";
 
 async function loadRequests(){
   const cfg = (await q("tenant_config?select=business_rules&limit=1"))[0];
   REQ_TARGET_H = Number(cfg?.business_rules?.inbound_response_hours || 24);
-  const rows = await q("requests?select=id,kind,topic,full_name,work_email,organization,country,owner_mailbox,status,received_at,first_response_at&order=received_at.desc&limit=300");
+  try { REQ_STAFF = await q("staff?select=person_id,full_name,email,role,status&status=eq.active&order=full_name"); } catch { REQ_STAFF = []; }
+  const rows = await q("requests?select=id,kind,topic,full_name,work_email,organization,country,owner_mailbox,owner_id,status,received_at,first_response_at,acknowledged_at&order=received_at.desc&limit=300");
   const now = new Date();
-  const open = rows.filter(r => !r.first_response_at);
+  const open = rows.filter(r => !r.first_response_at && !["declined","dormant","won"].includes(r.status));
   const done = rows.filter(r => !!r.first_response_at);
   const late = open.filter(r => hoursBetween(r.received_at, now) > REQ_TARGET_H);
   const onTime = done.filter(r => hoursBetween(r.received_at, r.first_response_at) <= REQ_TARGET_H);
   const resp = done.map(r => hoursBetween(r.received_at, r.first_response_at)).sort((a,b)=>a-b);
   const median = resp.length ? resp[Math.floor(resp.length/2)] : null;
   const last30 = rows.filter(r => hoursBetween(r.received_at, now) <= 24*30).length;
+  const staffName = (id) => REQ_STAFF.find(s => s.person_id === id)?.full_name || null;
 
   $("reqLede").textContent = rows.length
     ? `${rows.length} request${rows.length===1?"":"s"} recorded, ${last30} in the last 30 days. ${open.length} waiting for a first reply${late.length ? `, ${late.length} past the ${REQ_TARGET_H}-hour target` : ""}.`
@@ -837,15 +871,19 @@ async function loadRequests(){
      <div class="stat sage"><span class="stat-k">Answered on time</span><span class="stat-v">${done.length ? Math.round(onTime.length/done.length*100)+"%" : "—"}</span><span class="stat-n">of ${done.length} answered</span></div>
      <div class="stat"><span class="stat-k">Median reply</span><span class="stat-v">${median==null ? "—" : fmtWait(median)}</span><span class="stat-n">received to first reply</span></div>`;
 
-  const ordered = [...open.sort((a,b)=>new Date(a.received_at)-new Date(b.received_at)), ...done];
+  const rest = rows.filter(r => !open.includes(r) && !done.includes(r));
+  const ordered = [...open.sort((a,b)=>new Date(a.received_at)-new Date(b.received_at)), ...done, ...rest];
   $("reqBody").innerHTML = ordered.length ? ordered.map(r => {
     const h = hoursBetween(r.received_at, r.first_response_at || now);
-    const isLate = !r.first_response_at && h > REQ_TARGET_H;
+    const isOpen = open.includes(r);
+    const isLate = isOpen && h > REQ_TARGET_H;
     const pill = r.first_response_at ? `<span class="pill cur">${esc(label(r.status==="new"?"answered":r.status))}</span>`
-               : isLate ? `<span class="pill d60">Past target</span>` : `<span class="pill d30">Waiting</span>`;
+               : isOpen ? (isLate ? `<span class="pill d60">Past target</span>` : `<span class="pill d30">Waiting</span>`)
+               : `<span class="pill mut">${esc(label(r.status))}</span>`;
+    const who = staffName(r.owner_id);
     return `<tr class="click" data-req="${esc(r.id)}"><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(r.full_name))}</span>${esc(r.full_name||"—")}${r.organization?` <span class="panel-m">· ${esc(r.organization)}</span>`:""}</td>
       <td class="wrap">${esc(r.topic || label(r.kind))}</td>
-      <td>${esc((r.owner_mailbox||"—").replace("@bcaleadership.com","@"))}</td>
+      <td>${who ? `<b>${esc(who)}</b><br>` : ""}<span class="panel-m">${esc((r.owner_mailbox||"—").replace("@bcaleadership.com","@"))}</span></td>
       <td>${esc(when(r.received_at))}</td>
       <td class="num" style="${isLate?"color:var(--rust)":""}">${fmtWait(h)}</td><td>${pill}</td></tr>`;
   }).join("") : `<tr><td colspan="6">No requests yet.</td></tr>`;
@@ -856,32 +894,114 @@ async function openRequest(id){
   const [r] = await q(`requests?select=*&id=eq.${id}`);
   if (!r) return;
   const hist = r.person_id ? await q(`invoices?select=number,total_minor,paid_minor,currency,status,issued_on&person_id=eq.${r.person_id}&order=issued_on.desc&limit=8`) : [];
+  const tl = await timelineFor(`request_id=eq.${id}`);
   const waited = hoursBetween(r.received_at, r.first_response_at || new Date());
+  const me = claimsOf(session)?.sub;
+  const myStaff = REQ_STAFF.find(s => s.email && s.email === claimsOf(session)?.email) || null;
+  const tKey = r.kind === "membership_application" ? "membership" : (r.kind === "consultation" || r.kind === "coach_booking") ? "consultation" : "general";
+  const t = REQ_TEMPLATES[tKey];
+  const fill = (s) => s.replace(/\{first\}/g, firstName(r.full_name));
+
   const d = drawer(r.full_name || "Request", `${r.topic || label(r.kind)} · received ${when(r.received_at)}`, `
     <p class="panel-m"><b style="color:var(--parch)">${esc(r.work_email||"")}</b>${r.organization?` · ${esc(r.organization)}`:""}${r.country?` · ${esc(r.country)}`:""}</p>
     <p class="panel-m" style="margin-top:8px;white-space:pre-wrap">${esc(r.summary || "No message left.")}</p>
     ${r.page_url ? `<p class="panel-m" style="margin-top:6px">From: ${esc(r.page_url)}</p>` : ""}
+    <p class="panel-m" style="margin-top:8px">${r.acknowledged_at ? `Acknowledged automatically ${when(r.acknowledged_at)}.` : "No acknowledgment was sent (email was off at the time)."}
+      ${r.first_response_at ? ` First reply ${when(r.first_response_at)}, ${fmtWait(waited)} after it arrived.` : ` Waiting <b style="color:${waited > REQ_TARGET_H ? "var(--rust)" : "var(--parch)"}">${fmtWait(waited)}</b> of a ${REQ_TARGET_H}-hour target.`}</p>
     <div class="rule"></div>
-    <p class="panel-m">Owner: <b style="color:var(--parch)">${esc(r.owner_mailbox||"—")}</b> · ${r.first_response_at ? `answered ${when(r.first_response_at)} after ${fmtWait(waited)}` : `waiting ${fmtWait(waited)} of a ${REQ_TARGET_H}-hour target`}</p>
-    ${r.first_response_at ? "" : `<div class="row-btn" style="margin:10px 0 14px"><button class="btn" id="reqAnswered" type="button">Mark as answered now</button></div>`}
+
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Reply</b> · sent as <b style="color:var(--gold-lt)">${esc(r.owner_mailbox||"info@bcaleadership.com")}</b>, with the message above quoted</p>
+    <label class="fld"><span>Template</span><select id="reqTpl">
+      <option value="">Blank</option>
+      <option value="consultation"${tKey==="consultation"?" selected":""}>Consultation</option>
+      <option value="membership"${tKey==="membership"?" selected":""}>Membership</option>
+      <option value="general"${tKey==="general"?" selected":""}>General</option></select></label>
+    <label class="fld"><span>Subject</span><input id="reqSubject" value="${esc(fill(t.subject))}"></label>
+    <label class="fld"><span>Message</span><textarea id="reqBody" style="min-height:170px">${esc(fill(t.body))}</textarea></label>
+    <div class="row-btn"><button class="btn" id="reqSend" type="button">Send reply</button>
+      ${r.first_response_at ? "" : `<button class="btn ghost" id="reqAnswered" type="button">Answered elsewhere</button>`}</div>
+    <p class="note" id="reqMsg" hidden></p>
+    <div class="rule"></div>
+
+    <label class="fld"><span>Owner</span><select id="reqOwner">
+      <option value="">Nobody yet</option>
+      ${REQ_STAFF.map(s=>`<option value="${esc(s.person_id)}"${s.person_id===r.owner_id?" selected":""}>${esc(s.full_name||s.email)}</option>`).join("")}
+    </select></label>
     <label class="fld"><span>Status</span><select id="reqStatus">${optsFor(REQ_STATUS, r.status)}</select></label>
     <label class="fld"><span>Notes</span><textarea id="reqNotes" placeholder="What was said, what happens next">${esc(r.notes||"")}</textarea></label>
-    <div class="row-btn"><button class="btn" id="reqSave" type="button">Save</button></div>
-    <p class="note" id="reqMsg" hidden></p>
+    <div class="row-btn"><button class="btn ghost" id="reqSave" type="button">Save</button></div>
+    <div class="rule"></div>
+
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Turn it into</b></p>
+    <div class="row-btn">
+      <button class="btn ghost" id="reqConsult" type="button"${r.consultation_id?" disabled":""}>${r.consultation_id ? "Consultation booked" : "Book consultation"}</button>
+      <button class="btn ghost" id="reqOpp" type="button"${r.opportunity_id?" disabled":""}>${r.opportunity_id ? "In the pipeline" : "Raise opportunity"}</button>
+    </div>
+    <p class="note" id="reqMsg2" hidden></p>
+    <div class="rule"></div>
+
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">History</b></p>
+    ${tl}
     <div class="rule"></div>
     <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Billing history</b></p>
     ${hist.length ? `<table class="tbl"><tbody>${hist.map(i=>`<tr><td class="num">${esc(i.number)}</td><td class="num">${money2(i.total_minor,i.currency||"USD")}</td><td><span class="pill ${i.status==="paid"?"cur":"mut"}">${esc(i.status)}</span></td></tr>`).join("")}</tbody></table>`
                   : `<p class="panel-m">No invoices on record for this person. A new prospect.</p>`}`);
-  const save = async (extra={}) => {
-    const body = { status: d.querySelector("#reqStatus").value, notes: d.querySelector("#reqNotes").value || null, updated_at: new Date().toISOString(), ...extra };
-    try { await w("PATCH", `requests?id=eq.${id}`, body); note(d.querySelector("#reqMsg"), "Saved.", true); await loadRequests(); }
-    catch (e) { note(d.querySelector("#reqMsg"), e.message); }
+
+  const $$ = (sel) => d.querySelector(sel);
+  const say = (el, t, ok) => note($$(el), t, ok);
+  $$("#reqTpl").addEventListener("change", () => {
+    const k = $$("#reqTpl").value; const tt = REQ_TEMPLATES[k];
+    $$("#reqSubject").value = tt ? fill(tt.subject) : ""; $$("#reqBody").value = tt ? fill(tt.body) : "";
+  });
+
+  // Reply: one call, server sends as the owner mailbox, stamps the clock, logs the activity.
+  $$("#reqSend").addEventListener("click", async () => {
+    const subject = $$("#reqSubject").value.trim(), body = $$("#reqBody").value.trim();
+    if (!subject || !body) return say("#reqMsg", "Write a subject and a message first.");
+    if (/\[Your answer here\.\]/.test(body)) return say("#reqMsg", "Replace the placeholder in the message before sending.");
+    const b = $$("#reqSend"); b.disabled = true; b.textContent = "Sending…";
+    try {
+      const res = await fetch(`${API}/functions/v1/bca-reply`, { method:"POST",
+        headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+session.access_token },
+        body: JSON.stringify({ request_id: id, subject, body }) });
+      const j = await res.json().catch(()=>({}));
+      if (!res.ok || !j.ok) throw new Error(j.error === "email_off" ? "Email sending is not switched on yet." : j.error === "forbidden" ? "Your account cannot reply on behalf of BCA." : "The reply could not be sent.");
+      say("#reqMsg", `Sent as ${j.mailbox}. ${j.first_response ? "The clock has stopped." : "Logged."}`, true);
+      await loadRequests(); setTimeout(() => { closeDrawer(); openRequest(id); }, 900);
+    } catch (e) { say("#reqMsg", e.message); b.disabled = false; b.textContent = "Send reply"; }
+  });
+
+  const save = async (extra={}, msgEl="#reqMsg") => {
+    const body = { status: $$("#reqStatus").value, notes: $$("#reqNotes").value || null, owner_id: $$("#reqOwner").value || null, updated_at: new Date().toISOString(), ...extra };
+    try { await w("PATCH", `requests?id=eq.${id}`, body); say(msgEl, "Saved.", true); await loadRequests(); return true; }
+    catch (e) { say(msgEl, e.message); return false; }
   };
-  d.querySelector("#reqSave").addEventListener("click", () => save());
-  d.querySelector("#reqAnswered")?.addEventListener("click", async () => {
-    if (d.querySelector("#reqStatus").value === "new") d.querySelector("#reqStatus").value = "answered";
-    await save({ first_response_at: new Date().toISOString(), answered_by: claimsOf(session)?.sub || null });
-    closeDrawer(); openRequest(id);
+  $$("#reqSave").addEventListener("click", () => save());
+  $$("#reqAnswered")?.addEventListener("click", async () => {
+    if ($$("#reqStatus").value === "new") $$("#reqStatus").value = "answered";
+    if (!$$("#reqOwner").value && myStaff) $$("#reqOwner").value = myStaff.person_id;
+    if (await save({ first_response_at: new Date().toISOString(), answered_by: me || null })) { closeDrawer(); openRequest(id); }
+  });
+
+  // Convert. Both land in tables the console already shows.
+  $$("#reqConsult").addEventListener("click", async () => {
+    try {
+      const [c] = await w("POST", "consultations", [{ tenant_id: TENANT, full_name: r.full_name, work_email: r.work_email, company: r.organization || null, country: r.country || null, status: "requested" }]);
+      await w("PATCH", `requests?id=eq.${id}`, { consultation_id: c.id, status: "briefing_booked", updated_at: new Date().toISOString() });
+      await w("POST", "activities", [{ tenant_id: TENANT, kind: "note", direction: "internal", person_id: r.person_id || null, request_id: id, actor_id: myStaff?.person_id || null, subject: "Consultation requested", body: "Raised from Inbound requests." }]);
+      say("#reqMsg2", "Consultation created. It is now in Sessions to be matched with a coach.", true); await loadRequests(); setTimeout(() => { closeDrawer(); openRequest(id); }, 900);
+    } catch (e) { say("#reqMsg2", e.message); }
+  });
+  $$("#reqOpp").addEventListener("click", async () => {
+    try {
+      const line = REQ_LINE[r.kind] || "other";
+      const [o] = await w("POST", "opportunities", [{ tenant_id: TENANT, request_id: id, person_id: r.person_id || null,
+        name: `${r.full_name}${r.organization ? " · " + r.organization : ""} — ${r.topic || label(r.kind)}`, line, stage: "qualifying", probability: 10,
+        owner_id: $$("#reqOwner").value || myStaff?.person_id || null, next_step: "Qualify the request", next_step_on: todayISO() }]);
+      await w("PATCH", `requests?id=eq.${id}`, { opportunity_id: o.id, status: r.status === "new" ? "triaging" : r.status, updated_at: new Date().toISOString() });
+      await w("POST", "activities", [{ tenant_id: TENANT, kind: "note", direction: "internal", person_id: r.person_id || null, request_id: id, opportunity_id: o.id, actor_id: myStaff?.person_id || null, subject: "Opportunity raised", body: `Line: ${label(line)}. Raised from Inbound requests.` }]);
+      say("#reqMsg2", "Opportunity raised. Find it under Pipeline, stage Qualifying.", true); await loadRequests(); if (typeof loadPipeline === "function") loadPipeline().catch(()=>{}); setTimeout(() => { closeDrawer(); openRequest(id); }, 900);
+    } catch (e) { say("#reqMsg2", e.message); }
   });
 }
 
