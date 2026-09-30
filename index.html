@@ -183,6 +183,7 @@ select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px so
   .rail-foot{margin-top:14px}
   .view{padding:20px 16px 48px}
 }
+table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines th,#prLines td{padding:6px 5px;white-space:normal}#prLines td.num{font-family:var(--num)}#prLines tfoot td{border-bottom:0}
 </style>
 </head>
 <body>
@@ -309,6 +310,17 @@ select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px so
         </tr></thead>
         <tbody id="invBody"><tr><td colspan="7"><span class="sk"></span></td></tr></tbody>
       </table></div>
+    </section>
+
+    <!-- ───── proposals ───── -->
+    <section class="view" id="v-proposals" hidden>
+      <div class="eyebrow">Growth</div>
+      <h1>Proposals</h1>
+      <p class="lede" id="propLede">—</p>
+      <div class="rule"></div>
+      <div class="stats" id="propStats"></div>
+      <div class="rule"></div>
+      <div id="propWrap"></div>
     </section>
 
     <!-- ───── website ───── -->
@@ -575,11 +587,7 @@ const MODULES = [
 
   { g:"growth", v:"leads",    i:"users", en:"Leads", fr:"Prospects", live:true },
   { g:"growth", v:"pipeline", i:"flow",  en:"Pipeline", fr:"Pipeline", live:true },
-  { g:"growth", v:"proposals",i:"doc",   en:"Proposals", fr:"Propositions",
-    what:{en:"Build and send corporate and sponsorship proposals, then see which have been opened and which are waiting on a reply.",
-          fr:"Créer et envoyer des propositions entreprises et sponsoring, puis suivre les ouvertures."},
-    needs:{en:["BCA's corporate proposal template","The sponsorship rate card"],
-           fr:["Le modèle de proposition entreprise","La grille tarifaire sponsoring"]} },
+  { g:"growth", v:"proposals",i:"doc",   en:"Proposals", fr:"Propositions", live:true },
 
   { g:"mkt", v:"website",   i:"globe", en:"Website", fr:"Site web", live:true },
   { g:"mkt", v:"campaigns", i:"mega",  en:"Campaigns", fr:"Campagnes", locked:true,
@@ -739,6 +747,7 @@ async function start(){
   guard(loadWorklog,  "worklog",  "wlWrap");
   guard(loadDocuments,"documents","docWrap");
   guard(loadPipeline,"pipeline", "pipWrap");
+  guard(loadProposals,"proposals","propWrap");
   guard(loadTeam,    "team",     "teamWrap");
   guard(loadBench,   "bench",    "benchWrap");
   guard(loadSessions,"sessions", "sessWrap");
@@ -1040,6 +1049,191 @@ async function editWorklog(r, me){
   };
   $$("#wlSave").addEventListener("click", () => save());
   $$("#wlDone")?.addEventListener("click", () => { $$("#wlStatus").value = "done"; save({ done_on: todayISO() }); });
+}
+
+/* ───────── proposals ─────────
+   Built here from lines, sent to one named recipient as a branded email carrying a
+   private link (proposal.html?t=…), and tracked: sent, opened (how many times), accepted
+   or declined, with the recipient's note. Sending, opens and decisions go through the
+   edge function bca-proposal; drafting is plain REST under RLS. */
+const PROP_STATUS = ["draft","sent","opened","accepted","declined","expired","withdrawn"];
+const PROP_PILL = { draft:"mut", sent:"d30", opened:"d30", accepted:"cur", declined:"d60", expired:"mut", withdrawn:"mut" };
+const PROP_KINDS = ["corporate_membership","sponsorship","coaching_package","consulting","project_management","business_matching","conference","other"];
+/* Standard lines. Prices stay blank until BCA sends the corporate template and the sponsorship rate card. */
+const PROP_PRESETS = {
+  corporate_membership: [["Corporate membership, 12 months","Seats for named executives, Board Room access, member events"],["Executive coaching, per leader","Six one-to-one sessions with a Bench coach"],["Onboarding and leadership diagnostic",""]],
+  sponsorship: [["Headline sponsorship","Naming, stage presence, delegate list, brand on all materials"],["Session sponsorship","One session, brand on screen and programme"],["Delegate passes",""]],
+  coaching_package: [["Coaching package, six sessions","One-to-one with a Bench coach, 60 minutes each"],["Leadership diagnostic",""]],
+  consulting: [["Consulting engagement","Scope, deliverables and dates as agreed"],["Workshop day",""]],
+  project_management: [["Project management retainer, per month",""]],
+  business_matching: [["Business matching engagement",""]],
+  conference: [["Conference delegate pass",""],["Table of ten",""]],
+  other: [["Item",""]],
+};
+const cents = (v) => Math.round(Number(String(v).replace(/[^0-9.\-]/g,""))*100) || 0;
+const dollars = (m) => (Number(m||0)/100).toFixed(2);
+
+async function loadProposals(){
+  const me = await myStaff(); await staffMap();
+  const rows = await q("proposals?select=id,number,title,kind,status,currency,total_minor,valid_until,sent_at,opened_at,open_count,decided_at,owner_id,organizations(name),people!proposals_person_id_fkey(first_name,last_name,email)&order=created_at.desc&limit=300");
+  const open = rows.filter(r=>["sent","opened"].includes(r.status));
+  const sum = (a)=>a.reduce((t,r)=>t+Number(r.total_minor||0),0);
+  const won = rows.filter(r=>r.status==="accepted");
+  const waiting = open.filter(r=>r.opened_at && !r.decided_at);
+  $("propLede").textContent = rows.length
+    ? `${open.length} proposal${open.length===1?"":"s"} out worth ${money(sum(open))}. ${waiting.length} opened and waiting on a reply. ${won.length} accepted so far.`
+    : "No proposals yet. Build the first one below.";
+  $("propStats").innerHTML =
+    `<div class="stat"><span class="stat-k">Out for decision</span><span class="stat-v">${money(sum(open))}</span><span class="stat-n">${open.length} sent</span></div>
+     <div class="stat amber"><span class="stat-k">Opened, no reply</span><span class="stat-v">${waiting.length}</span><span class="stat-n">chase these first</span></div>
+     <div class="stat sage"><span class="stat-k">Accepted</span><span class="stat-v">${money(sum(won))}</span><span class="stat-n">${won.length} won</span></div>
+     <div class="stat"><span class="stat-k">Drafts</span><span class="stat-v">${rows.filter(r=>r.status==="draft").length}</span><span class="stat-n">not yet sent</span></div>`;
+  const today = todayISO();
+  $("propWrap").innerHTML = `
+    <div class="row-btn" style="margin-bottom:14px"><button class="btn" id="propNew" type="button">New proposal</button></div>
+    <div class="search-row"><input class="search" id="propSearch" type="search" placeholder="Search number, title, company, recipient or status" autocomplete="off"><span class="search-n" id="propCount"></span></div>
+    <div class="tblwrap"><table class="tbl"><caption>Newest first. Click a proposal to work on it.</caption>
+      <thead><tr><th>Proposal</th><th>To</th><th>Kind</th><th>Status</th><th class="num">Value</th><th>Sent</th><th>Opened</th><th>Valid until</th><th>Owner</th></tr></thead>
+      <tbody id="propBody">${rows.length ? rows.map(r=>{
+        const who = r.people ? [r.people.first_name,r.people.last_name].filter(Boolean).join(" ") : "";
+        const stale = ["sent","opened"].includes(r.status) && r.valid_until && r.valid_until < today;
+        return `<tr class="click" data-prop="${esc(r.id)}" data-search="${searchKey(r.number,r.title,r.organizations?.name,who,r.people?.email,label(r.status),label(r.kind))}">
+          <td class="wrap"><b>${esc(r.title)}</b><br><span class="panel-m">${esc(r.number)}</span></td>
+          <td class="wrap">${esc(who||"—")}${r.organizations?.name?`<br><span class="panel-m">${esc(r.organizations.name)}</span>`:""}</td>
+          <td>${esc(label(r.kind))}</td>
+          <td><span class="pill ${PROP_PILL[r.status]||"mut"}">${esc(label(r.status))}</span></td>
+          <td class="num">${money(r.total_minor, r.currency)}</td>
+          <td>${esc(when(r.sent_at))}</td>
+          <td>${r.opened_at?`${esc(when(r.opened_at))}${r.open_count>1?`<br><span class="panel-m">${r.open_count} times</span>`:""}`:"<span class='panel-m'>—</span>"}</td>
+          <td class="${stale?"due":""}">${esc(day(r.valid_until))}${stale?"<br><span class='panel-m due'>past</span>":""}</td>
+          <td>${esc(staffNameOf(r.owner_id)||"—")}</td></tr>`;}).join("")
+        : `<tr><td colspan="9">Nothing yet.</td></tr>`}</tbody></table></div>
+    <p class="panel-m" style="margin-top:14px">Each proposal goes out as admin@bcaleadership.com with a private link. The recipient's opens and decision show here, and the linked opportunity moves stage on its own: sent puts it at Proposal, accepted at Verbal, declined at Lost.</p>`;
+  wireSearch("propSearch","propBody","propCount");
+  $("propNew").addEventListener("click", () => editProposal(null, me));
+  $("propWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openProposal(tr.dataset.prop, me)));
+}
+
+async function openProposal(id, me){
+  const [p] = await q(`proposals?select=*,organizations(name),people!proposals_person_id_fkey(first_name,last_name,email)&id=eq.${id}&limit=1`);
+  if (!p) return;
+  p.lines = await q(`proposal_lines?select=*&proposal_id=eq.${id}&order=sort`);
+  editProposal(p, me);
+}
+
+async function editProposal(p, me){
+  const isNew = !p;
+  p = p || { title:"", kind:"corporate_membership", status:"draft", currency:"USD", valid_until:"", intro:"", terms:"", notes:"", lines: [] };
+  const [orgs, opps, staff] = await Promise.all([
+    q("organizations?select=id,name&order=name&limit=400").catch(()=>[]),
+    q("opportunities?select=id,name,stage,organization_id&stage=in.(qualifying,briefing,proposal,negotiation)&order=name&limit=200").catch(()=>[]),
+    Promise.resolve(Object.values(await staffMap()).filter(x=>x.status==="active")),
+  ]);
+  const locked = ["accepted","declined","withdrawn","expired"].includes(p.status);
+  const who = p.people ? [p.people.first_name,p.people.last_name].filter(Boolean).join(" ") : "";
+  const events = isNew ? [] : await q(`proposal_events?select=kind,detail,at,person_id&proposal_id=eq.${p.id}&order=at.desc&limit=40`).catch(()=>[]);
+  const link = p.public_token ? `${location.origin}/proposal.html?t=${p.public_token}` : "";
+  const d = drawer(isNew ? "New proposal" : `${p.number} · ${p.title}`,
+    isNew ? "Build it from lines, save, then send. Nothing goes out until you press Send." : `${label(p.status)}${p.sent_at?` · sent ${when(p.sent_at)}`:""}${p.opened_at?` · opened ${p.open_count||1}×`:""}${p.decided_at?` · decided ${when(p.decided_at)}`:""}`, `
+    ${p.decision_note ? `<div class="panel" style="margin-bottom:14px;border-left:3px solid var(--${p.status==="accepted"?"sage":"rust"})"><div class="panel-h"><span class="panel-t">What they said</span></div><p style="white-space:pre-wrap">${esc(p.decision_note)}</p></div>` : ""}
+    <label class="fld"><span>Title</span><input id="prTitle" value="${esc(p.title)}" placeholder="e.g. Corporate membership for Ecobank Ghana, 2027" ${locked?"disabled":""}></label>
+    <div class="grid2">
+      <label class="fld"><span>Kind</span><select id="prKind" ${locked?"disabled":""}>${optsFor(PROP_KINDS, p.kind)}</select></label>
+      <label class="fld"><span>Currency</span><select id="prCur" ${locked?"disabled":""}>${["USD","EUR","GBP","ZAR","MUR","GHS","KES","NGN"].map(c=>`<option${c===p.currency?" selected":""}>${c}</option>`).join("")}</select></label>
+      <label class="fld"><span>Recipient</span><input id="prWho" placeholder="Type a name or email to find them" value="${esc(who?`${who} <${p.people.email}>`:"")}" autocomplete="off" ${locked?"disabled":""}><input type="hidden" id="prPerson" value="${esc(p.person_id||"")}"><div id="prWhoList"></div></label>
+      <label class="fld"><span>Company</span><select id="prOrg" ${locked?"disabled":""}><option value="">None</option>${orgs.map(o=>`<option value="${esc(o.id)}"${o.id===p.organization_id?" selected":""}>${esc(o.name)}</option>`).join("")}</select></label>
+      <label class="fld"><span>Linked opportunity</span><select id="prOpp" ${locked?"disabled":""}><option value="">None</option>${opps.map(o=>`<option value="${esc(o.id)}"${o.id===p.opportunity_id?" selected":""}>${esc(o.name)} · ${esc(label(o.stage))}</option>`).join("")}</select></label>
+      <label class="fld"><span>Valid until</span><input id="prValid" type="date" value="${esc(p.valid_until||"")}" ${locked?"disabled":""}></label>
+      <label class="fld"><span>Owner</span><select id="prOwner" ${locked?"disabled":""}><option value="">Me</option>${staff.map(s=>`<option value="${esc(s.person_id)}"${s.person_id===p.owner_id?" selected":""}>${esc(s.full_name||s.email)}</option>`).join("")}</select></label>
+    </div>
+    <label class="fld"><span>Opening paragraph</span><textarea id="prIntro" placeholder="What they told you they need, and what this proposal does about it" ${locked?"disabled":""}>${esc(p.intro||"")}</textarea></label>
+    <div class="panel" style="margin-bottom:14px"><div class="panel-h"><span class="panel-t">Lines</span>${locked?"":`<select id="prPreset" style="font-size:12.5px;padding:5px 8px"><option value="">Add a standard line…</option></select>`}</div>
+      <table class="tbl" id="prLines"><thead><tr><th>Description</th><th style="width:50px" class="num">Qty</th><th style="width:92px" class="num">Unit</th><th style="width:88px" class="num">Amount</th>${locked?"":"<th style='width:26px'></th>"}</tr></thead><tbody></tbody>
+      <tfoot><tr><td colspan="3" class="num"><b>Total</b></td><td class="num" id="prTotal"><b>—</b></td>${locked?"":"<td></td>"}</tr></tfoot></table>
+      ${locked?"":`<div class="row-btn" style="margin-top:10px"><button class="btn ghost" id="prAddLine" type="button">Add a line</button></div>`}</div>
+    <label class="fld"><span>Terms shown to the recipient</span><textarea id="prTerms" placeholder="Payment terms, what is included, what happens on acceptance" ${locked?"disabled":""}>${esc(p.terms||"")}</textarea></label>
+    <label class="fld"><span>Internal notes (never shown)</span><textarea id="prNotes" ${locked?"disabled":""}>${esc(p.notes||"")}</textarea></label>
+    <div class="row-btn">
+      ${locked?"":`<button class="btn" id="prSave" type="button">${isNew?"Save draft":"Save"}</button>`}
+      ${isNew||locked?"":`<button class="btn" id="prSend" type="button">${p.sent_at?"Send again":"Send to recipient"}</button>`}
+      ${link&&!locked&&p.sent_at?`<button class="btn ghost" id="prCopy" type="button">Copy link</button>`:""}
+      ${isNew||locked?"":`<button class="btn ghost" id="prWithdraw" type="button">Withdraw</button>`}
+    </div>
+    <p class="note" id="prMsg" hidden></p>
+    ${isNew?"":`<h3 style="margin:22px 0 8px;font-size:15px">History</h3>${events.length?`<ul class="tl">${events.map(e=>`<li><time>${esc(when(e.at))}</time> <b>${esc(label(e.kind))}</b>${staffNameOf(e.person_id)?` · ${esc(staffNameOf(e.person_id))}`:""}${e.detail?`<p>${esc(e.detail)}</p>`:""}</li>`).join("")}</ul>`:`<p class="panel-m">Nothing yet.</p>`}`}`);
+  const $$ = (s) => d.querySelector(s);
+  const tb = $$("#prLines tbody");
+  const addLine = (l={}) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="wrap"><input class="ln-d" value="${esc(l.description||"")}" placeholder="What they get" style="width:100%;margin-bottom:4px" ${locked?"disabled":""}><input class="ln-x" value="${esc(l.detail||"")}" placeholder="Detail (optional)" style="width:100%;font-size:12.5px;color:var(--mute)" ${locked?"disabled":""}></td>
+      <td class="num"><input class="ln-q" value="${esc(l.qty??1)}" inputmode="decimal" style="width:100%;text-align:right" ${locked?"disabled":""}></td>
+      <td class="num"><input class="ln-u" value="${l.unit_minor?dollars(l.unit_minor):""}" inputmode="decimal" placeholder="0.00" style="width:100%;text-align:right" ${locked?"disabled":""}></td>
+      <td class="num ln-a">—</td>${locked?"":`<td><button type="button" class="dr-x ln-rm" aria-label="Remove line" style="font-size:16px">&#215;</button></td>`}`;
+    tr.querySelectorAll("input").forEach(i => { i.style.fontFamily="var(--ui)"; i.style.fontSize="13.5px"; i.style.padding="6px 8px"; i.style.border="1px solid var(--line)"; i.style.background="var(--ink)"; i.style.color="var(--parch)"; i.style.borderRadius="3px"; i.addEventListener("input", total); });
+    tr.querySelector(".ln-rm")?.addEventListener("click", () => { tr.remove(); total(); });
+    tb.append(tr); total();
+  };
+  const readLines = () => [...tb.querySelectorAll("tr")].map((tr,i)=>({ description: tr.querySelector(".ln-d").value.trim(), detail: tr.querySelector(".ln-x").value.trim()||null, qty: Number(tr.querySelector(".ln-q").value)||0, unit_minor: cents(tr.querySelector(".ln-u").value), sort: (i+1)*10 })).filter(l=>l.description);
+  const total = () => { let t=0; tb.querySelectorAll("tr").forEach(tr=>{ const a=Math.round((Number(tr.querySelector(".ln-q").value)||0)*cents(tr.querySelector(".ln-u").value)); t+=a; tr.querySelector(".ln-a").textContent = money2(a, $$("#prCur").value); }); $$("#prTotal").innerHTML = `<b>${money2(t, $$("#prCur").value)}</b>`; };
+  (p.lines||[]).forEach(addLine);
+  if (!locked) {
+    const fillPreset = () => { const k=$$("#prKind").value; $$("#prPreset").innerHTML = `<option value="">Add a standard line…</option>` + (PROP_PRESETS[k]||[]).map((x,i)=>`<option value="${i}">${esc(x[0])}</option>`).join(""); };
+    fillPreset(); $$("#prKind").addEventListener("change", fillPreset); $$("#prCur").addEventListener("change", total);
+    $$("#prPreset").addEventListener("change", (e)=>{ const x=(PROP_PRESETS[$$("#prKind").value]||[])[Number(e.target.value)]; if (x) addLine({description:x[0],detail:x[1]}); e.target.value=""; });
+    $$("#prAddLine").addEventListener("click", ()=>addLine());
+    if (isNew && !p.lines.length) (PROP_PRESETS[p.kind]||[]).slice(0,1).forEach(x=>addLine({description:x[0],detail:x[1]}));
+    /* recipient finder: any person on record, by name or email */
+    let tmr;
+    $$("#prWho").addEventListener("input", (e) => {
+      $$("#prPerson").value = ""; clearTimeout(tmr);
+      const s = e.target.value.trim(); if (s.length < 2) { $$("#prWhoList").innerHTML=""; return; }
+      tmr = setTimeout(async () => {
+        const enc = encodeURIComponent(`*${s}*`);
+        const ppl = await q(`people?select=id,first_name,last_name,email,organization_id&or=(first_name.ilike.${enc},last_name.ilike.${enc},email.ilike.${enc})&order=first_name&limit=8`).catch(()=>[]);
+        $$("#prWhoList").innerHTML = ppl.length ? `<div class="panel" style="padding:6px 0;margin-top:4px">${ppl.map(x=>`<button type="button" class="who" data-id="${esc(x.id)}" data-org="${esc(x.organization_id||"")}" data-label="${esc([x.first_name,x.last_name].filter(Boolean).join(" "))} &lt;${esc(x.email)}&gt;" style="display:block;width:100%;text-align:left;background:none;border:0;color:var(--parch);padding:6px 12px;font-size:13.5px;cursor:pointer">${esc([x.first_name,x.last_name].filter(Boolean).join(" ")||x.email)} <span class="panel-m">${esc(x.email||"")}</span></button>`).join("")}</div>` : `<p class="panel-m" style="margin-top:4px">No one on record matches. Add them under Leads or Members first.</p>`;
+        $$("#prWhoList").querySelectorAll(".who").forEach(b => b.addEventListener("click", () => { $$("#prPerson").value=b.dataset.id; $$("#prWho").value=b.dataset.label.replace(/&lt;/g,"<").replace(/&gt;/g,">"); $$("#prWhoList").innerHTML=""; if (b.dataset.org && !$$("#prOrg").value) $$("#prOrg").value=b.dataset.org; }));
+      }, 250);
+    });
+  }
+  const body = () => ({ title: $$("#prTitle").value.trim(), kind: $$("#prKind").value, currency: $$("#prCur").value, person_id: $$("#prPerson").value||null, organization_id: $$("#prOrg").value||null,
+    opportunity_id: $$("#prOpp").value||null, valid_until: $$("#prValid").value||null, owner_id: $$("#prOwner").value||me?.person_id||null, intro: $$("#prIntro").value||null, terms: $$("#prTerms").value||null, notes: $$("#prNotes").value||null });
+  const save = async () => {
+    const b = body(); if (!b.title) throw new Error("Give the proposal a title.");
+    const lines = readLines();
+    if (isNew) {
+      const [row] = await w("POST", "proposals", [{ tenant_id: TENANT, created_by: me?.person_id||null, ...b }]);
+      p = { ...row, lines };
+      await w("POST", "proposal_events", [{ tenant_id: TENANT, proposal_id: p.id, kind: "created", person_id: me?.person_id||null }]);
+    } else {
+      await w("PATCH", `proposals?id=eq.${p.id}`, b);
+      await w("DELETE", `proposal_lines?proposal_id=eq.${p.id}`);
+    }
+    if (lines.length) await w("POST", "proposal_lines", lines.map(l=>({ tenant_id: TENANT, proposal_id: p.id, ...l })));
+    return p;
+  };
+  $$("#prSave")?.addEventListener("click", async (e) => {
+    e.currentTarget.disabled = true;
+    try { const row = await save(); note($$("#prMsg"), isNew ? `Saved as ${row.number}.` : "Saved.", true); await loadProposals(); setTimeout(()=>openProposal(row.id, me), 500); }
+    catch (err) { note($$("#prMsg"), err.message); e.currentTarget.disabled = false; }
+  });
+  $$("#prSend")?.addEventListener("click", async (e) => {
+    if (!$$("#prPerson").value) return note($$("#prMsg"), "Choose a recipient first.");
+    if (!readLines().length) return note($$("#prMsg"), "Add at least one line.");
+    const btn = e.currentTarget; btn.disabled = true; note($$("#prMsg"), "Saving and sending…");
+    try {
+      await save();
+      const res = await fetch(`${API}/functions/v1/bca-proposal`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+session.access_token }, body: JSON.stringify({ action:"send", proposal_id: p.id }) });
+      const out = await res.json().catch(()=>({}));
+      if (!res.ok || !out.ok) throw new Error({ no_recipient:"The recipient has no email address on record.", no_lines:"Add at least one line.", closed:"This proposal has already been decided.", email_off:"Email sending is not switched on.", send_failed:"The email could not be sent." }[out.error] || out.error || `Send failed (${res.status})`);
+      note($$("#prMsg"), out.resent ? "Sent again." : "Sent. The recipient has the link.", true);
+      await loadProposals(); setTimeout(()=>openProposal(p.id, me), 700);
+    } catch (err) { note($$("#prMsg"), err.message); btn.disabled = false; }
+  });
+  $$("#prCopy")?.addEventListener("click", async () => { try { await navigator.clipboard.writeText(link); note($$("#prMsg"), "Link copied.", true); } catch { note($$("#prMsg"), link); } });
+  $$("#prWithdraw")?.addEventListener("click", async () => {
+    try { await w("PATCH", `proposals?id=eq.${p.id}`, { status:"withdrawn" }); await w("POST","proposal_events",[{ tenant_id: TENANT, proposal_id: p.id, kind:"withdrawn", person_id: me?.person_id||null }]); note($$("#prMsg"), "Withdrawn. The link no longer opens.", true); await loadProposals(); setTimeout(closeDrawer, 600); }
+    catch (err) { note($$("#prMsg"), err.message); }
+  });
 }
 
 /* ───────── inbound requests ─────────

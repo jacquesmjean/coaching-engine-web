@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Proposal · BCA Leadership</title>
+<style>
+  :root{--night:#24170C;--espresso:#452C23;--gold:#F7A61C;--green:#058D52;--clay:#C14027;--olive:#ABBB61;--cream:#FAF6EE;--ink:#242424;--mute:#6F665E;--line:#E9E2D4}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:Georgia,"Cormorant Garamond","Times New Roman",serif;font-size:17px;line-height:1.65}
+  .strip{display:flex;height:7px}.strip i{display:block;flex:1}
+  .wrap{max-width:720px;margin:34px auto 60px;padding:0 16px}
+  .card{background:#fff;border:1px solid var(--line)}
+  .head{padding:26px 36px 18px;border-bottom:1px solid #EFE9DC;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .head img{width:118px;height:auto;display:block}
+  .k{font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);margin:0}
+  .body{padding:28px 36px 30px}
+  h1{font-size:28px;line-height:1.2;margin:4px 0 14px;color:var(--night);font-weight:600}
+  .to{color:var(--mute);font-size:15px;margin:0 0 20px}
+  table{width:100%;border-collapse:collapse;margin:18px 0 6px}
+  td{padding:10px 0;border-bottom:1px solid #EFE9DC;vertical-align:top;font-size:16px}
+  td.n{text-align:right;white-space:nowrap}
+  td small{display:block;color:var(--mute);font-size:13.5px;font-family:Helvetica,Arial,sans-serif;margin-top:2px}
+  tr.total td{border-bottom:0;padding-top:14px;font-size:19px;color:var(--night);font-weight:700}
+  .terms{font-family:Helvetica,Arial,sans-serif;font-size:13.5px;color:var(--mute);white-space:pre-wrap;line-height:1.6;margin-top:18px}
+  .valid{font-family:Helvetica,Arial,sans-serif;font-size:13px;color:var(--mute)}
+  .act{margin-top:26px;padding-top:22px;border-top:1px solid #EFE9DC}
+  .btn{display:inline-block;padding:13px 26px;font-family:Helvetica,Arial,sans-serif;font-size:13.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:3px;border:1px solid var(--gold);background:var(--gold);color:var(--night);cursor:pointer;margin:0 8px 8px 0}
+  .btn.ghost{background:transparent;color:var(--espresso);border-color:#C9BFA9}
+  .btn:disabled{opacity:.55;cursor:default}
+  textarea{width:100%;min-height:84px;font-family:Helvetica,Arial,sans-serif;font-size:14px;padding:10px;border:1px solid #C9BFA9;border-radius:3px;background:#FFFDF8;margin:8px 0 12px}
+  .done{padding:16px 18px;border-left:4px solid var(--green);background:#F1F8F3;font-family:Helvetica,Arial,sans-serif;font-size:15px}
+  .done.no{border-color:var(--clay);background:#FBF0EC}
+  .foot{background:var(--night);padding:20px 36px;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;line-height:1.7;color:rgba(250,246,238,.72)}
+  .foot b{color:var(--gold);letter-spacing:.22em;font-size:10.5px;text-transform:uppercase;font-weight:400}
+  .foot i{font-family:Georgia,serif;font-size:14px;color:#FAF6EE}
+  .foot a{color:var(--gold);text-decoration:none}
+  .empty{padding:60px 36px;text-align:center;color:var(--mute)}
+  @media (max-width:560px){.head,.body,.foot{padding-left:20px;padding-right:20px}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <div class="strip"><i style="background:#058D52;flex:4"></i><i style="background:#F7A61C"></i><i style="background:#C14027"></i><i style="background:#ABBB61"></i><i style="background:#452C23"></i><i style="background:#F7A61C"></i><i style="background:#23A455;flex:4"></i></div>
+  <div class="head"><img src="https://bcaleadership.com/assets/logo-dark.png" alt="BCA Leadership"><p class="k" id="num"></p></div>
+  <div class="body" id="main"><div class="empty">Loading your proposal…</div></div>
+  <div class="foot"><b>BCA Leadership</b><br><i>Where Africa's leaders sharpen each other.</i><br>Suite 113, First Floor, Grand Baie Business Park Phase 1, Grand Baie, Mauritius<br><a href="https://bcaleadership.com">bcaleadership.com</a></div>
+</div></div>
+<script>
+const FN = "https://uojsxmdnpwskxeueftgp.supabase.co/functions/v1/bca-proposal";
+const KEY = "sb_publishable_Z2DVEpLgOb2PkH4ng-Yh5Q__VuY7cKB";
+const t = new URLSearchParams(location.search).get("t") || "";
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money = (m, c="USD") => (Number(m||0)/100).toLocaleString("en-US",{style:"currency",currency:c});
+const day = (d) => d ? new Date(d+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}) : "";
+const main = document.getElementById("main");
+const gone = (msg) => { main.innerHTML = `<div class="empty">${msg}</div>`; };
+async function load(){
+  if (!/^[0-9a-f]{48}$/.test(t)) return gone("This link is not valid. Please use the link in your email from BCA Leadership.");
+  let r; try { r = await fetch(`${FN}?t=${t}`, { headers:{ apikey:KEY } }); } catch { return gone("We could not load the proposal. Please try again in a moment."); }
+  if (!r.ok) return gone(r.status === 404 ? "This proposal is no longer available. Please contact admin@bcaleadership.com." : "We could not load the proposal. Please try again in a moment.");
+  const { proposal: p } = await r.json();
+  document.getElementById("num").textContent = `Proposal ${p.number}`;
+  const rows = (p.lines||[]).map(l => `<tr><td>${esc(l.description)}${l.detail?`<small>${esc(l.detail)}</small>`:""}${Number(l.qty)!==1?`<small>${esc(l.qty)} × ${money(l.unit_minor,p.currency)}</small>`:""}</td><td class="n">${money(Math.round(l.qty*l.unit_minor),p.currency)}</td></tr>`).join("");
+  const decided = ["accepted","declined"].includes(p.status);
+  const expired = p.status === "expired";
+  main.innerHTML = `
+    <p class="k">${esc(p.kind.replace(/_/g," "))}</p>
+    <h1>${esc(p.title)}</h1>
+    <p class="to">Prepared for ${esc(p.recipient?.name||"you")}${p.recipient?.title?`, ${esc(p.recipient.title)}`:""}${p.organization?` · ${esc(p.organization)}`:""}</p>
+    ${p.intro ? esc(p.intro).split(/\n{2,}/).map(x=>`<p>${x.replace(/\n/g,"<br>")}</p>`).join("") : ""}
+    <table>${rows}<tr class="total"><td>Total</td><td class="n">${money(p.total_minor,p.currency)}</td></tr></table>
+    ${p.valid_until?`<p class="valid">Valid until ${day(p.valid_until)}.</p>`:""}
+    ${p.terms?`<div class="terms">${esc(p.terms)}</div>`:""}
+    <div class="act" id="act">
+      ${decided ? `<div class="done ${p.status==="declined"?"no":""}">You ${p.status} this proposal on ${new Date(p.decided_at).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}. Thank you. The BCA team has been notified.</div>`
+      : expired ? `<div class="done no">This proposal passed its validity date. Please write to <a href="mailto:admin@bcaleadership.com">admin@bcaleadership.com</a> and we will refresh it for you.</div>`
+      : `<p class="k" style="margin-bottom:8px">Your response</p>
+         <textarea id="note" placeholder="Anything you would like us to know (optional)"></textarea>
+         <button class="btn" id="yes" type="button">Accept this proposal</button>
+         <button class="btn ghost" id="no" type="button">Decline</button>
+         <p class="valid" id="msg"></p>`}
+    </div>`;
+  const decide = async (decision) => {
+    const y = document.getElementById("yes"), n = document.getElementById("no"), msg = document.getElementById("msg");
+    if (decision === "declined" && !confirm("Decline this proposal? The BCA team will be told.")) return;
+    y.disabled = n.disabled = true; msg.textContent = "Sending…";
+    try {
+      const r = await fetch(FN, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY }, body: JSON.stringify({ action:"decide", t, decision, note: document.getElementById("note").value }) });
+      const out = await r.json().catch(()=>({}));
+      if (!r.ok || !out.ok) throw new Error(out.error === "closed" ? "This proposal has already been answered." : "Something went wrong. Please try again or email admin@bcaleadership.com.");
+      document.getElementById("act").innerHTML = `<div class="done ${decision==="declined"?"no":""}">${decision==="accepted"?"Thank you. Your acceptance has been recorded and the BCA team will be in touch with the agreement and invoice.":"Thank you for letting us know. The BCA team has been notified."}</div>`;
+    } catch (e) { msg.textContent = e.message; y.disabled = n.disabled = false; }
+  };
+  document.getElementById("yes")?.addEventListener("click", () => decide("accepted"));
+  document.getElementById("no")?.addEventListener("click", () => decide("declined"));
+}
+load();
+</script>
+</body>
+</html>
