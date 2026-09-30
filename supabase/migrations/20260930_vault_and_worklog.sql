@@ -153,7 +153,26 @@ seed(area, title, detail, side, status, done_on, sort) as (values
   ('data','5000-series numbers for the four Stripe invoices; what the 3000 and 1000 series are','And confirm the $30,000 Secka payment.','bca','waiting',null,154),
   ('data','WooCommerce export of 2000-series invoices','','bca','waiting',null,155),
   ('engine','Clear the test entries in Inbound requests','Claudia ×4, Nii, Andrea ×2, John Doe/Die, one from Yemen. Mark Declined so board numbers are clean.','bca','waiting',null,156),
-  ('engine','Answer the one real lead','Mwaba Mupinde, Basic membership application, 23 Aug. Still unanswered.','bca','waiting',null,157)
+  ('engine','Answer the one real lead','Mwaba Mupinde, Basic membership application, 23 Aug. Still unanswered.','bca','waiting',null,157),
+  -- Added 30 Sept: the gap between "list done" and "site and engine at 100%".
+  ('website','Spam and bot protection on every form','Honeypot plus Cloudflare Turnstile on Join, Concierge, Contact and newsletter, so test and junk entries stop reaching Inbound requests.','techfides','planned',null,37),
+  ('website','Terms, Privacy and agreement text in FR, ES and PT','Once BCA supplies the English text. Site is four languages; legal pages must match.','techfides','waiting',null,38),
+  ('website','Redirects from old WordPress URLs','301 map from old.bcaleadership.com paths to the new pages before the old site is switched off. Protects the Google rankings.','techfides','planned',null,39),
+  ('website','Search Console: verify, submit sitemap, fix what it reports','TechFides side once BCA adds the DNS record.','techfides','waiting',null,40),
+  ('website','Final QA: mobile, four languages, speed, accessibility','Lighthouse on every page, all four languages clicked through on phone and desktop, broken links, form submissions.','techfides','planned',null,41),
+  ('website','Ownership handover: domain, Vercel, Resend, Search Console','BCA holds admin on everything that runs the site. TechFides keeps operator access.','techfides','planned',null,42),
+  ('website','BCA sign-off: website complete','Nii and Claudia walk every page and confirm in writing. Nothing is 100% until this line is done.','bca','planned',null,60),
+  ('engine','Campaigns module: build or drop','Locked today. Needs a decision: do campaigns run in the engine, or in Mailchimp with results shown here.','techfides','planned',null,140),
+  ('engine','Intelligence module: build or drop','Locked today. Plain-language questions over BCA data and a weekly briefing. Scope after Stripe and invoicing are done.','techfides','planned',null,141),
+  ('engine','Module licensing page','Shows which modules are in BCA''s plan. Low priority; finish or hide before sign-off.','techfides','planned',null,142),
+  ('engine','Automatic backups and data export','Nightly database backup confirmed, plus a one-click CSV export of members, invoices and leads for BCA.','techfides','planned',null,143),
+  ('engine','Staff training and user guide','One session per team (ops, finance, board) and a short guide in the Document vault.','techfides','planned',null,144),
+  ('engine','Final QA: every module, both roles, English and French','Owner and staff log in and run each module end to end, including every email the engine sends.','techfides','planned',null,145),
+  ('commercial','Confirm Stripe can settle to a Mauritius entity','Stripe does not list Mauritius as a supported country. BCA must confirm the entity and bank that will receive funds before any Stripe work starts.','bca','waiting',null,158),
+  ('commercial','Corporate proposal template and sponsorship rate card','Needed before Proposals can be built.','bca','waiting',null,159),
+  ('commercial','Who countersigns agreements for BCA','Needed for the Contract builder.','bca','waiting',null,160),
+  ('email','Confirm support@ mailbox exists and is monitored','Nii''s routing sends billing and post-payment mail there.','bca','waiting',null,161),
+  ('engine','BCA sign-off: engine complete','Each module accepted in writing by the team that uses it. Nothing is 100% until this line is done.','bca','planned',null,170)
 )
 insert into public.worklog (tenant_id, area, title, detail, side, status, done_on, sort)
 select t.id, s.area, s.title, nullif(s.detail,''), s.side, s.status, s.done_on::date, s.sort
