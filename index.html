@@ -472,6 +472,17 @@ const save = (s) => {
   else { localStorage.removeItem(STORE); try { localStorage.removeItem(LEGACY); } catch {} }
 };
 const claimsOf = (s) => { try { return JSON.parse(atob(s.access_token.split(".")[1])); } catch { return {}; } };
+/* Storage and edge-function calls do not get the refresh-once treatment that q()/w() have,
+   so hand them a token that is known to be good for at least another minute. */
+async function freshToken(){
+  if (!session) throw new Error("Not signed in");
+  const c = claimsOf(session);
+  if (c.exp && c.exp*1000 < Date.now() + 60000 && session.refresh_token){
+    try { save(await auth("token?grant_type=refresh_token", { refresh_token: session.refresh_token })); }
+    catch { save(null); showGate(); throw new Error("Session expired, please sign in again"); }
+  }
+  return session.access_token;
+}
 
 async function auth(path, body){
   const r = await fetch(`${API}/auth/v1/${path}`, {
@@ -881,7 +892,8 @@ async function myStaff(){
   return MY_STAFF;
 }
 async function storageFetch(path, opts={}){
-  const r = await fetch(`${API}/storage/v1/${path}`, { ...opts, headers: { apikey:KEY, Authorization:"Bearer "+session.access_token, ...(opts.headers||{}) } });
+  const tok = await freshToken();
+  const r = await fetch(`${API}/storage/v1/${path}`, { ...opts, headers: { apikey:KEY, Authorization:"Bearer "+tok, ...(opts.headers||{}) } });
   if (!r.ok) throw new Error((await r.text()).slice(0,160) || `Storage ${r.status}`);
   return r;
 }
@@ -1223,7 +1235,7 @@ async function editProposal(p, me){
     const btn = e.currentTarget; btn.disabled = true; note($$("#prMsg"), "Saving and sending…");
     try {
       await save();
-      const res = await fetch(`${API}/functions/v1/bca-proposal`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+session.access_token }, body: JSON.stringify({ action:"send", proposal_id: p.id }) });
+      const res = await fetch(`${API}/functions/v1/bca-proposal`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+(await freshToken()) }, body: JSON.stringify({ action:"send", proposal_id: p.id }) });
       const out = await res.json().catch(()=>({}));
       if (!res.ok || !out.ok) throw new Error({ no_recipient:"The recipient has no email address on record.", no_lines:"Add at least one line.", closed:"This proposal has already been decided.", email_off:"Email sending is not switched on.", send_failed:"The email could not be sent." }[out.error] || out.error || `Send failed (${res.status})`);
       note($$("#prMsg"), out.resent ? "Sent again." : "Sent. The recipient has the link.", true);
@@ -1395,7 +1407,7 @@ async function openRequest(id){
     const b = $$("#reqSend"); b.disabled = true; b.textContent = "Sending…";
     try {
       const res = await fetch(`${API}/functions/v1/bca-reply`, { method:"POST",
-        headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+session.access_token },
+        headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+(await freshToken()) },
         body: JSON.stringify({ request_id: id, subject, body }) });
       const j = await res.json().catch(()=>({}));
       if (!res.ok || !j.ok) throw new Error(j.error === "email_off" ? "Email sending is not switched on yet." : j.error === "forbidden" ? "Your account cannot reply on behalf of BCA." : "The reply could not be sent.");
