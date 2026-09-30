@@ -377,6 +377,25 @@ select.mini{font-family:var(--ui);font-size:12.5px;padding:4px 7px;border:1px so
     <!-- generated: modules not yet built -->
     <div id="soonViews"></div>
 
+    <!-- ───── work tracker ───── -->
+    <section class="view" id="v-worklog" hidden>
+      <div class="eyebrow">Operations</div>
+      <h1>Work tracker</h1>
+      <p class="lede" id="wlLede">—</p>
+      <div class="rule"></div>
+      <div id="wlWrap"></div>
+      <p class="panel-m" style="margin-top:14px">One list, shared by TechFides and BCA. "This week" is what each side has on for the week; "Everything" is the full record of what is done, in progress and waiting. Either side can add an item or mark one done.</p>
+    </section>
+
+    <!-- ───── document vault ───── -->
+    <section class="view" id="v-documents" hidden>
+      <div class="eyebrow">Governance</div>
+      <h1>Document vault</h1>
+      <p class="lede" id="docLede">—</p>
+      <div class="rule"></div>
+      <div id="docWrap"></div>
+    </section>
+
     <!-- ───── board ───── -->
     <section class="view" id="v-board" hidden>
       <div class="eyebrow" data-t="gov">Governance</div>
@@ -540,6 +559,7 @@ const MODULES = [
   { g:"ops", v:"bench",    i:"star",  en:"The Bench", fr:"Le Banc", live:true },
   { g:"ops", v:"sessions", i:"cal",   en:"Sessions",  fr:"Séances", live:true },
   { g:"ops", v:"requests", i:"chat",  en:"Inbound requests", fr:"Demandes entrantes", live:true },
+  { g:"ops", v:"worklog",  i:"cal",   en:"Work tracker", fr:"Suivi des travaux", live:true },
 
   { g:"fin", v:"billing",  i:"book",  en:"Billing",   fr:"Facturation", live:true },
   { g:"fin", v:"payments", i:"card",  en:"Payments",  fr:"Paiements",
@@ -567,11 +587,7 @@ const MODULES = [
           fr:"Planifier et mesurer les campagnes de recrutement et de renouvellement."} },
 
   { g:"gov", v:"board",     i:"shield", en:"Board Room", fr:"Conseil", live:true },
-  { g:"gov", v:"documents", i:"doc",    en:"Document vault", fr:"Coffre documentaire",
-    what:{en:"Board papers, resolutions and signed agreements in one place, with a record of who opened what and when.",
-          fr:"Documents du conseil et contrats signés au même endroit, avec traçabilité des accès."},
-    needs:{en:["Which documents belong in the vault","Who may see board-level material"],
-           fr:["Quels documents entrent dans le coffre","Qui peut voir les documents du conseil"]} },
+  { g:"gov", v:"documents", i:"doc",    en:"Document vault", fr:"Coffre documentaire", live:true },
   { g:"gov", v:"intel",     i:"spark",  en:"Intelligence", fr:"Intelligence", locked:true,
     what:{en:"Ask questions of BCA's own data in plain language, and receive a weekly briefing on what changed and what needs attention.",
           fr:"Interroger les données de BCA en langage courant et recevoir un briefing hebdomadaire."} },
@@ -720,6 +736,8 @@ async function start(){
   guard(loadMembers, "members",  "memStats");
   guard(loadLeads,   "leads",    "leadStats");
   guard(loadRequests,"requests", "reqStats");
+  guard(loadWorklog,  "worklog",  "wlWrap");
+  guard(loadDocuments,"documents","docWrap");
   guard(loadPipeline,"pipeline", "pipWrap");
   guard(loadTeam,    "team",     "teamWrap");
   guard(loadBench,   "bench",    "benchWrap");
@@ -831,6 +849,198 @@ function wireSearch(inputId, bodyId, countId){
   input.runSearch = run;
 }
 const searchKey = (...parts) => parts.map(p => String(p ?? "")).join(" ").toLowerCase().replace(/"/g, "&quot;");
+
+/* ───────── document vault ─────────
+   Files live in the private storage bucket "vault" under <tenant_id>/…, metadata in
+   public.documents. Every open is recorded in document_access: who, what, when. */
+const DOC_CATS = ["working","board","agreement","brand","finance","report","other"];
+const DOC_CAT_LABEL = { working:"Working file", board:"Board paper", agreement:"Agreement", brand:"Brand", finance:"Finance", report:"Report", other:"Other" };
+const fmtBytes = (n) => !n ? "—" : n < 1024 ? `${n} B` : n < 1048576 ? `${(n/1024).toFixed(0)} KB` : `${(n/1048576).toFixed(1)} MB`;
+let MY_STAFF = null, STAFF_MAP = null;
+async function staffMap(){
+  if (STAFF_MAP) return STAFF_MAP;
+  const list = await q("staff?select=person_id,full_name,email,role,status&order=full_name").catch(()=>[]);
+  STAFF_MAP = Object.fromEntries(list.map(s=>[s.person_id, s]));
+  if (!REQ_STAFF.length) REQ_STAFF = list.filter(s=>s.status==="active");
+  return STAFF_MAP;
+}
+const staffNameOf = (id) => (STAFF_MAP && STAFF_MAP[id]?.full_name) || null;
+async function myStaff(){
+  if (MY_STAFF) return MY_STAFF;
+  const email = claimsOf(session)?.email;
+  try { MY_STAFF = (await q(`staff?select=person_id,full_name,email,role&email=eq.${encodeURIComponent(email)}&limit=1`))[0] || null; } catch { MY_STAFF = null; }
+  return MY_STAFF;
+}
+async function storageFetch(path, opts={}){
+  const r = await fetch(`${API}/storage/v1/${path}`, { ...opts, headers: { apikey:KEY, Authorization:"Bearer "+session.access_token, ...(opts.headers||{}) } });
+  if (!r.ok) throw new Error((await r.text()).slice(0,160) || `Storage ${r.status}`);
+  return r;
+}
+
+async function loadDocuments(){
+  const me = await myStaff();
+  const canWrite = ["owner","admin"].includes(me?.role);
+  await staffMap();
+  const rows = await q("documents?select=*&order=created_at.desc&limit=200");
+  const opens = await q("document_access?select=document_id,at&action=eq.opened&order=at.desc&limit=500").catch(()=>[]);
+  const lastOpen = {}; opens.forEach(a => { if (!lastOpen[a.document_id]) lastOpen[a.document_id] = a.at; });
+  $("docLede").textContent = rows.length ? `${rows.length} document${rows.length===1?"":"s"} in the vault. Every open is recorded.` : "Nothing in the vault yet.";
+  $("docWrap").innerHTML = `
+    ${canWrite ? `<div class="panel" style="margin-bottom:16px"><div class="panel-h"><span class="panel-t">Add a document</span></div>
+      <div class="grid2">
+        <label class="fld"><span>Title</span><input id="docTitle" placeholder="e.g. Website and engine tracker"></label>
+        <label class="fld"><span>Category</span><select id="docCat">${DOC_CATS.map(c=>`<option value="${c}">${DOC_CAT_LABEL[c]}</option>`).join("")}</select></label>
+      </div>
+      <label class="fld"><span>File</span><input id="docFile" type="file"></label>
+      <label class="fld"><span>Notes</span><input id="docNotes" placeholder="What this is and who it is for"></label>
+      <label style="display:flex;gap:8px;align-items:center;margin:0 0 14px;font-size:13px;letter-spacing:0;text-transform:none;color:var(--parch)"><input id="docBoard" type="checkbox" style="width:auto;margin:0"> Board only (owners, admins and board members)</label>
+      <div class="row-btn"><button class="btn" id="docUpload" type="button">Upload</button></div>
+      <p class="note" id="docMsg" hidden></p></div>` : ""}
+    <div class="search-row"><input class="search" id="docSearch" type="search" placeholder="Search title, file, category or notes" autocomplete="off"><span class="search-n" id="docCount"></span></div>
+    <div class="tblwrap"><table class="tbl"><caption>Newest first. Click a document to open it.</caption>
+      <thead><tr><th>Document</th><th>Category</th><th>Added</th><th>By</th><th class="num">Size</th><th>Last opened</th></tr></thead>
+      <tbody id="docBody">${rows.length ? rows.map(d=>`<tr class="click" data-doc="${esc(d.id)}" data-search="${searchKey(d.title,d.file_name,DOC_CAT_LABEL[d.category]||d.category,d.notes)}">
+        <td class="wrap"><b>${esc(d.title)}</b>${d.board_only?` <span class="pill mut" style="margin-left:6px">Board</span>`:""}<br><span class="panel-m">${esc(d.file_name)}${d.version>1?` · v${d.version}`:""}${d.notes?` · ${esc(d.notes)}`:""}</span></td>
+        <td>${esc(DOC_CAT_LABEL[d.category]||d.category)}</td><td>${esc(when(d.created_at))}</td><td>${esc(staffNameOf(d.uploaded_by)||"—")}</td>
+        <td class="num">${fmtBytes(d.size_bytes)}</td><td>${lastOpen[d.id]?esc(when(lastOpen[d.id])):"<span class='panel-m'>never</span>"}</td></tr>`).join("")
+        : `<tr><td colspan="6">No documents yet.</td></tr>`}</tbody></table></div>`;
+  wireSearch("docSearch","docBody","docCount");
+  $("docWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openDocument(tr.dataset.doc, rows.find(d=>d.id===tr.dataset.doc))));
+  if (canWrite) $("docUpload").addEventListener("click", uploadDocument);
+}
+
+async function uploadDocument(){
+  const f = $("docFile").files[0]; const title = $("docTitle").value.trim();
+  if (!f) return note($("docMsg"), "Choose a file first.");
+  if (!title) return note($("docMsg"), "Give it a title.");
+  const b = $("docUpload"); b.disabled = true; b.textContent = "Uploading…";
+  try {
+    const me = await myStaff();
+    const safe = f.name.replace(/[^\w.\-]+/g, "_");
+    const path = `${TENANT}/${crypto.randomUUID()}-${safe}`;
+    await storageFetch(`object/vault/${path}`, { method:"POST", body:f, headers:{ "Content-Type": f.type || "application/octet-stream", "x-upsert":"false" } });
+    const [doc] = await w("POST", "documents", [{ tenant_id: TENANT, title, category: $("docCat").value, storage_path: path, file_name: f.name,
+      mime_type: f.type || null, size_bytes: f.size, notes: $("docNotes").value || null, board_only: $("docBoard").checked, uploaded_by: me?.person_id || null }]);
+    await w("POST", "document_access", [{ tenant_id: TENANT, document_id: doc.id, person_id: me?.person_id || null, action: "uploaded" }]);
+    note($("docMsg"), "Uploaded.", true); await loadDocuments();
+  } catch (e) { note($("docMsg"), e.message); b.disabled = false; b.textContent = "Upload"; }
+}
+
+async function openDocument(id, d){
+  if (!d) return;
+  const me = await myStaff();
+  const log = await q(`document_access?select=action,at,person_id&document_id=eq.${id}&order=at.desc&limit=30`).catch(()=>[]);
+  const dr = drawer(d.title, `${DOC_CAT_LABEL[d.category]||d.category} · ${d.file_name} · ${fmtBytes(d.size_bytes)}`, `
+    ${d.notes ? `<p class="panel-m">${esc(d.notes)}</p><div class="rule"></div>` : ""}
+    <div class="row-btn"><button class="btn" id="docOpen" type="button">Open document</button>
+      ${["owner","admin"].includes(me?.role) ? `<button class="btn ghost" id="docReplace" type="button">Upload new version</button>` : ""}</div>
+    <input id="docReplaceFile" type="file" hidden>
+    <p class="note" id="docMsg2" hidden></p>
+    <div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Who opened it</b></p>
+    ${log.length ? `<ul class="tl">${log.map(a=>`<li><time>${esc(when(a.at))}</time><b>${esc(label(a.action))}</b> — ${esc(staffNameOf(a.person_id)||"someone")}</li>`).join("")}</ul>` : `<p class="panel-m">Not opened yet.</p>`}`);
+  dr.querySelector("#docOpen").addEventListener("click", async () => {
+    try {
+      const r = await storageFetch(`object/sign/vault/${d.storage_path}`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ expiresIn: 300 }) });
+      const j = await r.json();
+      await w("POST", "document_access", [{ tenant_id: TENANT, document_id: id, person_id: me?.person_id || null, action: "opened" }]).catch(()=>{});
+      window.open(`${API}/storage/v1${j.signedURL}`, "_blank", "noopener");
+    } catch (e) { note(dr.querySelector("#docMsg2"), e.message); }
+  });
+  dr.querySelector("#docReplace")?.addEventListener("click", () => dr.querySelector("#docReplaceFile").click());
+  dr.querySelector("#docReplaceFile")?.addEventListener("change", async (ev) => {
+    const f = ev.target.files[0]; if (!f) return;
+    try {
+      const safe = f.name.replace(/[^\w.\-]+/g, "_");
+      const path = `${TENANT}/${crypto.randomUUID()}-${safe}`;
+      await storageFetch(`object/vault/${path}`, { method:"POST", body:f, headers:{ "Content-Type": f.type || "application/octet-stream" } });
+      await w("PATCH", `documents?id=eq.${id}`, { storage_path: path, file_name: f.name, mime_type: f.type || null, size_bytes: f.size, version: (d.version||1)+1 });
+      await w("POST", "document_access", [{ tenant_id: TENANT, document_id: id, person_id: me?.person_id || null, action: "replaced" }]);
+      note(dr.querySelector("#docMsg2"), `Now version ${(d.version||1)+1}.`, true); await loadDocuments();
+    } catch (e) { note(dr.querySelector("#docMsg2"), e.message); }
+  });
+}
+
+/* ───────── work tracker / weekly agenda ─────────
+   One table, two views. "This week" shows what each side has on for the selected week;
+   "Everything" is the full tracker of what is done, in progress, waiting and planned. */
+const WL_AREAS = ["website","engine","email","data","commercial","other"];
+const WL_STATUS = ["planned","in_progress","waiting","blocked","done","dropped"];
+const WL_STATUS_PILL = { done:"cur", in_progress:"d30", waiting:"mut", blocked:"d60", planned:"mut", dropped:"mut" };
+const mondayOf = (d) => { const x = new Date(d); const day = (x.getDay()+6)%7; x.setDate(x.getDate()-day); return x.toISOString().slice(0,10); };
+let WL_WEEK = mondayOf(new Date());
+let WL_VIEW = "week";
+const fmtWeek = (iso) => { const a = new Date(iso+"T00:00:00Z"), b = new Date(a); b.setUTCDate(a.getUTCDate()+6);
+  const f = (d) => d.toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"}); return `${f(a)} – ${f(b)} ${a.getUTCFullYear()}`; };
+
+async function loadWorklog(){
+  const me = await myStaff();
+  await staffMap();
+  const rows = await q("worklog?select=*&order=sort.asc,created_at.asc&limit=500");
+  const open = rows.filter(r => !["done","dropped"].includes(r.status));
+  const bcaWaiting = open.filter(r => r.side === "bca").length;
+  $("wlLede").textContent = `${rows.filter(r=>r.status==="done").length} done, ${open.length} open. ${bcaWaiting} of the open items are waiting on BCA.`;
+  const week = rows.filter(r => r.week_of === WL_WEEK);
+  const tf = week.filter(r => r.side === "techfides"), bca = week.filter(r => r.side === "bca");
+  const row = (r) => `<tr class="click" data-wl="${esc(r.id)}" data-search="${searchKey(r.title,r.detail,r.area,label(r.status),r.side,staffNameOf(r.owner_id))}">
+      <td class="wrap"><b>${esc(r.title)}</b>${r.detail?`<br><span class="panel-m">${esc(r.detail)}</span>`:""}</td>
+      <td>${esc(label(r.area))}</td><td>${r.side==="bca"?"BCA":"TechFides"}${staffNameOf(r.owner_id)?`<br><span class="panel-m">${esc(staffNameOf(r.owner_id))}</span>`:""}</td>
+      <td>${r.week_of?esc(fmtWeek(r.week_of).split(" – ")[0]):"<span class='panel-m'>backlog</span>"}</td>
+      <td><span class="pill ${WL_STATUS_PILL[r.status]||"mut"}">${esc(label(r.status))}</span>${r.done_on?`<br><span class="panel-m">${esc(r.done_on)}</span>`:""}</td></tr>`;
+  const table = (list, cap) => `<div class="tblwrap"><table class="tbl"><caption>${cap}</caption>
+    <thead><tr><th>Item</th><th>Area</th><th>Side</th><th>Week</th><th>Status</th></tr></thead><tbody>${list.length?list.map(row).join(""):`<tr><td colspan="5">Nothing here.</td></tr>`}</tbody></table></div>`;
+
+  $("wlWrap").innerHTML = `
+    <div class="search-row" style="margin-bottom:14px">
+      <div class="lang" role="group"><button type="button" data-wlv="week" aria-pressed="${WL_VIEW==="week"}">This week</button><button type="button" data-wlv="all" aria-pressed="${WL_VIEW==="all"}">Everything</button></div>
+      ${WL_VIEW==="week" ? `<div class="lang" role="group"><button type="button" id="wlPrev">‹</button><button type="button" id="wlToday">Week of ${esc(fmtWeek(WL_WEEK))}</button><button type="button" id="wlNext">›</button></div>` : ""}
+      <button class="btn mini" id="wlAdd" type="button">Add an item</button>
+    </div>
+    ${WL_VIEW==="week" ? `<div class="stats" style="margin-bottom:14px">
+        <div class="stat"><span class="stat-k">TechFides this week</span><span class="stat-v">${tf.length}</span><span class="stat-n">${tf.filter(r=>r.status==="done").length} done</span></div>
+        <div class="stat amber"><span class="stat-k">BCA this week</span><span class="stat-v">${bca.length}</span><span class="stat-n">${bca.filter(r=>r.status==="done").length} done</span></div>
+        <div class="stat sage"><span class="stat-k">Backlog</span><span class="stat-v">${open.filter(r=>!r.week_of).length}</span><span class="stat-n">not yet scheduled</span></div></div>
+      ${table(tf, "What TechFides is delivering this week")}<div class="rule"></div>${table(bca, "What BCA has on this week")}`
+    : `<div class="search-row"><input class="search" id="wlSearch" type="search" placeholder="Search item, area, side or status" autocomplete="off"><span class="search-n" id="wlCount"></span></div>
+       ${table([...open.sort((a,b)=>(a.side>b.side?1:-1)||a.sort-b.sort), ...rows.filter(r=>["done","dropped"].includes(r.status))], "Open items first, then what is done")}`}`;
+  if (WL_VIEW==="all"){ $("wlWrap").querySelector("tbody").id = "wlBody"; wireSearch("wlSearch","wlBody","wlCount"); }
+  $("wlWrap").querySelectorAll("[data-wlv]").forEach(b => b.addEventListener("click", () => { WL_VIEW = b.dataset.wlv; loadWorklog(); }));
+  $("wlPrev")?.addEventListener("click", () => { const d=new Date(WL_WEEK+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()-7); WL_WEEK=d.toISOString().slice(0,10); loadWorklog(); });
+  $("wlNext")?.addEventListener("click", () => { const d=new Date(WL_WEEK+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+7); WL_WEEK=d.toISOString().slice(0,10); loadWorklog(); });
+  $("wlToday")?.addEventListener("click", () => { WL_WEEK = mondayOf(new Date()); loadWorklog(); });
+  $("wlAdd").addEventListener("click", () => editWorklog(null, me));
+  $("wlWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => editWorklog(rows.find(r=>r.id===tr.dataset.wl), me)));
+}
+
+async function editWorklog(r, me){
+  const isNew = !r; r = r || { area:"website", side: me?.email?.endsWith("@techfides.com") ? "techfides" : "bca", status:"planned", week_of: WL_VIEW==="week" ? WL_WEEK : null, title:"", detail:"" };
+  const staff = Object.values(await staffMap()).filter(x=>x.status==="active");
+  const d = drawer(isNew ? "Add an item" : r.title, isNew ? "Anyone on either side can add to the tracker." : `${label(r.area)} · ${r.side==="bca"?"BCA":"TechFides"}${staffNameOf(r.added_by)?` · added by ${staffNameOf(r.added_by)}`:""}`, `
+    <label class="fld"><span>Item</span><input id="wlTitle" value="${esc(r.title||"")}" placeholder="What needs to happen"></label>
+    <label class="fld"><span>Detail</span><textarea id="wlDetail" placeholder="Context, links, what done looks like">${esc(r.detail||"")}</textarea></label>
+    <div class="grid2">
+      <label class="fld"><span>Area</span><select id="wlArea">${optsFor(WL_AREAS, r.area)}</select></label>
+      <label class="fld"><span>Next action with</span><select id="wlSide"><option value="techfides"${r.side==="techfides"?" selected":""}>TechFides</option><option value="bca"${r.side==="bca"?" selected":""}>BCA</option></select></label>
+      <label class="fld"><span>Status</span><select id="wlStatus">${optsFor(WL_STATUS, r.status)}</select></label>
+      <label class="fld"><span>Week</span><input id="wlWeek" type="date" value="${esc(r.week_of||"")}"></label>
+      <label class="fld"><span>Owner</span><select id="wlOwner"><option value="">Nobody yet</option>${staff.map(s=>`<option value="${esc(s.person_id)}"${s.person_id===r.owner_id?" selected":""}>${esc(s.full_name||s.email)}</option>`).join("")}</select></label>
+    </div>
+    <div class="row-btn"><button class="btn" id="wlSave" type="button">${isNew?"Add":"Save"}</button>${isNew?"":`<button class="btn ghost" id="wlDone" type="button">Mark done</button>`}</div>
+    <p class="note" id="wlMsg" hidden></p>`);
+  const $$ = (s) => d.querySelector(s);
+  const save = async (extra={}) => {
+    const title = $$("#wlTitle").value.trim(); if (!title) return note($$("#wlMsg"), "Give the item a name.");
+    const wk = $$("#wlWeek").value ? mondayOf(new Date($$("#wlWeek").value+"T12:00:00")) : null;
+    const body = { title, detail: $$("#wlDetail").value || null, area: $$("#wlArea").value, side: $$("#wlSide").value, status: $$("#wlStatus").value, week_of: wk, owner_id: $$("#wlOwner").value || null, ...extra };
+    try {
+      if (isNew) await w("POST", "worklog", [{ tenant_id: TENANT, added_by: me?.person_id || null, ...body }]);
+      else await w("PATCH", `worklog?id=eq.${r.id}`, body);
+      note($$("#wlMsg"), "Saved.", true); await loadWorklog(); setTimeout(closeDrawer, 500);
+    } catch (e) { note($$("#wlMsg"), e.message); }
+  };
+  $$("#wlSave").addEventListener("click", () => save());
+  $$("#wlDone")?.addEventListener("click", () => { $$("#wlStatus").value = "done"; save({ done_on: todayISO() }); });
+}
 
 /* ───────── inbound requests ─────────
    One queue for every reach-out from the website. Each row is owned by a
