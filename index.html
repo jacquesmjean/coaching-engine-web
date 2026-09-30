@@ -417,6 +417,17 @@ table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines 
       <div id="intelWrap"></div>
     </section>
 
+    <!-- ───── campaigns ───── -->
+    <section class="view" id="v-campaigns" hidden>
+      <div class="eyebrow">Marketing</div>
+      <h1>Campaigns</h1>
+      <p class="lede" id="campLede">—</p>
+      <div class="rule"></div>
+      <div class="stats" id="campStats"></div>
+      <div class="rule"></div>
+      <div id="campWrap"></div>
+    </section>
+
     <!-- ───── board ───── -->
     <section class="view" id="v-board" hidden>
       <div class="eyebrow" data-t="gov">Governance</div>
@@ -610,9 +621,7 @@ const MODULES = [
   { g:"growth", v:"proposals",i:"doc",   en:"Proposals", fr:"Propositions", live:true },
 
   { g:"mkt", v:"website",   i:"globe", en:"Website", fr:"Site web", live:true },
-  { g:"mkt", v:"campaigns", i:"mega",  en:"Campaigns", fr:"Campagnes", locked:true,
-    what:{en:"Plan and measure member recruitment and renewal campaigns across email and social.",
-          fr:"Planifier et mesurer les campagnes de recrutement et de renouvellement."} },
+  { g:"mkt", v:"campaigns", i:"mega",  en:"Campaigns", fr:"Campagnes", live:true },
 
   { g:"gov", v:"board",     i:"shield", en:"Board Room", fr:"Conseil", live:true },
   { g:"gov", v:"documents", i:"doc",    en:"Document vault", fr:"Coffre documentaire", live:true },
@@ -765,6 +774,7 @@ async function start(){
   guard(loadWorklog,  "worklog",  "wlWrap");
   guard(loadDocuments,"documents","docWrap");
   guard(loadIntel,    "intel",    "intelWrap");
+  guard(loadCampaigns,"campaigns","campWrap");
   guard(loadPipeline,"pipeline", "pipWrap");
   guard(loadProposals,"proposals","propWrap");
   guard(loadTeam,    "team",     "teamWrap");
@@ -1315,6 +1325,137 @@ async function askIntel(){
     if (j.ok) { const hist = await q("intel_questions?select=id,question,answer,sql,row_count,ok,error,asked_by,created_at&order=created_at.desc&limit=1").catch(()=>[]); void hist; }
   } catch (e) { out.innerHTML = `<p class="note">${esc(e.message)}</p>`; }
   finally { b.disabled = false; }
+}
+
+/* ───────── campaigns ─────────
+   Life cycle: Draft → Test send → Submit for review → Approve → Send now or Schedule →
+   Sending → Sent → Results per person (delivered, opened, clicked, bounced, unsubscribed).
+   Replies go to the from mailbox. Unsubscribes are honoured on every later campaign. */
+const CAMP_AUD = { members_active:"Active members", members_lapsed:"Lapsed members", leads_new:"Open leads (new, working, nurturing)", leads_all:"All leads", enquirers_90d:"Enquirers, last 90 days", everyone:"Everyone on record" };
+const CAMP_PILL = { draft:"mut", review:"d30", approved:"cur", scheduled:"d30", sending:"d30", sent:"cur", cancelled:"mut" };
+const CAMP_LABEL = { draft:"Draft", review:"In review", approved:"Approved", scheduled:"Scheduled", sending:"Sending", sent:"Sent", cancelled:"Cancelled" };
+const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "—";
+
+async function loadCampaigns(){
+  const me = await myStaff(); await staffMap();
+  const rows = await q("campaigns?select=*&order=created_at.desc&limit=200");
+  const sent = rows.filter(r=>r.status==="sent");
+  const tot = (k) => sent.reduce((t,r)=>t+Number(r[k]||0),0);
+  $("campLede").textContent = rows.length
+    ? `${sent.length} campaign${sent.length===1?"":"s"} sent to ${tot("n_sent").toLocaleString()} people. ${pct(tot("n_opened"),tot("n_delivered"))} opened, ${pct(tot("n_clicked"),tot("n_delivered"))} clicked.`
+    : "No campaigns yet. Build the first one below.";
+  $("campStats").innerHTML =
+    `<div class="stat"><span class="stat-k">Sent</span><span class="stat-v">${tot("n_sent").toLocaleString()}</span><span class="stat-n">${sent.length} campaigns</span></div>
+     <div class="stat sage"><span class="stat-k">Open rate</span><span class="stat-v">${pct(tot("n_opened"),tot("n_delivered"))}</span><span class="stat-n">of delivered</span></div>
+     <div class="stat amber"><span class="stat-k">Click rate</span><span class="stat-v">${pct(tot("n_clicked"),tot("n_delivered"))}</span><span class="stat-n">of delivered</span></div>
+     <div class="stat"><span class="stat-k">Waiting</span><span class="stat-v">${rows.filter(r=>["review","approved","scheduled"].includes(r.status)).length}</span><span class="stat-n">in review, approved or scheduled</span></div>`;
+  $("campWrap").innerHTML = `
+    <div class="row-btn" style="margin-bottom:14px"><button class="btn" id="campNew" type="button">New campaign</button></div>
+    <div class="search-row"><input class="search" id="campSearch" type="search" placeholder="Search name, subject, audience or status" autocomplete="off"><span class="search-n" id="campCount"></span></div>
+    <div class="tblwrap"><table class="tbl"><caption>Newest first. Click a campaign to work on it.</caption>
+      <thead><tr><th>Campaign</th><th>Audience</th><th>Status</th><th class="num">Recipients</th><th class="num">Delivered</th><th class="num">Opened</th><th class="num">Clicked</th><th class="num">Unsub</th><th>When</th></tr></thead>
+      <tbody id="campBody">${rows.length ? rows.map(r=>`<tr class="click" data-camp="${esc(r.id)}" data-search="${searchKey(r.name,r.subject,CAMP_AUD[r.audience],CAMP_LABEL[r.status])}">
+        <td class="wrap"><b>${esc(r.name)}</b><br><span class="panel-m">${esc(r.subject)}</span></td>
+        <td>${esc(CAMP_AUD[r.audience]||r.audience)}</td>
+        <td><span class="pill ${CAMP_PILL[r.status]||"mut"}">${esc(CAMP_LABEL[r.status]||r.status)}</span></td>
+        <td class="num">${r.n_recipients||"—"}</td><td class="num">${r.n_delivered||"—"}</td>
+        <td class="num">${r.n_opened?`${r.n_opened} <span class="panel-m">${pct(r.n_opened,r.n_delivered)}</span>`:"—"}</td>
+        <td class="num">${r.n_clicked?`${r.n_clicked} <span class="panel-m">${pct(r.n_clicked,r.n_delivered)}</span>`:"—"}</td>
+        <td class="num">${r.n_unsubscribed||"—"}</td>
+        <td>${r.status==="scheduled"?`Scheduled ${esc(when(r.scheduled_for))}`:r.sent_at?esc(when(r.sent_at)):esc(when(r.created_at))}</td></tr>`).join("")
+        : `<tr><td colspan="9">Nothing yet.</td></tr>`}</tbody></table></div>
+    <p class="panel-m" style="margin-top:14px">Every campaign goes out as ${esc("info@bcaleadership.com")} in the site brand with a one-click unsubscribe. Anyone who unsubscribes or bounces is left out of every later campaign on their own. Links to bcaleadership.com carry UTM tags so the Website panel shows what each campaign brought in.</p>`;
+  wireSearch("campSearch","campBody","campCount");
+  $("campNew").addEventListener("click", () => editCampaign(null, me));
+  $("campWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openCampaign(tr.dataset.camp, me)));
+}
+async function openCampaign(id, me){ const [c] = await q(`campaigns?select=*&id=eq.${id}&limit=1`); if (c) editCampaign(c, me); }
+
+async function campaignCall(action, id){
+  const res = await fetch(`${API}/functions/v1/bca-campaign`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+(await freshToken()) }, body: JSON.stringify({ action, campaign_id: id }) });
+  const j = await res.json().catch(()=>({}));
+  if (!res.ok || !j.ok) throw new Error({ not_approved:"Approve the campaign before sending.", email_off:"Email sending is not switched on.", forbidden:"Only owners and admins can send." }[j.error] || j.error || `Failed (${res.status})`);
+  return j;
+}
+
+async function editCampaign(c, me){
+  const isNew = !c;
+  c = c || { name:"", audience:"members_active", audience_filter:{}, from_mailbox:"info@bcaleadership.com", subject:"", preheader:"", body:"Dear {first},\n\n", cta_text:"", cta_url:"", utm_campaign:"", status:"draft" };
+  const locked = ["sending","sent","cancelled"].includes(c.status);
+  const canApprove = ["owner","admin"].includes(me?.role);
+  const recips = isNew ? [] : await q(`campaign_recipients?select=email,status,sent_at,opened_at,clicked_at,error,person_id&campaign_id=eq.${c.id}&order=status&limit=500`).catch(()=>[]);
+  const d = drawer(isNew ? "New campaign" : c.name,
+    isNew ? "Draft it, send yourself a test, then submit for review." : `${CAMP_LABEL[c.status]||c.status}${c.last_test_at?` · last test ${when(c.last_test_at)}`:""}${c.approved_at?` · approved ${when(c.approved_at)}${staffNameOf(c.approved_by)?" by "+staffNameOf(c.approved_by):""}`:""}${c.sent_at?` · sent ${when(c.sent_at)}`:""}`, `
+    ${locked ? `<div class="stats" style="margin-bottom:14px">
+        <div class="stat"><span class="stat-k">Recipients</span><span class="stat-v">${c.n_recipients}</span><span class="stat-n">${c.n_sent} sent · ${c.n_bounced} bounced</span></div>
+        <div class="stat sage"><span class="stat-k">Opened</span><span class="stat-v">${pct(c.n_opened,c.n_delivered)}</span><span class="stat-n">${c.n_opened} of ${c.n_delivered} delivered</span></div>
+        <div class="stat amber"><span class="stat-k">Clicked</span><span class="stat-v">${pct(c.n_clicked,c.n_delivered)}</span><span class="stat-n">${c.n_clicked} · ${c.n_unsubscribed} unsubscribed</span></div></div>` : ""}
+    <label class="fld"><span>Campaign name (internal)</span><input id="cpName" value="${esc(c.name)}" placeholder="e.g. October renewal reminder" ${locked?"disabled":""}></label>
+    <div class="grid2">
+      <label class="fld"><span>Audience</span><select id="cpAud" ${locked?"disabled":""}>${Object.entries(CAMP_AUD).map(([k,v])=>`<option value="${k}"${k===c.audience?" selected":""}>${v}</option>`).join("")}</select></label>
+      <label class="fld"><span>Country filter (ISO code, optional)</span><input id="cpCountry" value="${esc(c.audience_filter?.country||"")}" placeholder="e.g. GH" maxlength="2" ${locked?"disabled":""}></label>
+      <label class="fld"><span>Language filter (optional)</span><select id="cpLang" ${locked?"disabled":""}><option value="">Any</option>${["en","fr","es","pt"].map(l=>`<option value="${l}"${l===(c.audience_filter?.language||"")?" selected":""}>${l.toUpperCase()}</option>`).join("")}</select></label>
+      <label class="fld"><span>Send as</span><select id="cpFrom" ${locked?"disabled":""}>${["info@bcaleadership.com","admin@bcaleadership.com"].map(m=>`<option${m===c.from_mailbox?" selected":""}>${m}</option>`).join("")}</select></label>
+    </div>
+    <p class="panel-m" id="cpAudN" style="margin:-6px 0 12px">${isNew?"Save the draft to count the audience.":"Counting the audience…"}</p>
+    <label class="fld"><span>Subject</span><input id="cpSubject" value="${esc(c.subject)}" ${locked?"disabled":""}></label>
+    <label class="fld"><span>Preview line (shows after the subject in the inbox)</span><input id="cpPre" value="${esc(c.preheader||"")}" ${locked?"disabled":""}></label>
+    <label class="fld"><span>Message · {first} becomes the first name · blank line between paragraphs</span><textarea id="cpBody" style="min-height:180px" ${locked?"disabled":""}>${esc(c.body)}</textarea></label>
+    <div class="grid2">
+      <label class="fld"><span>Button text (optional)</span><input id="cpCta" value="${esc(c.cta_text||"")}" placeholder="e.g. Renew my membership" ${locked?"disabled":""}></label>
+      <label class="fld"><span>Button link</span><input id="cpUrl" value="${esc(c.cta_url||"")}" placeholder="https://bcaleadership.com/membership" ${locked?"disabled":""}></label>
+      <label class="fld"><span>UTM campaign tag</span><input id="cpUtm" value="${esc(c.utm_campaign||"")}" placeholder="e.g. oct-renewal" ${locked?"disabled":""}></label>
+      ${!locked && ["approved","scheduled"].includes(c.status) ? `<label class="fld"><span>Schedule for (your local time)</span><input id="cpWhen" type="datetime-local" value="${c.scheduled_for?esc(new Date(c.scheduled_for).toISOString().slice(0,16)):""}"></label>` : ""}
+    </div>
+    <div class="row-btn">
+      ${locked ? "" : `<button class="btn" id="cpSave" type="button">${isNew?"Save draft":"Save"}</button>`}
+      ${isNew||locked ? "" : `<button class="btn ghost" id="cpTest" type="button">Send me a test</button>`}
+      ${!isNew && c.status==="draft" ? `<button class="btn ghost" id="cpReview" type="button">Submit for review</button>` : ""}
+      ${!isNew && c.status==="review" && canApprove ? `<button class="btn" id="cpApprove" type="button">Approve</button><button class="btn ghost" id="cpBack" type="button">Back to draft</button>` : ""}
+      ${!isNew && ["approved","scheduled"].includes(c.status) && canApprove ? `<button class="btn" id="cpSend" type="button">Send now</button><button class="btn ghost" id="cpSchedule" type="button">${c.status==="scheduled"?"Reschedule":"Schedule"}</button>` : ""}
+      ${!isNew && !locked ? `<button class="btn ghost" id="cpCancel" type="button">Cancel campaign</button>` : ""}
+    </div>
+    <p class="note" id="cpMsg" hidden></p>
+    ${recips.length ? `<h3 style="margin:22px 0 8px;font-size:15px">Recipients</h3>
+      <div class="search-row"><input class="search" id="cpRSearch" type="search" placeholder="Search email or status" autocomplete="off"><span class="search-n" id="cpRCount"></span></div>
+      <div class="tblwrap"><table class="tbl" style="min-width:0"><thead><tr><th>Email</th><th>Status</th><th>Opened</th><th>Clicked</th></tr></thead>
+      <tbody id="cpRBody">${recips.map(r=>`<tr data-search="${searchKey(r.email,r.status)}"><td class="wrap">${esc(r.email)}${r.error?`<br><span class="panel-m due">${esc(r.error)}</span>`:""}</td><td><span class="pill ${["opened","clicked","delivered"].includes(r.status)?"cur":["bounced","failed","complained","unsubscribed"].includes(r.status)?"d60":"mut"}">${esc(label(r.status))}</span></td><td>${esc(when(r.opened_at))}</td><td>${esc(when(r.clicked_at))}</td></tr>`).join("")}</tbody></table></div>` : ""}`);
+  const $$ = (s) => d.querySelector(s);
+  if (recips.length) wireSearch("cpRSearch","cpRBody","cpRCount");
+  const body = () => ({ name: $$("#cpName").value.trim(), audience: $$("#cpAud").value,
+    audience_filter: Object.fromEntries([["country", $$("#cpCountry").value.trim().toUpperCase()||null],["language", $$("#cpLang").value||null]].filter(([,v])=>v)),
+    from_mailbox: $$("#cpFrom").value, subject: $$("#cpSubject").value.trim(), preheader: $$("#cpPre").value.trim()||null, body: $$("#cpBody").value,
+    cta_text: $$("#cpCta").value.trim()||null, cta_url: $$("#cpUrl").value.trim()||null, utm_campaign: $$("#cpUtm").value.trim()||null });
+  const say = (t, ok) => note($$("#cpMsg"), t, ok);
+  const save = async () => {
+    const b = body();
+    if (!b.name) throw new Error("Give the campaign a name."); if (!b.subject) throw new Error("Write a subject."); if (b.body.trim().length < 20) throw new Error("Write the message.");
+    if (b.cta_text && !/^https?:\/\//.test(b.cta_url||"")) throw new Error("The button needs a full link starting with https://");
+    if (isNew) { const [row] = await w("POST","campaigns",[{ tenant_id: TENANT, created_by: me?.person_id||null, ...b }]); c = row; }
+    else await w("PATCH", `campaigns?id=eq.${c.id}`, b);
+    return c;
+  };
+  const countAudience = async () => {
+    if (isNew) return;
+    try { const a = await campaignCall("audience", c.id); $$("#cpAudN").textContent = `${a.count.toLocaleString()} people will receive this${a.sample.length?`: ${a.sample.slice(0,3).join(", ")}${a.count>3?", …":""}`:""}.`; }
+    catch (e) { $$("#cpAudN").textContent = "Audience could not be counted: " + e.message; }
+  };
+  countAudience();
+  const setStatus = async (status, extra={}) => { await w("PATCH", `campaigns?id=eq.${c.id}`, { status, ...extra }); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); };
+  $$("#cpSave")?.addEventListener("click", async (e) => { e.currentTarget.disabled = true; try { await save(); say(isNew?"Draft saved.":"Saved.", true); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); } catch (err) { say(err.message); e.currentTarget.disabled = false; } });
+  $$("#cpTest")?.addEventListener("click", async (e) => { e.currentTarget.disabled = true; say("Sending the test…"); try { await save(); await campaignCall("test", c.id); say(`Test sent to ${me?.email||"you"}. Check your inbox, then submit for review.`, true); } catch (err) { say(err.message); } finally { e.currentTarget.disabled = false; } });
+  $$("#cpReview")?.addEventListener("click", async () => { try { await save(); if (!c.last_test_at) { const ok = confirm("No test has been sent yet. Submit for review anyway?"); if (!ok) return; } await setStatus("review"); } catch (err) { say(err.message); } });
+  $$("#cpApprove")?.addEventListener("click", async () => { try { await save(); await setStatus("approved", { approved_by: me?.person_id||null, approved_at: new Date().toISOString() }); } catch (err) { say(err.message); } });
+  $$("#cpBack")?.addEventListener("click", () => setStatus("draft", { approved_by: null, approved_at: null }));
+  $$("#cpSchedule")?.addEventListener("click", async () => { const v = $$("#cpWhen")?.value; if (!v) return say("Pick a date and time first."); const at = new Date(v); if (at.getTime() < Date.now()+60000) return say("Pick a time in the future."); try { await save(); await setStatus("scheduled", { scheduled_for: at.toISOString() }); } catch (err) { say(err.message); } });
+  $$("#cpSend")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget;
+    if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.textContent = "Confirm: send to everyone now"; say("Press again to send. This cannot be undone."); return; }
+    btn.disabled = true; say("Sending…");
+    try { await save(); const r = await campaignCall("send", c.id); say(`Sent to ${r.sent} people${r.failed?`, ${r.failed} failed`:""}.`, true); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 800); }
+    catch (err) { say(err.message); btn.disabled = false; btn.dataset.armed = "0"; btn.textContent = "Send now"; }
+  });
+  $$("#cpCancel")?.addEventListener("click", () => { if (confirm("Cancel this campaign? It will not be sent.")) setStatus("cancelled"); });
 }
 
 /* ───────── inbound requests ─────────

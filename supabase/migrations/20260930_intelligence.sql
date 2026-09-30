@@ -11,7 +11,7 @@
 -- ============================================================================
 
 -- ── 1. What the model may query: table and column names only, from the live catalogue.
-create or replace function app.intel_schema() returns text
+create or replace function public.intel_schema() returns text
 language sql stable security definer set search_path = public as $$
   select string_agg(t.table_name || '(' || t.cols || ')', E'\n' order by t.table_name)
   from (
@@ -25,12 +25,12 @@ language sql stable security definer set search_path = public as $$
     group by c.table_name
   ) t;
 $$;
-revoke all on function app.intel_schema() from public;
-grant execute on function app.intel_schema() to authenticated;
+revoke all on function public.intel_schema() from public;
+grant execute on function public.intel_schema() to authenticated;
 
 -- ── 2. Run one read-only SELECT as the caller. RLS applies (security invoker).
 --      Guarded: one statement, SELECT/WITH only, no writes, no system schemas, 5 s cap, 200 rows.
-create or replace function app.intel_run(p_sql text) returns jsonb
+create or replace function public.intel_run(p_sql text) returns jsonb
 language plpgsql security invoker set search_path = public as $$
 declare q text := btrim(p_sql); out jsonb;
 begin
@@ -44,8 +44,8 @@ begin
   execute 'select coalesce(jsonb_agg(row_to_json(t)), ''[]''::jsonb) from (' || rtrim(q, '; ') || ' limit 200) t' into out;
   return out;
 end $$;
-revoke all on function app.intel_run(text) from public;
-grant execute on function app.intel_run(text) to authenticated;
+revoke all on function public.intel_run(text) from public;
+grant execute on function public.intel_run(text) to authenticated;
 
 -- ── 3. A record of every question and every briefing.
 create table if not exists public.intel_questions (
