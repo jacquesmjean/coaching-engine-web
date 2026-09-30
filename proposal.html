@@ -70,7 +70,7 @@ async function load(){
     <h1>${esc(p.title)}</h1>
     <p class="to">Prepared for ${esc(p.recipient?.name||"you")}${p.recipient?.title?`, ${esc(p.recipient.title)}`:""}${p.organization?` · ${esc(p.organization)}`:""}</p>
     ${p.intro ? esc(p.intro).split(/\n{2,}/).map(x=>`<p>${x.replace(/\n/g,"<br>")}</p>`).join("") : ""}
-    <table>${rows}<tr class="total"><td>Total</td><td class="n">${money(p.total_minor,p.currency)}</td></tr></table>
+    <table>${rows}<tr class="total"><td>Total</td><td class="n">${money(p.value_minor,p.currency)}</td></tr></table>
     ${p.valid_until?`<p class="valid">Valid until ${day(p.valid_until)}.</p>`:""}
     ${p.terms?`<div class="terms">${esc(p.terms)}</div>`:""}
     <div class="act" id="act">

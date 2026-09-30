@@ -1056,8 +1056,9 @@ async function editWorklog(r, me){
    private link (proposal.html?t=…), and tracked: sent, opened (how many times), accepted
    or declined, with the recipient's note. Sending, opens and decisions go through the
    edge function bca-proposal; drafting is plain REST under RLS. */
-const PROP_STATUS = ["draft","sent","opened","accepted","declined","expired","withdrawn"];
-const PROP_PILL = { draft:"mut", sent:"d30", opened:"d30", accepted:"cur", declined:"d60", expired:"mut", withdrawn:"mut" };
+const PROP_STATUS = ["draft","internal_review","sent","viewed","accepted","declined","expired","superseded","withdrawn"];
+const PROP_PILL = { draft:"mut", internal_review:"mut", sent:"d30", viewed:"d30", accepted:"cur", declined:"d60", expired:"mut", superseded:"mut", withdrawn:"mut" };
+const PROP_LABEL = (s) => s==="viewed" ? "Opened" : label(s);
 const PROP_KINDS = ["corporate_membership","sponsorship","coaching_package","consulting","project_management","business_matching","conference","other"];
 /* Standard lines. Prices stay blank until BCA sends the corporate template and the sponsorship rate card. */
 const PROP_PRESETS = {
@@ -1075,11 +1076,11 @@ const dollars = (m) => (Number(m||0)/100).toFixed(2);
 
 async function loadProposals(){
   const me = await myStaff(); await staffMap();
-  const rows = await q("proposals?select=id,number,title,kind,status,currency,total_minor,valid_until,sent_at,opened_at,open_count,decided_at,owner_id,organizations(name),people!proposals_person_id_fkey(first_name,last_name,email)&order=created_at.desc&limit=300");
-  const open = rows.filter(r=>["sent","opened"].includes(r.status));
-  const sum = (a)=>a.reduce((t,r)=>t+Number(r.total_minor||0),0);
+  const rows = await q("proposals?select=id,number,title,kind,status,currency,value_minor,valid_until,sent_at,first_viewed_at,open_count,decided_at,owner_id,organizations(name),people!proposals_person_id_fkey(first_name,last_name,email)&order=created_at.desc&limit=300");
+  const open = rows.filter(r=>["sent","viewed"].includes(r.status));
+  const sum = (a)=>a.reduce((t,r)=>t+Number(r.value_minor||0),0);
   const won = rows.filter(r=>r.status==="accepted");
-  const waiting = open.filter(r=>r.opened_at && !r.decided_at);
+  const waiting = open.filter(r=>r.first_viewed_at && !r.decided_at);
   $("propLede").textContent = rows.length
     ? `${open.length} proposal${open.length===1?"":"s"} out worth ${money(sum(open))}. ${waiting.length} opened and waiting on a reply. ${won.length} accepted so far.`
     : "No proposals yet. Build the first one below.";
@@ -1096,15 +1097,15 @@ async function loadProposals(){
       <thead><tr><th>Proposal</th><th>To</th><th>Kind</th><th>Status</th><th class="num">Value</th><th>Sent</th><th>Opened</th><th>Valid until</th><th>Owner</th></tr></thead>
       <tbody id="propBody">${rows.length ? rows.map(r=>{
         const who = r.people ? [r.people.first_name,r.people.last_name].filter(Boolean).join(" ") : "";
-        const stale = ["sent","opened"].includes(r.status) && r.valid_until && r.valid_until < today;
-        return `<tr class="click" data-prop="${esc(r.id)}" data-search="${searchKey(r.number,r.title,r.organizations?.name,who,r.people?.email,label(r.status),label(r.kind))}">
+        const stale = ["sent","viewed"].includes(r.status) && r.valid_until && r.valid_until < today;
+        return `<tr class="click" data-prop="${esc(r.id)}" data-search="${searchKey(r.number,r.title,r.organizations?.name,who,r.people?.email,PROP_LABEL(r.status),label(r.kind))}">
           <td class="wrap"><b>${esc(r.title)}</b><br><span class="panel-m">${esc(r.number)}</span></td>
           <td class="wrap">${esc(who||"—")}${r.organizations?.name?`<br><span class="panel-m">${esc(r.organizations.name)}</span>`:""}</td>
           <td>${esc(label(r.kind))}</td>
-          <td><span class="pill ${PROP_PILL[r.status]||"mut"}">${esc(label(r.status))}</span></td>
-          <td class="num">${money(r.total_minor, r.currency)}</td>
+          <td><span class="pill ${PROP_PILL[r.status]||"mut"}">${esc(PROP_LABEL(r.status))}</span></td>
+          <td class="num">${money(r.value_minor, r.currency)}</td>
           <td>${esc(when(r.sent_at))}</td>
-          <td>${r.opened_at?`${esc(when(r.opened_at))}${r.open_count>1?`<br><span class="panel-m">${r.open_count} times</span>`:""}`:"<span class='panel-m'>—</span>"}</td>
+          <td>${r.first_viewed_at?`${esc(when(r.first_viewed_at))}${r.open_count>1?`<br><span class="panel-m">${r.open_count} times</span>`:""}`:"<span class='panel-m'>—</span>"}</td>
           <td class="${stale?"due":""}">${esc(day(r.valid_until))}${stale?"<br><span class='panel-m due'>past</span>":""}</td>
           <td>${esc(staffNameOf(r.owner_id)||"—")}</td></tr>`;}).join("")
         : `<tr><td colspan="9">Nothing yet.</td></tr>`}</tbody></table></div>
@@ -1129,12 +1130,12 @@ async function editProposal(p, me){
     q("opportunities?select=id,name,stage,organization_id&stage=in.(qualifying,briefing,proposal,negotiation)&order=name&limit=200").catch(()=>[]),
     Promise.resolve(Object.values(await staffMap()).filter(x=>x.status==="active")),
   ]);
-  const locked = ["accepted","declined","withdrawn","expired"].includes(p.status);
+  const locked = ["accepted","declined","withdrawn","expired","superseded"].includes(p.status);
   const who = p.people ? [p.people.first_name,p.people.last_name].filter(Boolean).join(" ") : "";
   const events = isNew ? [] : await q(`proposal_events?select=kind,detail,at,person_id&proposal_id=eq.${p.id}&order=at.desc&limit=40`).catch(()=>[]);
   const link = p.public_token ? `${location.origin}/proposal.html?t=${p.public_token}` : "";
   const d = drawer(isNew ? "New proposal" : `${p.number} · ${p.title}`,
-    isNew ? "Build it from lines, save, then send. Nothing goes out until you press Send." : `${label(p.status)}${p.sent_at?` · sent ${when(p.sent_at)}`:""}${p.opened_at?` · opened ${p.open_count||1}×`:""}${p.decided_at?` · decided ${when(p.decided_at)}`:""}`, `
+    isNew ? "Build it from lines, save, then send. Nothing goes out until you press Send." : `${PROP_LABEL(p.status)}${p.sent_at?` · sent ${when(p.sent_at)}`:""}${p.first_viewed_at?` · opened ${p.open_count||1}×`:""}${p.decided_at?` · decided ${when(p.decided_at)}`:""}`, `
     ${p.decision_note ? `<div class="panel" style="margin-bottom:14px;border-left:3px solid var(--${p.status==="accepted"?"sage":"rust"})"><div class="panel-h"><span class="panel-t">What they said</span></div><p style="white-space:pre-wrap">${esc(p.decision_note)}</p></div>` : ""}
     <label class="fld"><span>Title</span><input id="prTitle" value="${esc(p.title)}" placeholder="e.g. Corporate membership for Ecobank Ghana, 2027" ${locked?"disabled":""}></label>
     <div class="grid2">
@@ -1160,7 +1161,7 @@ async function editProposal(p, me){
       ${isNew||locked?"":`<button class="btn ghost" id="prWithdraw" type="button">Withdraw</button>`}
     </div>
     <p class="note" id="prMsg" hidden></p>
-    ${isNew?"":`<h3 style="margin:22px 0 8px;font-size:15px">History</h3>${events.length?`<ul class="tl">${events.map(e=>`<li><time>${esc(when(e.at))}</time> <b>${esc(label(e.kind))}</b>${staffNameOf(e.person_id)?` · ${esc(staffNameOf(e.person_id))}`:""}${e.detail?`<p>${esc(e.detail)}</p>`:""}</li>`).join("")}</ul>`:`<p class="panel-m">Nothing yet.</p>`}`}`);
+    ${isNew?"":`<h3 style="margin:22px 0 8px;font-size:15px">History</h3>${events.length?`<ul class="tl">${events.map(e=>`<li><time>${esc(when(e.at))}</time> <b>${esc(PROP_LABEL(e.kind))}</b>${staffNameOf(e.person_id)?` · ${esc(staffNameOf(e.person_id))}`:""}${e.detail?`<p>${esc(e.detail)}</p>`:""}</li>`).join("")}</ul>`:`<p class="panel-m">Nothing yet.</p>`}`}`);
   const $$ = (s) => d.querySelector(s);
   const tb = $$("#prLines tbody");
   const addLine = (l={}) => {

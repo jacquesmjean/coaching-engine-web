@@ -76,7 +76,7 @@ async function loadFull(db: ReturnType<typeof admin>, where: { id?: string; toke
   return { ...p, lines: lines || [] };
 }
 const publicView = (p: any) => ({
-  number: p.number, title: p.title, kind: p.kind, status: p.status, currency: p.currency, total_minor: p.total_minor,
+  number: p.number, title: p.title, kind: p.kind, status: p.status, currency: p.currency, value_minor: p.value_minor,
   valid_until: p.valid_until, intro: p.intro, terms: p.terms, sent_at: p.sent_at, decided_at: p.decided_at,
   organization: p.organizations?.name || null,
   recipient: p.people ? { name: [p.people.first_name, p.people.last_name].filter(Boolean).join(" "), title: p.people.title } : null,
@@ -92,15 +92,15 @@ Deno.serve(async (req) => {
     const t = new URL(req.url).searchParams.get("t") || "";
     if (!/^[0-9a-f]{48}$/.test(t)) return json({ ok: false, error: "not_found" }, 404);
     const p = await loadFull(db, { token: t });
-    if (!p || p.status === "draft" || p.status === "withdrawn") return json({ ok: false, error: "not_found" }, 404);
+    if (!p || ["draft", "internal_review", "withdrawn", "superseded"].includes(p.status)) return json({ ok: false, error: "not_found" }, 404);
     const now = new Date().toISOString();
-    const expired = p.status === "sent" || p.status === "opened" ? (p.valid_until && p.valid_until < now.slice(0, 10)) : false;
+    const expired = p.status === "sent" || p.status === "viewed" ? (p.valid_until && p.valid_until < now.slice(0, 10)) : false;
     const patch: Record<string, unknown> = { last_opened_at: now, open_count: (p.open_count || 0) + 1 };
-    if (!p.opened_at) patch.opened_at = now;
-    if (p.status === "sent") patch.status = expired ? "expired" : "opened";
-    else if (expired && p.status === "opened") patch.status = "expired";
+    if (!p.first_viewed_at) patch.first_viewed_at = now;
+    if (p.status === "sent") patch.status = expired ? "expired" : "viewed";
+    else if (expired && p.status === "viewed") patch.status = "expired";
     await db.from("proposals").update(patch).eq("id", p.id);
-    await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: p.opened_at ? "opened" : "opened", detail: p.opened_at ? `Opened again (${(p.open_count || 0) + 1})` : "First open" });
+    await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: "viewed", detail: p.first_viewed_at ? `Opened again (${(p.open_count || 0) + 1})` : "First open" });
     return json({ ok: true, proposal: publicView({ ...p, ...patch }) });
   }
 
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     const t = String(b.t || ""); const decision = String(b.decision || "");
     if (!/^[0-9a-f]{48}$/.test(t) || !["accepted", "declined"].includes(decision)) return json({ ok: false, error: "bad_request" }, 400);
     const p = await loadFull(db, { token: t });
-    if (!p || !["sent", "opened"].includes(p.status)) return json({ ok: false, error: "closed" }, 409);
+    if (!p || !["sent", "viewed"].includes(p.status)) return json({ ok: false, error: "closed" }, 409);
     const now = new Date().toISOString(); const note = String(b.note || "").trim().slice(0, 2000) || null;
     await db.from("proposals").update({ status: decision, decided_at: now, decision_note: note }).eq("id", p.id);
     await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: decision, detail: note });
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
       const from = Deno.env.get("RESEND_FROM") || "BCA Leadership <info@bcaleadership.com>";
       const who = p.people ? [p.people.first_name, p.people.last_name].filter(Boolean).join(" ") : "The recipient";
       await resend(from, ["admin@bcaleadership.com"], `${decision === "accepted" ? "Accepted" : "Declined"}: ${p.number} ${p.title}`,
-        brandEmail(`<p><b>${esc(who)}</b>${p.organizations?.name ? ` of ${esc(p.organizations.name)}` : ""} has <b>${decision}</b> proposal ${esc(p.number)}, <i>${esc(p.title)}</i>, worth ${money(p.total_minor, p.currency)}.</p>${note ? `<blockquote style="margin:14px 0;padding:6px 14px;border-left:3px solid ${BRAND.gold};color:#555;font-size:15px">${nl2p(note)}</blockquote>` : ""}${button("https://bca.coachingengine.app/#proposals", "Open in the console")}`, { preheader: `${p.number} ${decision}` }));
+        brandEmail(`<p><b>${esc(who)}</b>${p.organizations?.name ? ` of ${esc(p.organizations.name)}` : ""} has <b>${decision}</b> proposal ${esc(p.number)}, <i>${esc(p.title)}</i>, worth ${money(p.value_minor, p.currency)}.</p>${note ? `<blockquote style="margin:14px 0;padding:6px 14px;border-left:3px solid ${BRAND.gold};color:#555;font-size:15px">${nl2p(note)}</blockquote>` : ""}${button("https://bca.coachingengine.app/#proposals", "Open in the console")}`, { preheader: `${p.number} ${decision}` }));
     } catch (e) { console.error("notify_failed", e); }
     return json({ ok: true, status: decision });
   }
@@ -152,17 +152,17 @@ Deno.serve(async (req) => {
        <p style="margin:18px 0 4px;font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:${BRAND.mute}">Proposal ${esc(p.number)}</p>
        <p style="margin:0 0 12px;font-size:20px;color:${BRAND.night}"><b>${esc(p.title)}</b></p>
        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-family:Georgia,serif">${rows}
-         <tr><td style="padding:12px 0;font-size:16px"><b>Total</b></td><td align="right" style="padding:12px 0;font-size:18px;color:${BRAND.night}"><b>${money(p.total_minor, p.currency)}</b></td></tr></table>
+         <tr><td style="padding:12px 0;font-size:16px"><b>Total</b></td><td align="right" style="padding:12px 0;font-size:18px;color:${BRAND.night}"><b>${money(p.value_minor, p.currency)}</b></td></tr></table>
        ${p.valid_until ? `<p style="color:${BRAND.mute};font-size:14px">Valid until ${day(p.valid_until)}.</p>` : ""}
        ${button(link, "View and respond")}
        <p style="margin-top:22px;margin-bottom:0"><b style="color:${BRAND.night}">${esc(member.full_name || "BCA Leadership")}</b>${member.job_title ? `<br><span style="color:${BRAND.mute};font-size:14px">${esc(member.job_title)}</span>` : ""}<br><span style="color:${BRAND.mute};font-size:14px">BCA Leadership · <a href="mailto:${mailbox}" style="color:${BRAND.gold};text-decoration:none">${mailbox}</a></span></p>`,
-      { preheader: `${p.title} · ${money(p.total_minor, p.currency)}`, footnote: `This link is private to you: <a href="${link}" style="color:${BRAND.gold}">${link}</a>` });
+      { preheader: `${p.title} · ${money(p.value_minor, p.currency)}`, footnote: `This link is private to you: <a href="${link}" style="color:${BRAND.gold}">${link}</a>` });
     let sent: any;
     try { sent = await resend(from, [p.people.email], `Proposal ${p.number}: ${p.title}`, html, mailbox); }
     catch (e) { return json({ ok: false, error: String((e as Error).message) }, 502); }
     const now = new Date().toISOString();
     const resent = !!p.sent_at;
-    await db.from("proposals").update({ status: p.status === "opened" ? "opened" : "sent", sent_at: p.sent_at || now, ...(staff?.id && !p.owner_id ? { owner_id: staff.id } : {}) }).eq("id", p.id);
+    await db.from("proposals").update({ status: p.status === "viewed" ? "viewed" : "sent", sent_at: p.sent_at || now, ...(staff?.id && !p.owner_id ? { owner_id: staff.id } : {}) }).eq("id", p.id);
     await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: resent ? "resent" : "sent", person_id: staff?.id || null, detail: `To ${p.people.email}${sent?.id ? " · Resend " + sent.id : ""}` });
     if (p.opportunity_id) await db.from("opportunities").update({ stage: "proposal" }).eq("id", p.opportunity_id).in("stage", ["qualifying", "briefing"]);
     if (p.person_id) await db.from("activities").insert({ tenant_id: p.tenant_id, kind: "proposal_sent", direction: "out", person_id: p.person_id, actor_id: staff?.id || null, subject: `Proposal ${p.number}: ${p.title}`, body: link }).then(() => {}, (e: unknown) => console.error("activity", e));
