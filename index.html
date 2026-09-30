@@ -408,6 +408,15 @@ table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines 
       <div id="docWrap"></div>
     </section>
 
+    <!-- ───── intelligence ───── -->
+    <section class="view" id="v-intel" hidden>
+      <div class="eyebrow">Governance</div>
+      <h1>Intelligence</h1>
+      <p class="lede" id="intelLede">—</p>
+      <div class="rule"></div>
+      <div id="intelWrap"></div>
+    </section>
+
     <!-- ───── board ───── -->
     <section class="view" id="v-board" hidden>
       <div class="eyebrow" data-t="gov">Governance</div>
@@ -607,9 +616,7 @@ const MODULES = [
 
   { g:"gov", v:"board",     i:"shield", en:"Board Room", fr:"Conseil", live:true },
   { g:"gov", v:"documents", i:"doc",    en:"Document vault", fr:"Coffre documentaire", live:true },
-  { g:"gov", v:"intel",     i:"spark",  en:"Intelligence", fr:"Intelligence", locked:true,
-    what:{en:"Ask questions of BCA's own data in plain language, and receive a weekly briefing on what changed and what needs attention.",
-          fr:"Interroger les données de BCA en langage courant et recevoir un briefing hebdomadaire."} },
+  { g:"gov", v:"intel",     i:"spark",  en:"Intelligence", fr:"Intelligence", live:true },
 
   { g:"admin", v:"team",      i:"key",   en:"Team access", fr:"Accès équipe", live:true },
   { g:"admin", v:"licensing", i:"spark", en:"Module licensing", fr:"Licences des modules",
@@ -757,6 +764,7 @@ async function start(){
   guard(loadRequests,"requests", "reqStats");
   guard(loadWorklog,  "worklog",  "wlWrap");
   guard(loadDocuments,"documents","docWrap");
+  guard(loadIntel,    "intel",    "intelWrap");
   guard(loadPipeline,"pipeline", "pipWrap");
   guard(loadProposals,"proposals","propWrap");
   guard(loadTeam,    "team",     "teamWrap");
@@ -1247,6 +1255,66 @@ async function editProposal(p, me){
     try { await w("PATCH", `proposals?id=eq.${p.id}`, { status:"withdrawn" }); await w("POST","proposal_events",[{ tenant_id: TENANT, proposal_id: p.id, kind:"withdrawn", person_id: me?.person_id||null }]); note($$("#prMsg"), "Withdrawn. The link no longer opens.", true); await loadProposals(); setTimeout(closeDrawer, 600); }
     catch (err) { note($$("#prMsg"), err.message); }
   });
+}
+
+/* ───────── intelligence ─────────
+   Plain-language questions over BCA's own data. The function writes one read-only query,
+   runs it as the signed-in user (so row-level security applies), and answers in plain English.
+   Every question is kept with its query. Monday briefings land here and in admin@'s inbox. */
+const INTEL_STARTERS = [
+  "How many invoices are overdue and what do they add up to?",
+  "Which memberships renew in the next 60 days?",
+  "How many inbound requests came in this month, by kind?",
+  "Which opportunities have no next step?",
+  "Who are our ten largest paying members by amount invoiced?",
+  "How many coaching sessions happened last month?",
+];
+async function loadIntel(){
+  const me = await myStaff(); await staffMap();
+  const [hist, briefs] = await Promise.all([
+    q("intel_questions?select=id,question,answer,sql,row_count,ok,error,asked_by,created_at&order=created_at.desc&limit=25").catch(()=>[]),
+    q("intel_briefings?select=id,week_of,body,figures,sent_to,created_at&order=week_of.desc&limit=12").catch(()=>[]),
+  ]);
+  $("intelLede").textContent = briefs.length
+    ? `Ask anything about BCA's data. Latest briefing: week of ${day(briefs[0].week_of)}.`
+    : "Ask anything about BCA's data. The first Monday briefing arrives at 06:00 UTC next Monday.";
+  $("intelWrap").innerHTML = `
+    <div class="panel" style="margin-bottom:16px"><div class="panel-h"><span class="panel-t">Ask</span></div>
+      <label class="fld"><span>Question</span><textarea id="inQ" placeholder="e.g. Which corporate members have not paid this year?" style="min-height:62px"></textarea></label>
+      <div class="row-btn"><button class="btn" id="inAsk" type="button">Ask</button>
+        ${INTEL_STARTERS.map((s,i)=>`<button class="btn ghost in-starter" type="button" data-i="${i}" style="font-size:12.5px;padding:7px 10px">${esc(s)}</button>`).join("")}</div>
+      <div id="inOut" style="margin-top:14px"></div></div>
+    <div class="grid2">
+      <div class="panel"><div class="panel-h"><span class="panel-t">Monday briefings</span></div>
+        ${briefs.length ? briefs.map(b=>`<details style="margin-bottom:10px"><summary style="cursor:pointer"><b>Week of ${esc(day(b.week_of))}</b> <span class="panel-m">· ${esc(when(b.created_at))}${b.sent_to?.length?` · sent to ${esc(b.sent_to.join(", "))}`:""}</span></summary><div style="white-space:pre-wrap;margin-top:8px;line-height:1.6">${esc(b.body)}</div></details>`).join("")
+          : `<p class="panel-m">No briefing yet. It is written every Monday at 06:00 UTC from that week's figures and emailed to admin@bcaleadership.com.</p>`}</div>
+      <div class="panel"><div class="panel-h"><span class="panel-t">Recent questions</span></div>
+        ${hist.length ? `<ul class="tl">${hist.map(h=>`<li><time>${esc(when(h.created_at))}</time> <b>${esc(h.question)}</b>${staffNameOf(h.asked_by)?` <span class="panel-m">· ${esc(staffNameOf(h.asked_by))}</span>`:""}<p>${h.ok ? esc((h.answer||"").slice(0,260)) : `<span class="due">Could not run: ${esc(h.error||"")}</span>`}</p></li>`).join("")}</ul>`
+          : `<p class="panel-m">Nothing asked yet.</p>`}</div>
+    </div>
+    <p class="panel-m" style="margin-top:14px">Answers come from a single read-only query that runs with your own access rights, so you only ever see what your role can see in the other screens. Each question and its query are kept so the numbers can be checked.</p>`;
+  $("intelWrap").querySelectorAll(".in-starter").forEach(b => b.addEventListener("click", () => { $("inQ").value = INTEL_STARTERS[Number(b.dataset.i)]; askIntel(); }));
+  $("inAsk").addEventListener("click", askIntel);
+  $("inQ").addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") askIntel(); });
+}
+async function askIntel(){
+  const question = $("inQ").value.trim(); const out = $("inOut");
+  if (question.length < 4) { out.innerHTML = `<p class="note">Type a question first.</p>`; return; }
+  const b = $("inAsk"); b.disabled = true; out.innerHTML = `<p class="panel-m">Working on it…</p>`;
+  try {
+    const res = await fetch(`${API}/functions/v1/bca-intel`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+(await freshToken()) }, body: JSON.stringify({ action:"ask", question }) });
+    const j = await res.json().catch(()=>({}));
+    const rows = Array.isArray(j.rows) ? j.rows : [];
+    const cols = rows.length ? Object.keys(rows[0]) : [];
+    out.innerHTML = `
+      <div style="font-size:16px;line-height:1.6;${j.ok?"":"color:var(--rust)"}">${esc(j.answer || j.error || `Request failed (${res.status})`)}</div>
+      ${rows.length ? `<div class="tblwrap" style="margin-top:12px"><table class="tbl" style="min-width:0"><caption>${rows.length} row${rows.length===1?"":"s"}</caption>
+        <thead><tr>${cols.map(c=>`<th>${esc(label(c))}</th>`).join("")}</tr></thead>
+        <tbody>${rows.slice(0,50).map(r=>`<tr>${cols.map(c=>`<td class="wrap">${esc(r[c]===null||r[c]===undefined?"—":typeof r[c]==="object"?JSON.stringify(r[c]):r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : ""}
+      ${j.sql ? `<details style="margin-top:10px"><summary class="panel-m" style="cursor:pointer">Show the query</summary><pre style="white-space:pre-wrap;font-size:12px;color:var(--mute);margin:6px 0 0">${esc(j.sql)}</pre></details>` : ""}`;
+    if (j.ok) { const hist = await q("intel_questions?select=id,question,answer,sql,row_count,ok,error,asked_by,created_at&order=created_at.desc&limit=1").catch(()=>[]); void hist; }
+  } catch (e) { out.innerHTML = `<p class="note">${esc(e.message)}</p>`; }
+  finally { b.disabled = false; }
 }
 
 /* ───────── inbound requests ─────────
