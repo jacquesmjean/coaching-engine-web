@@ -1460,7 +1460,7 @@ async function editCampaign(c, me){
   let targets = [];
   const drawTargets = async () => {
     if (isNew) return;
-    targets = await q(`campaign_targets?select=id,person_id,people(first_name,last_name,email,organization_id)&campaign_id=eq.${c.id}&order=added_at&limit=1000`).catch(()=>[]);
+    targets = await q(`campaign_targets?select=id,person_id,people!campaign_targets_person_id_fkey(first_name,last_name,email,organization_id)&campaign_id=eq.${c.id}&order=added_at&limit=1000`).catch(()=>[]);
     $$("#cpPickN").textContent = `${targets.length} selected`;
     $$("#cpPickList").innerHTML = targets.length ? `<div class="tblwrap"><table class="tbl" style="min-width:0"><tbody>${targets.map(t=>`<tr><td class="wrap">${esc([t.people?.first_name,t.people?.last_name].filter(Boolean).join(" ")||"—")} <span class="panel-m">${esc(t.people?.email||"")}</span></td>${locked?"":`<td style="width:40px"><button type="button" class="dr-x cp-rm" data-id="${esc(t.id)}" aria-label="Remove">&#215;</button></td>`}</tr>`).join("")}</tbody></table></div>` : `<p class="panel-m">Nobody selected yet.</p>`;
     $$("#cpPickList").querySelectorAll(".cp-rm").forEach(b => b.addEventListener("click", async () => { await w("DELETE", `campaign_targets?id=eq.${b.dataset.id}`); await drawTargets(); countAudience(); }));
