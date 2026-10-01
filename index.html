@@ -1478,9 +1478,9 @@ async function editCampaign(c, me){
       clearTimeout(tmr); const sv = e.target.value.trim(); if (sv.length < 2) { $$("#cpPickRes").innerHTML = ""; shown = []; return; }
       tmr = setTimeout(async () => {
         const enc = encodeURIComponent(`*${sv}*`);
-        const ppl = await q(`people?select=id,first_name,last_name,email,status,organizations(name)&email=not.is.null&or=(first_name.ilike.${enc},last_name.ilike.${enc},email.ilike.${enc})&order=first_name&limit=25`).catch(()=>[]);
+        const ppl = await q(`people?select=id,first_name,last_name,email,status,organizations!people_organization_id_fkey(name)&email=not.is.null&or=(first_name.ilike.${enc},last_name.ilike.${enc},email.ilike.${enc})&order=first_name&limit=25`).catch(()=>[]);
         const orgs = await q(`organizations?select=id,name&name=ilike.${enc}&limit=10`).catch(()=>[]);
-        const byOrg = orgs.length ? await q(`people?select=id,first_name,last_name,email,status,organizations(name)&email=not.is.null&organization_id=in.(${orgs.map(o=>o.id).join(",")})&limit=50`).catch(()=>[]) : [];
+        const byOrg = orgs.length ? await q(`people?select=id,first_name,last_name,email,status,organizations!people_organization_id_fkey(name)&email=not.is.null&organization_id=in.(${orgs.map(o=>o.id).join(",")})&limit=50`).catch(()=>[]) : [];
         const seen = new Set(); shown = [...ppl, ...byOrg].filter(x => x.email && !seen.has(x.id) && seen.add(x.id));
         $$("#cpPickRes").innerHTML = shown.length ? `<div class="tblwrap" style="margin-top:6px"><table class="tbl" style="min-width:0"><tbody>${shown.map(x=>`<tr><td class="wrap">${esc([x.first_name,x.last_name].filter(Boolean).join(" ")||x.email)} <span class="panel-m">${esc(x.email)}${x.organizations?.name?` · ${esc(x.organizations.name)}`:""}${x.status?` · ${esc(label(x.status))}`:""}</span></td><td style="width:70px"><button type="button" class="btn ghost cp-add" data-id="${esc(x.id)}" style="padding:4px 10px;font-size:12px">Add</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="panel-m" style="margin-top:6px">No one on record matches.</p>`;
         $$("#cpPickRes").querySelectorAll(".cp-add").forEach(b => b.addEventListener("click", () => addTargets([b.dataset.id])));
