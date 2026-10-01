@@ -127,7 +127,7 @@ async function sendCampaign(db: any, c: any, testTo?: { email: string; first: st
     await db.from("campaigns").update({ last_test_at: new Date().toISOString() }).eq("id", c.id);
     return { test: true, id: r?.id || null };
   }
-  const { data: aud, error: ae } = await db.rpc("campaign_audience", { p_audience: c.audience, p_filter: c.audience_filter || {} });
+  const { data: aud, error: ae } = await db.rpc("campaign_audience", { p_audience: c.audience, p_filter: c.audience_filter || {}, p_campaign: c.id });
   if (ae) throw new Error("audience: " + ae.message);
   const people = (aud || []).filter((p: any) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p.email));
   await db.from("campaigns").update({ status: "sending", n_recipients: people.length }).eq("id", c.id);
@@ -259,7 +259,7 @@ Deno.serve(async (req) => {
     return json({ ok: true, html: render(c, (member.full_name || "").split(" ")[0], `${FN}?u=test`, false, about) });
   }
   if (b.action === "audience") {
-    const { data: aud, error: ae } = await db.rpc("campaign_audience", { p_audience: c.audience, p_filter: c.audience_filter || {} });
+    const { data: aud, error: ae } = await db.rpc("campaign_audience", { p_audience: c.audience, p_filter: c.audience_filter || {}, p_campaign: c.id });
     if (ae) return json({ ok: false, error: ae.message }, 500);
     return json({ ok: true, count: (aud || []).length, sample: (aud || []).slice(0, 8).map((p: any) => `${[p.first_name, p.last_name].filter(Boolean).join(" ")} <${p.email}>`) });
   }

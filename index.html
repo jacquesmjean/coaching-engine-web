@@ -1331,7 +1331,7 @@ async function askIntel(){
    Life cycle: Draft → Test send → Submit for review → Approve → Send now or Schedule →
    Sending → Sent → Results per person (delivered, opened, clicked, bounced, unsubscribed).
    Replies go to the from mailbox. Unsubscribes are honoured on every later campaign. */
-const CAMP_AUD = { members_active:"Active members", members_lapsed:"Lapsed members", leads_new:"Open leads (new, working, nurturing)", leads_all:"All leads", enquirers_90d:"Enquirers, last 90 days", everyone:"Everyone on record" };
+const CAMP_AUD = { members_active:"Active members", members_lapsed:"Lapsed members", leads_new:"Open leads (new, working, nurturing)", leads_all:"All leads", enquirers_90d:"Enquirers, last 90 days", everyone:"Everyone on record", selected:"Selected people (hand-picked)" };
 const CAMP_PILL = { draft:"mut", review:"d30", approved:"cur", scheduled:"d30", sending:"d30", sent:"cur", cancelled:"mut", planned:"mut", running:"d30", paused:"mut", completed:"cur" };
 const CAMP_LABEL = { draft:"Draft", review:"In review", approved:"Approved", scheduled:"Scheduled", sending:"Sending", sent:"Sent", cancelled:"Cancelled", planned:"Planned (plan only)", running:"Running (plan only)", paused:"Paused (plan only)", completed:"Completed (plan only)" };
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "—";
@@ -1399,6 +1399,13 @@ async function editCampaign(c, me){
       <label class="fld"><span>Send as</span><select id="cpFrom" ${locked?"disabled":""}>${["info@bcaleadership.com","admin@bcaleadership.com"].map(m=>`<option${m===c.from_mailbox?" selected":""}>${m}</option>`).join("")}</select></label>
     </div>
     <p class="panel-m" id="cpAudN" style="margin:-6px 0 12px">${isNew?"Save the draft to count the audience.":"Counting the audience…"}</p>
+    <div id="cpPick" class="panel" style="margin-bottom:14px;${c.audience==="selected"?"":"display:none"}">
+      <div class="panel-h"><span class="panel-t">Hand-picked recipients</span><span class="panel-m" id="cpPickN"></span></div>
+      ${isNew ? `<p class="panel-m">Save the draft first, then pick people here.</p>` : locked ? "" : `
+      <div class="search-row"><input class="search" id="cpPickQ" type="search" placeholder="Search leads and members by name, email or company" autocomplete="off"><button class="btn ghost" id="cpPickAll" type="button" style="margin-left:8px">Add all shown</button></div>
+      <div id="cpPickRes"></div>`}
+      <div id="cpPickList" style="margin-top:8px"></div>
+    </div>
     <label class="fld"><span>Subject</span><input id="cpSubject" value="${esc(c.subject||"")}" ${locked?"disabled":""}></label>
     <label class="fld"><span>Preview line (shows after the subject in the inbox)</span><input id="cpPre" value="${esc(c.preheader||"")}" ${locked?"disabled":""}></label>
     <label class="fld"><span>Message · {first} becomes the first name · blank line between paragraphs</span><textarea id="cpBody" style="min-height:180px" ${locked?"disabled":""}>${esc(c.body||"")}</textarea></label>
@@ -1447,6 +1454,41 @@ async function editCampaign(c, me){
     catch (e) { $$("#cpAudN").textContent = "Audience could not be counted: " + e.message; }
   };
   countAudience();
+  /* hand-picked recipients */
+  const pick = $$("#cpPick");
+  $$("#cpAud").addEventListener("change", () => { pick.style.display = $$("#cpAud").value === "selected" ? "" : "none"; });
+  let targets = [];
+  const drawTargets = async () => {
+    if (isNew) return;
+    targets = await q(`campaign_targets?select=id,person_id,people(first_name,last_name,email,organization_id)&campaign_id=eq.${c.id}&order=added_at&limit=1000`).catch(()=>[]);
+    $$("#cpPickN").textContent = `${targets.length} selected`;
+    $$("#cpPickList").innerHTML = targets.length ? `<div class="tblwrap"><table class="tbl" style="min-width:0"><tbody>${targets.map(t=>`<tr><td class="wrap">${esc([t.people?.first_name,t.people?.last_name].filter(Boolean).join(" ")||"—")} <span class="panel-m">${esc(t.people?.email||"")}</span></td>${locked?"":`<td style="width:40px"><button type="button" class="dr-x cp-rm" data-id="${esc(t.id)}" aria-label="Remove">&#215;</button></td>`}</tr>`).join("")}</tbody></table></div>` : `<p class="panel-m">Nobody selected yet.</p>`;
+    $$("#cpPickList").querySelectorAll(".cp-rm").forEach(b => b.addEventListener("click", async () => { await w("DELETE", `campaign_targets?id=eq.${b.dataset.id}`); await drawTargets(); countAudience(); }));
+  };
+  let shown = [];
+  const addTargets = async (ids) => {
+    const have = new Set(targets.map(t=>t.person_id)); const fresh = ids.filter(id=>!have.has(id));
+    if (!fresh.length) return;
+    await w("POST", "campaign_targets", fresh.map(person_id=>({ tenant_id: TENANT, campaign_id: c.id, person_id, added_by: me?.person_id||null })));
+    await drawTargets(); countAudience();
+  };
+  if (!isNew && !locked) {
+    let tmr;
+    $$("#cpPickQ").addEventListener("input", (e) => {
+      clearTimeout(tmr); const sv = e.target.value.trim(); if (sv.length < 2) { $$("#cpPickRes").innerHTML = ""; shown = []; return; }
+      tmr = setTimeout(async () => {
+        const enc = encodeURIComponent(`*${sv}*`);
+        const ppl = await q(`people?select=id,first_name,last_name,email,status,organizations(name)&email=not.is.null&or=(first_name.ilike.${enc},last_name.ilike.${enc},email.ilike.${enc})&order=first_name&limit=25`).catch(()=>[]);
+        const orgs = await q(`organizations?select=id,name&name=ilike.${enc}&limit=10`).catch(()=>[]);
+        const byOrg = orgs.length ? await q(`people?select=id,first_name,last_name,email,status,organizations(name)&email=not.is.null&organization_id=in.(${orgs.map(o=>o.id).join(",")})&limit=50`).catch(()=>[]) : [];
+        const seen = new Set(); shown = [...ppl, ...byOrg].filter(x => x.email && !seen.has(x.id) && seen.add(x.id));
+        $$("#cpPickRes").innerHTML = shown.length ? `<div class="tblwrap" style="margin-top:6px"><table class="tbl" style="min-width:0"><tbody>${shown.map(x=>`<tr><td class="wrap">${esc([x.first_name,x.last_name].filter(Boolean).join(" ")||x.email)} <span class="panel-m">${esc(x.email)}${x.organizations?.name?` · ${esc(x.organizations.name)}`:""}${x.status?` · ${esc(label(x.status))}`:""}</span></td><td style="width:70px"><button type="button" class="btn ghost cp-add" data-id="${esc(x.id)}" style="padding:4px 10px;font-size:12px">Add</button></td></tr>`).join("")}</tbody></table></div>` : `<p class="panel-m" style="margin-top:6px">No one on record matches.</p>`;
+        $$("#cpPickRes").querySelectorAll(".cp-add").forEach(b => b.addEventListener("click", () => addTargets([b.dataset.id])));
+      }, 250);
+    });
+    $$("#cpPickAll").addEventListener("click", () => addTargets(shown.map(x=>x.id)));
+  }
+  drawTargets();
   const setStatus = async (status, extra={}) => { await w("PATCH", `campaigns?id=eq.${c.id}`, { status, ...extra }); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); };
   $$("#cpSave")?.addEventListener("click", async (e) => { e.currentTarget.disabled = true; try { await save(); say(isNew?"Draft saved.":"Saved.", true); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); } catch (err) { say(err.message); e.currentTarget.disabled = false; } });
   $$("#cpPreview")?.addEventListener("click", async (e) => {

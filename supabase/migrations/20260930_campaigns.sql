@@ -110,6 +110,60 @@ $$;
 revoke all on function public.campaign_audience(text, jsonb) from public;
 grant execute on function public.campaign_audience(text, jsonb) to authenticated;
 
+-- ── 4b. Hand-picked recipients (added 30 Sept, applied)
+-- Hand-picked recipients for a campaign (audience = 'selected').
+create table if not exists public.campaign_targets (
+  id          uuid primary key default gen_random_uuid(),
+  tenant_id   uuid not null references public.tenants(id) on delete cascade,
+  campaign_id uuid not null references public.campaigns(id) on delete cascade,
+  person_id   uuid not null references public.people(id) on delete cascade,
+  added_by    uuid references public.people(id) on delete set null,
+  added_at    timestamptz not null default now(),
+  unique (campaign_id, person_id)
+);
+create index if not exists campaign_targets_idx on public.campaign_targets (campaign_id);
+alter table public.campaign_targets enable row level security;
+drop policy if exists campaign_targets_read on public.campaign_targets;
+create policy campaign_targets_read on public.campaign_targets for select using (tenant_id = app.current_tenant_id() or app.is_platform_admin());
+drop policy if exists campaign_targets_write on public.campaign_targets;
+create policy campaign_targets_write on public.campaign_targets for all
+  using ((tenant_id = app.current_tenant_id() and app.has_tenant_role(array['owner','admin'])) or app.is_platform_admin())
+  with check ((tenant_id = app.current_tenant_id() and app.has_tenant_role(array['owner','admin'])) or app.is_platform_admin());
+
+alter table public.campaigns drop constraint if exists campaigns_audience_check;
+alter table public.campaigns add constraint campaigns_audience_check
+  check (audience in ('members_active','members_lapsed','leads_new','leads_all','enquirers_90d','everyone','selected'));
+
+-- Audience resolver now takes the campaign id so 'selected' can read campaign_targets.
+drop function if exists public.campaign_audience(text, jsonb);
+create or replace function public.campaign_audience(p_audience text, p_filter jsonb default '{}'::jsonb, p_campaign uuid default null)
+returns table (person_id uuid, email text, first_name text, last_name text, preferred_language text, country text)
+language sql stable security invoker set search_path = public as $$
+  with base as (
+    select p.id, p.email, p.first_name, p.last_name, p.preferred_language, p.country
+    from public.people p
+    where p.email is not null and p.email <> '' and p.marketing_opt_out = false
+      and (p_filter->>'country' is null or p.country = p_filter->>'country')
+      and (p_filter->>'language' is null or p.preferred_language = p_filter->>'language')
+      and not exists (select 1 from public.campaign_recipients r where r.person_id = p.id and r.status in ('bounced','complained'))
+  )
+  select distinct on (lower(b.email)) b.id, lower(b.email), b.first_name, b.last_name, b.preferred_language, b.country
+  from base b
+  where case p_audience
+    when 'members_active' then exists (select 1 from public.memberships m where m.person_id = b.id and m.status = 'active')
+    when 'members_lapsed' then exists (select 1 from public.memberships m where m.person_id = b.id and m.status in ('lapsed','cancelled'))
+                              and not exists (select 1 from public.memberships m where m.person_id = b.id and m.status = 'active')
+    when 'leads_new'      then exists (select 1 from public.leads l where l.person_id = b.id and l.status in ('new','working','nurturing'))
+    when 'leads_all'      then exists (select 1 from public.leads l where l.person_id = b.id and l.status <> 'disqualified')
+    when 'enquirers_90d'  then exists (select 1 from public.requests q where q.person_id = b.id and q.received_at > now() - interval '90 days')
+    when 'selected'       then p_campaign is not null and exists (select 1 from public.campaign_targets t where t.campaign_id = p_campaign and t.person_id = b.id)
+    when 'everyone'       then true
+    else false end
+  order by lower(b.email), b.id;
+$$;
+revoke all on function public.campaign_audience(text, jsonb, uuid) from public;
+grant execute on function public.campaign_audience(text, jsonb, uuid) to authenticated;
+
 -- ── 5. Scheduled sends: every 10 minutes, ask the function to dispatch anything due.
 --      Reuses the nudge key already in platform_secrets, so no new secret is created.
 do $$
