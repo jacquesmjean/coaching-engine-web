@@ -1332,8 +1332,8 @@ async function askIntel(){
    Sending → Sent → Results per person (delivered, opened, clicked, bounced, unsubscribed).
    Replies go to the from mailbox. Unsubscribes are honoured on every later campaign. */
 const CAMP_AUD = { members_active:"Active members", members_lapsed:"Lapsed members", leads_new:"Open leads (new, working, nurturing)", leads_all:"All leads", enquirers_90d:"Enquirers, last 90 days", everyone:"Everyone on record" };
-const CAMP_PILL = { draft:"mut", review:"d30", approved:"cur", scheduled:"d30", sending:"d30", sent:"cur", cancelled:"mut" };
-const CAMP_LABEL = { draft:"Draft", review:"In review", approved:"Approved", scheduled:"Scheduled", sending:"Sending", sent:"Sent", cancelled:"Cancelled" };
+const CAMP_PILL = { draft:"mut", review:"d30", approved:"cur", scheduled:"d30", sending:"d30", sent:"cur", cancelled:"mut", planned:"mut", running:"d30", paused:"mut", completed:"cur" };
+const CAMP_LABEL = { draft:"Draft", review:"In review", approved:"Approved", scheduled:"Scheduled", sending:"Sending", sent:"Sent", cancelled:"Cancelled", planned:"Planned (plan only)", running:"Running (plan only)", paused:"Paused (plan only)", completed:"Completed (plan only)" };
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "—";
 
 async function loadCampaigns(){
@@ -1355,7 +1355,7 @@ async function loadCampaigns(){
     <div class="tblwrap"><table class="tbl"><caption>Newest first. Click a campaign to work on it.</caption>
       <thead><tr><th>Campaign</th><th>Audience</th><th>Status</th><th class="num">Recipients</th><th class="num">Delivered</th><th class="num">Opened</th><th class="num">Clicked</th><th class="num">Unsub</th><th>When</th></tr></thead>
       <tbody id="campBody">${rows.length ? rows.map(r=>`<tr class="click" data-camp="${esc(r.id)}" data-search="${searchKey(r.name,r.subject,CAMP_AUD[r.audience],CAMP_LABEL[r.status])}">
-        <td class="wrap"><b>${esc(r.name)}</b><br><span class="panel-m">${esc(r.subject)}</span></td>
+        <td class="wrap"><b>${esc(r.name)}</b><br><span class="panel-m">${esc(r.subject || (r.objective ? "Plan: " + label(r.objective) : "No subject yet"))}</span></td>
         <td>${esc(CAMP_AUD[r.audience]||r.audience)}</td>
         <td><span class="pill ${CAMP_PILL[r.status]||"mut"}">${esc(CAMP_LABEL[r.status]||r.status)}</span></td>
         <td class="num">${r.n_recipients||"—"}</td><td class="num">${r.n_delivered||"—"}</td>
@@ -1380,8 +1380,9 @@ async function campaignCall(action, id){
 
 async function editCampaign(c, me){
   const isNew = !c;
-  c = c || { name:"", audience:"members_active", audience_filter:{}, from_mailbox:"info@bcaleadership.com", subject:"", preheader:"", body:"Dear {first},\n\n", cta_text:"", cta_url:"", utm_campaign:"", status:"draft" };
-  const locked = ["sending","sent","cancelled"].includes(c.status);
+  c = c || { name:"", audience:"members_active", audience_filter:{}, from_mailbox:"info@bcaleadership.com", subject:"", preheader:"", body:"Dear {first},\n\n", cta_text:"", cta_url:"", utm_campaign:"", signer_name: me?.full_name||"", signer_title: "", show_about: true, status:"draft" };
+  const locked = ["sending","sent","cancelled","completed"].includes(c.status);
+  if (["planned","running","paused"].includes(c.status)) c.status = "draft"; // older planning rows become editable email drafts
   const canApprove = ["owner","admin"].includes(me?.role);
   const recips = isNew ? [] : await q(`campaign_recipients?select=email,status,sent_at,opened_at,clicked_at,error,person_id&campaign_id=eq.${c.id}&order=status&limit=500`).catch(()=>[]);
   const d = drawer(isNew ? "New campaign" : c.name,
@@ -1398,17 +1399,21 @@ async function editCampaign(c, me){
       <label class="fld"><span>Send as</span><select id="cpFrom" ${locked?"disabled":""}>${["info@bcaleadership.com","admin@bcaleadership.com"].map(m=>`<option${m===c.from_mailbox?" selected":""}>${m}</option>`).join("")}</select></label>
     </div>
     <p class="panel-m" id="cpAudN" style="margin:-6px 0 12px">${isNew?"Save the draft to count the audience.":"Counting the audience…"}</p>
-    <label class="fld"><span>Subject</span><input id="cpSubject" value="${esc(c.subject)}" ${locked?"disabled":""}></label>
+    <label class="fld"><span>Subject</span><input id="cpSubject" value="${esc(c.subject||"")}" ${locked?"disabled":""}></label>
     <label class="fld"><span>Preview line (shows after the subject in the inbox)</span><input id="cpPre" value="${esc(c.preheader||"")}" ${locked?"disabled":""}></label>
-    <label class="fld"><span>Message · {first} becomes the first name · blank line between paragraphs</span><textarea id="cpBody" style="min-height:180px" ${locked?"disabled":""}>${esc(c.body)}</textarea></label>
+    <label class="fld"><span>Message · {first} becomes the first name · blank line between paragraphs</span><textarea id="cpBody" style="min-height:180px" ${locked?"disabled":""}>${esc(c.body||"")}</textarea></label>
     <div class="grid2">
       <label class="fld"><span>Button text (optional)</span><input id="cpCta" value="${esc(c.cta_text||"")}" placeholder="e.g. Renew my membership" ${locked?"disabled":""}></label>
       <label class="fld"><span>Button link</span><input id="cpUrl" value="${esc(c.cta_url||"")}" placeholder="https://bcaleadership.com/membership" ${locked?"disabled":""}></label>
       <label class="fld"><span>UTM campaign tag</span><input id="cpUtm" value="${esc(c.utm_campaign||"")}" placeholder="e.g. oct-renewal" ${locked?"disabled":""}></label>
+      <label class="fld"><span>Signed by</span><input id="cpSigner" value="${esc(c.signer_name||"")}" placeholder="e.g. Nii Lokko" ${locked?"disabled":""}></label>
+      <label class="fld"><span>Signer's title</span><input id="cpSignerT" value="${esc(c.signer_title||"")}" placeholder="e.g. Executive Director" ${locked?"disabled":""}></label>
+      <label class="fld" style="display:flex;gap:8px;align-items:center"><input id="cpAbout" type="checkbox" style="width:auto" ${c.show_about!==false?"checked":""} ${locked?"disabled":""}> <span style="margin:0;text-transform:none;letter-spacing:0;font-size:13px">Include the "About BCA Leadership" panel with links</span></label>
       ${!locked && ["approved","scheduled"].includes(c.status) ? `<label class="fld"><span>Schedule for (your local time)</span><input id="cpWhen" type="datetime-local" value="${c.scheduled_for?esc(new Date(c.scheduled_for).toISOString().slice(0,16)):""}"></label>` : ""}
     </div>
     <div class="row-btn">
       ${locked ? "" : `<button class="btn" id="cpSave" type="button">${isNew?"Save draft":"Save"}</button>`}
+      ${isNew ? "" : `<button class="btn ghost" id="cpPreview" type="button">Preview the letter</button>`}
       ${isNew||locked ? "" : `<button class="btn ghost" id="cpTest" type="button">Send me a test</button>`}
       ${!isNew && c.status==="draft" ? `<button class="btn ghost" id="cpReview" type="button">Submit for review</button>` : ""}
       ${!isNew && c.status==="review" && canApprove ? `<button class="btn" id="cpApprove" type="button">Approve</button><button class="btn ghost" id="cpBack" type="button">Back to draft</button>` : ""}
@@ -1425,7 +1430,8 @@ async function editCampaign(c, me){
   const body = () => ({ name: $$("#cpName").value.trim(), audience: $$("#cpAud").value,
     audience_filter: Object.fromEntries([["country", $$("#cpCountry").value.trim().toUpperCase()||null],["language", $$("#cpLang").value||null]].filter(([,v])=>v)),
     from_mailbox: $$("#cpFrom").value, subject: $$("#cpSubject").value.trim(), preheader: $$("#cpPre").value.trim()||null, body: $$("#cpBody").value,
-    cta_text: $$("#cpCta").value.trim()||null, cta_url: $$("#cpUrl").value.trim()||null, utm_campaign: $$("#cpUtm").value.trim()||null });
+    cta_text: $$("#cpCta").value.trim()||null, cta_url: $$("#cpUrl").value.trim()||null, utm_campaign: $$("#cpUtm").value.trim()||null,
+    signer_name: $$("#cpSigner").value.trim()||null, signer_title: $$("#cpSignerT").value.trim()||null, show_about: $$("#cpAbout").checked });
   const say = (t, ok) => note($$("#cpMsg"), t, ok);
   const save = async () => {
     const b = body();
@@ -1443,6 +1449,11 @@ async function editCampaign(c, me){
   countAudience();
   const setStatus = async (status, extra={}) => { await w("PATCH", `campaigns?id=eq.${c.id}`, { status, ...extra }); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); };
   $$("#cpSave")?.addEventListener("click", async (e) => { e.currentTarget.disabled = true; try { await save(); say(isNew?"Draft saved.":"Saved.", true); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); } catch (err) { say(err.message); e.currentTarget.disabled = false; } });
+  $$("#cpPreview")?.addEventListener("click", async (e) => {
+    e.currentTarget.disabled = true; say("Building the preview…");
+    try { if (!locked) await save(); const r = await campaignCall("preview", c.id); const win = window.open("", "_blank"); if (!win) throw new Error("Allow pop-ups to see the preview."); win.document.open(); win.document.write(r.html); win.document.close(); say("Preview opened in a new tab.", true); }
+    catch (err) { say(err.message); } finally { e.currentTarget.disabled = false; }
+  });
   $$("#cpTest")?.addEventListener("click", async (e) => { e.currentTarget.disabled = true; say("Sending the test…"); try { await save(); await campaignCall("test", c.id); say(`Test sent to ${me?.email||"you"}. Check your inbox, then submit for review.`, true); } catch (err) { say(err.message); } finally { e.currentTarget.disabled = false; } });
   $$("#cpReview")?.addEventListener("click", async () => { try { await save(); if (!c.last_test_at) { const ok = confirm("No test has been sent yet. Submit for review anyway?"); if (!ok) return; } await setStatus("review"); } catch (err) { say(err.message); } });
   $$("#cpApprove")?.addEventListener("click", async () => { try { await save(); await setStatus("approved", { approved_by: me?.person_id||null, approved_at: new Date().toISOString() }); } catch (err) { say(err.message); } });

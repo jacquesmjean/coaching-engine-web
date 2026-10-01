@@ -17,48 +17,48 @@ update public.people set unsubscribe_token = encode(gen_random_bytes(16), 'hex')
 alter table public.people alter column unsubscribe_token set default encode(gen_random_bytes(16), 'hex');
 create unique index if not exists people_unsubscribe_token_key on public.people (unsubscribe_token);
 
--- ── 2. Campaigns
-create table if not exists public.campaigns (
-  id             uuid primary key default gen_random_uuid(),
-  tenant_id      uuid not null references public.tenants(id) on delete cascade,
-  name           text not null,
-  audience       text not null default 'members_active'
-                 check (audience in ('members_active','members_lapsed','leads_new','leads_all','enquirers_90d','everyone')),
-  audience_filter jsonb not null default '{}'::jsonb,        -- {country:'GH', language:'fr'} optional
-  from_mailbox   text not null default 'info@bcaleadership.com',
-  subject        text not null,
-  preheader      text,
-  body           text not null,                             -- plain paragraphs; rendered in the brand shell
-  cta_text       text,
-  cta_url        text,
-  utm_campaign   text,
-  status         text not null default 'draft' check (status in ('draft','review','approved','scheduled','sending','sent','cancelled')),
-  scheduled_for  timestamptz,
-  approved_by    uuid references public.people(id) on delete set null,
-  approved_at    timestamptz,
-  last_test_at   timestamptz,
-  sent_at        timestamptz,
-  n_recipients   int not null default 0,
-  n_sent         int not null default 0,
-  n_delivered    int not null default 0,
-  n_opened       int not null default 0,
-  n_clicked      int not null default 0,
-  n_bounced      int not null default 0,
-  n_unsubscribed int not null default 0,
-  created_by     uuid references public.people(id) on delete set null,
-  created_at     timestamptz not null default now(),
-  updated_at     timestamptz not null default now()
-);
-create index if not exists campaigns_tenant_idx on public.campaigns (tenant_id, created_at desc);
-alter table public.campaigns enable row level security;
+-- ── 2. Campaigns: the table ALREADY EXISTED from the first build as a planning table
+--      (objective, channels, languages, regions, starts_on, ends_on, budget_minor, spend_minor; 3 rows on 30 Sept).
+--      It is extended for email sending; nothing is dropped. Statuses keep the planning set and add the email life cycle.
+-- campaigns already existed (planning table: objective, channels, languages, regions, dates, budget, spend). Extend it for email sending.
+alter table public.campaigns
+  add column if not exists audience        text not null default 'members_active',
+  add column if not exists audience_filter jsonb not null default '{}'::jsonb,
+  add column if not exists from_mailbox    text not null default 'info@bcaleadership.com',
+  add column if not exists subject         text,
+  add column if not exists preheader       text,
+  add column if not exists body            text,
+  add column if not exists cta_text        text,
+  add column if not exists cta_url         text,
+  add column if not exists utm_campaign    text,
+  add column if not exists signer_name     text,
+  add column if not exists signer_title    text,
+  add column if not exists show_about      boolean not null default true,
+  add column if not exists scheduled_for   timestamptz,
+  add column if not exists approved_by     uuid references public.people(id) on delete set null,
+  add column if not exists approved_at     timestamptz,
+  add column if not exists last_test_at    timestamptz,
+  add column if not exists sent_at         timestamptz,
+  add column if not exists n_recipients    int not null default 0,
+  add column if not exists n_sent          int not null default 0,
+  add column if not exists n_delivered     int not null default 0,
+  add column if not exists n_opened        int not null default 0,
+  add column if not exists n_clicked       int not null default 0,
+  add column if not exists n_bounced       int not null default 0,
+  add column if not exists n_unsubscribed  int not null default 0,
+  add column if not exists created_by      uuid references public.people(id) on delete set null;
+alter table public.campaigns drop constraint if exists campaigns_audience_check;
+alter table public.campaigns add constraint campaigns_audience_check
+  check (audience in ('members_active','members_lapsed','leads_new','leads_all','enquirers_90d','everyone'));
+alter table public.campaigns drop constraint if exists campaigns_status_check;
+alter table public.campaigns add constraint campaigns_status_check
+  check (status in ('planned','running','paused','completed','cancelled','draft','review','approved','scheduled','sending','sent'));
+-- keep the original policies; drop the duplicates added on 30 Sept
 drop policy if exists campaigns_read on public.campaigns;
-create policy campaigns_read on public.campaigns for select using (tenant_id = app.current_tenant_id() or app.is_platform_admin());
 drop policy if exists campaigns_write on public.campaigns;
-create policy campaigns_write on public.campaigns for all
-  using ((tenant_id = app.current_tenant_id() and app.has_tenant_role(array['owner','admin'])) or app.is_platform_admin())
-  with check ((tenant_id = app.current_tenant_id() and app.has_tenant_role(array['owner','admin'])) or app.is_platform_admin());
-drop trigger if exists campaigns_touch on public.campaigns;
-create trigger campaigns_touch before update on public.campaigns for each row execute function app.touch_updated_at();
+
+create index if not exists campaigns_tenant_idx on public.campaigns (tenant_id, created_at desc);
+notify pgrst, 'reload schema';
 
 -- ── 3. One row per person per campaign: what was sent and what they did with it.
 create table if not exists public.campaign_recipients (

@@ -58,11 +58,38 @@ function utm(url: string, c: any): string {
   try { const u = new URL(url); if (/bcaleadership\.com$/i.test(u.hostname)) { u.searchParams.set("utm_source", "engine"); u.searchParams.set("utm_medium", "email"); u.searchParams.set("utm_campaign", c.utm_campaign || c.id); } return u.toString(); }
   catch { return url; }
 }
-function render(c: any, first: string, unsubUrl: string, test = false): string {
+const ABOUT_DEFAULT = {
+  headline: "About BCA Leadership",
+  text: "Africa's premier executive coaching and peer-learning network: 45 certified coaches, membership from $600 a year, serving 5,000+ leaders since 2017. Where Africa's leaders sharpen each other.",
+  links: [
+    { label: "Membership", url: "https://bcaleadership.com/membership.html", note: "Join the network" },
+    { label: "The Bench", url: "https://bcaleadership.com/the-bench.html", note: "Meet the coaches" },
+    { label: "Insights", url: "https://bcaleadership.com/insights.html", note: "Essays and podcast" },
+  ],
+};
+const longDate = (d = new Date()) => d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+/* The letter. Letterhead (shell), date line, message, button, sign-off block, About panel, footer. */
+function render(c: any, first: string, unsubUrl: string, test = false, about: any = ABOUT_DEFAULT): string {
   const paras = esc(c.body.replace(/\{first\}/g, first || "there")).split(/\n{2,}/)
-    .map((p) => `<p>${p.replace(/\n/g, "<br>").replace(/(https?:\/\/[^\s<]+)/g, (m) => `<a href="${utm(m.replace(/&amp;/g, "&"), c)}" style="color:${BRAND.gold}">${m}</a>`)}</p>`).join("");
+    .map((p) => `<p style="margin:0 0 16px">${p.replace(/\n/g, "<br>").replace(/(https?:\/\/[^\s<]+)/g, (m) => `<a href="${utm(m.replace(/&amp;/g, "&"), c)}" style="color:${BRAND.gold}">${m}</a>`)}</p>`).join("");
   const cta = c.cta_text && c.cta_url ? button(utm(c.cta_url, c), esc(c.cta_text)) : "";
-  return brandEmail(`${test ? `<p style="background:#FBEBC9;padding:8px 12px;font-family:Helvetica,Arial,sans-serif;font-size:12px">TEST SEND. Only you received this.</p>` : ""}${paras}${cta}`,
+  const signer = c.signer_name ? `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0 6px"><tr>
+      <td style="border-left:3px solid ${BRAND.gold};padding:2px 0 2px 14px;font-family:Helvetica,Arial,sans-serif">
+        <span style="font-family:Georgia,serif;font-size:17px;color:${BRAND.night}"><b>${esc(c.signer_name)}</b></span><br>
+        ${c.signer_title ? `<span style="font-size:13px;color:${BRAND.mute}">${esc(c.signer_title)}</span><br>` : ""}
+        <span style="font-size:13px;color:${BRAND.mute}">BCA Leadership · <a href="mailto:${esc(c.from_mailbox)}" style="color:${BRAND.gold};text-decoration:none">${esc(c.from_mailbox)}</a></span>
+      </td></tr></table>` : "";
+  const aboutPanel = c.show_about === false ? "" : `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:30px;background:${BRAND.cream};border-top:3px solid ${BRAND.green}">
+      <tr><td style="padding:22px 26px 6px;font-family:Helvetica,Arial,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:${BRAND.espresso}">${esc(about.headline || ABOUT_DEFAULT.headline)}</td></tr>
+      <tr><td style="padding:0 26px 16px;font-family:Georgia,serif;font-size:15px;line-height:1.6;color:${BRAND.ink}">${esc(about.text || ABOUT_DEFAULT.text)}</td></tr>
+      <tr><td style="padding:0 20px 22px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+        ${(about.links || ABOUT_DEFAULT.links).slice(0, 3).map((l: any) => `<td width="33%" style="padding:0 6px"><a href="${utm(l.url, c)}" style="display:block;background:#ffffff;border:1px solid #E9E2D4;padding:12px 12px;text-decoration:none">
+          <span style="font-family:Georgia,serif;font-size:15px;color:${BRAND.night}"><b>${esc(l.label)}</b></span><br>
+          <span style="font-family:Helvetica,Arial,sans-serif;font-size:12px;color:${BRAND.mute}">${esc(l.note || "")}</span></a></td>`).join("")}
+      </tr></table></td></tr></table>`;
+  const head = `<p style="margin:0 0 18px;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:${BRAND.mute}">${longDate()}</p>`;
+  return brandEmail(`${test ? `<p style="background:#FBEBC9;padding:8px 12px;font-family:Helvetica,Arial,sans-serif;font-size:12px">TEST SEND. Only you received this.</p>` : ""}${head}${paras}${cta}${signer}${aboutPanel}`,
     { preheader: c.preheader || "", footnote: `You are receiving this because you are a member of, or have been in touch with, BCA Leadership. <a href="${unsubUrl}" style="color:${BRAND.mute}">Unsubscribe</a> in one click.` });
 }
 
@@ -87,10 +114,16 @@ async function recount(db: any, campaignId: string) {
 }
 
 /* Send a campaign to its audience (or to one test address). Returns counts. */
+async function aboutFor(db: any, tenantId: string) {
+  const { data } = await db.from("tenant_config").select("business_rules").eq("tenant_id", tenantId).maybeSingle();
+  const a = data?.business_rules?.campaign_about;
+  return a && (a.text || a.links) ? { ...ABOUT_DEFAULT, ...a } : ABOUT_DEFAULT;
+}
 async function sendCampaign(db: any, c: any, testTo?: { email: string; first: string }) {
   const from = `BCA Leadership <${c.from_mailbox || "info@bcaleadership.com"}>`;
+  const about = await aboutFor(db, c.tenant_id);
   if (testTo) {
-    const [r] = await resendBatch([{ from, to: [testTo.email], reply_to: c.from_mailbox, subject: `[TEST] ${c.subject}`, html: render(c, testTo.first, `${FN}?u=test`, true), tags: [{ name: "campaign", value: c.id }, { name: "test", value: "1" }] }]);
+    const [r] = await resendBatch([{ from, to: [testTo.email], reply_to: c.from_mailbox, subject: `[TEST] ${c.subject}`, html: render(c, testTo.first, `${FN}?u=test`, true, about), tags: [{ name: "campaign", value: c.id }, { name: "test", value: "1" }] }]);
     await db.from("campaigns").update({ last_test_at: new Date().toISOString() }).eq("id", c.id);
     return { test: true, id: r?.id || null };
   }
@@ -108,7 +141,7 @@ async function sendCampaign(db: any, c: any, testTo?: { email: string; first: st
   for (let i = 0; i < people.length; i += 50) {
     const chunk = people.slice(i, i + 50);
     const msgs = chunk.map((p: any) => { const unsub = `${FN}?u=${tokOf[p.person_id] || ""}`; return {
-      from, to: [p.email], reply_to: c.from_mailbox, subject: c.subject, html: render(c, p.first_name, unsub),
+      from, to: [p.email], reply_to: c.from_mailbox, subject: c.subject, html: render(c, p.first_name, unsub, false, about),
       headers: { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
       tags: [{ name: "campaign", value: c.id }] }; });
     try {
@@ -205,13 +238,25 @@ Deno.serve(async (req) => {
   if (!member || member.status === "suspended" || !["owner", "admin"].includes(member.role)) return json({ ok: false, error: "forbidden" }, 403);
 
   if (b.action === "test") {
-    try { return json({ ok: true, ...(await sendCampaign(db, c, { email: member.email, first: (member.full_name || "").split(" ")[0] })) }); }
+    // A test goes to the caller, or to another staff address on this tenant if one is named.
+    let to = member.email, first = (member.full_name || "").split(" ")[0];
+    if (b.to && String(b.to).toLowerCase() !== String(member.email).toLowerCase()) {
+      const { data: other } = await db.from("tenant_users").select("email,full_name").eq("tenant_id", c.tenant_id).ilike("email", String(b.to)).maybeSingle();
+      const { data: staffP } = other ? { data: null } : await db.from("people").select("email,first_name").eq("tenant_id", c.tenant_id).ilike("email", String(b.to)).not("user_id", "is", null).maybeSingle();
+      if (!other && !staffP) return json({ ok: false, error: "test_to_not_staff" }, 422);
+      to = (other?.email || staffP?.email); first = other ? (other.full_name || "").split(" ")[0] : (staffP?.first_name || first);
+    }
+    try { return json({ ok: true, ...(await sendCampaign(db, c, { email: to, first })) }); }
     catch (e) { return json({ ok: false, error: String((e as Error).message) }, 502); }
   }
   if (b.action === "send") {
     if (!["approved", "scheduled"].includes(c.status)) return json({ ok: false, error: "not_approved" }, 409);
     try { return json({ ok: true, ...(await sendCampaign(db, c)) }); }
     catch (e) { await db.from("campaigns").update({ status: "approved" }).eq("id", c.id); return json({ ok: false, error: String((e as Error).message) }, 502); }
+  }
+  if (b.action === "preview") {
+    const about = await aboutFor(db, c.tenant_id);
+    return json({ ok: true, html: render(c, (member.full_name || "").split(" ")[0], `${FN}?u=test`, false, about) });
   }
   if (b.action === "audience") {
     const { data: aud, error: ae } = await db.rpc("campaign_audience", { p_audience: c.audience, p_filter: c.audience_filter || {} });
