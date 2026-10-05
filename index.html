@@ -426,6 +426,7 @@ table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines 
       <div class="stats" id="campStats"></div>
       <div class="rule"></div>
       <div id="campWrap"></div>
+      <div id="socWrap"></div>
     </section>
 
     <!-- ───── board ───── -->
@@ -968,13 +969,25 @@ async function uploadDocument(){
 async function openDocument(id, d){
   if (!d) return;
   const me = await myStaff();
+  const canWrite = ["owner","admin"].includes(me?.role);
   const log = await q(`document_access?select=action,at,person_id&document_id=eq.${id}&order=at.desc&limit=30`).catch(()=>[]);
-  const dr = drawer(d.title, `${DOC_CAT_LABEL[d.category]||d.category} · ${d.file_name} · ${fmtBytes(d.size_bytes)}`, `
-    ${d.notes ? `<p class="panel-m">${esc(d.notes)}</p><div class="rule"></div>` : ""}
+  const dr = drawer(d.title, `${DOC_CAT_LABEL[d.category]||d.category} · ${d.file_name} · ${fmtBytes(d.size_bytes)}${d.version>1?` · v${d.version}`:""}`, `
+    ${!canWrite && d.notes ? `<p class="panel-m">${esc(d.notes)}</p><div class="rule"></div>` : ""}
     <div class="row-btn"><button class="btn" id="docOpen" type="button">Open document</button>
-      ${["owner","admin"].includes(me?.role) ? `<button class="btn ghost" id="docReplace" type="button">Upload new version</button>` : ""}</div>
+      ${canWrite ? `<button class="btn ghost" id="docReplace" type="button">Upload new version</button>` : ""}</div>
     <input id="docReplaceFile" type="file" hidden>
     <p class="note" id="docMsg2" hidden></p>
+    ${canWrite ? `<div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Details</b> · anyone with owner or admin access can change these</p>
+    <label class="fld"><span>Title</span><input id="deTitle" value="${esc(d.title)}"></label>
+    <div class="grid2">
+      <label class="fld"><span>Category</span><select id="deCat">${DOC_CATS.map(c=>`<option value="${c}"${c===d.category?" selected":""}>${DOC_CAT_LABEL[c]}</option>`).join("")}</select></label>
+      <label class="fld"><span>Version</span><input value="v${d.version||1}" disabled></label>
+    </div>
+    <label class="fld"><span>Notes</span><textarea id="deNotes" rows="3" placeholder="What this is, who it is for, what changed">${esc(d.notes||"")}</textarea></label>
+    <label style="display:flex;gap:8px;align-items:center;margin:0 0 14px;font-size:13px;letter-spacing:0;text-transform:none;color:var(--parch)"><input id="deBoard" type="checkbox" style="width:auto;margin:0"${d.board_only?" checked":""}> Board only (owners, admins and board members)</label>
+    <div class="row-btn"><button class="btn" id="deSave" type="button">Save changes</button><button class="btn ghost" id="deDelete" type="button" style="margin-left:auto;color:var(--clay,#C14027)">Delete document</button></div>
+    <p class="note" id="deMsg" hidden></p>` : ""}
     <div class="rule"></div>
     <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Who opened it</b></p>
     ${log.length ? `<ul class="tl">${log.map(a=>`<li><time>${esc(when(a.at))}</time><b>${esc(label(a.action))}</b> — ${esc(staffNameOf(a.person_id)||"someone")}</li>`).join("")}</ul>` : `<p class="panel-m">Not opened yet.</p>`}`);
@@ -993,10 +1006,34 @@ async function openDocument(id, d){
       const safe = f.name.replace(/[^\w.\-]+/g, "_");
       const path = `${TENANT}/${crypto.randomUUID()}-${safe}`;
       await storageFetch(`object/vault/${path}`, { method:"POST", body:f, headers:{ "Content-Type": f.type || "application/octet-stream" } });
+      const old = d.storage_path;
       await w("PATCH", `documents?id=eq.${id}`, { storage_path: path, file_name: f.name, mime_type: f.type || null, size_bytes: f.size, version: (d.version||1)+1 });
       await w("POST", "document_access", [{ tenant_id: TENANT, document_id: id, person_id: me?.person_id || null, action: "replaced" }]);
+      if (old && old !== path) storageFetch(`object/vault/${old}`, { method:"DELETE" }).catch(()=>{});
       note(dr.querySelector("#docMsg2"), `Now version ${(d.version||1)+1}.`, true); await loadDocuments();
+      setTimeout(async () => { const fresh = (await q(`documents?select=*&id=eq.${id}`))[0]; if (fresh) openDocument(id, fresh); }, 400);
     } catch (e) { note(dr.querySelector("#docMsg2"), e.message); }
+  });
+  dr.querySelector("#deSave")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget; const title = dr.querySelector("#deTitle").value.trim();
+    if (!title) return note(dr.querySelector("#deMsg"), "A title is needed.");
+    btn.disabled = true;
+    try {
+      await w("PATCH", `documents?id=eq.${id}`, { title, category: dr.querySelector("#deCat").value, notes: dr.querySelector("#deNotes").value.trim() || null, board_only: dr.querySelector("#deBoard").checked });
+      note(dr.querySelector("#deMsg"), "Saved.", true); await loadDocuments();
+    } catch (err) { note(dr.querySelector("#deMsg"), err.message); }
+    btn.disabled = false;
+  });
+  dr.querySelector("#deDelete")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again to delete for good"; setTimeout(() => { b.dataset.armed = ""; b.textContent = "Delete document"; }, 6000); return; }
+    b.disabled = true; b.textContent = "Deleting…";
+    try {
+      await storageFetch(`object/vault/${d.storage_path}`, { method:"DELETE" }).catch((err) => { if (!/not found|404/i.test(err.message)) throw err; });
+      await w("DELETE", `documents?id=eq.${id}`);
+      closeDrawer();
+      await loadDocuments();
+    } catch (err) { note(dr.querySelector("#deMsg"), err.message); b.disabled = false; b.textContent = "Delete document"; }
   });
 }
 
@@ -1336,6 +1373,161 @@ const CAMP_PILL = { draft:"mut", review:"d30", approved:"cur", scheduled:"d30", 
 const CAMP_LABEL = { draft:"Draft", review:"In review", approved:"Approved", scheduled:"Scheduled", sending:"Sending", sent:"Sent", cancelled:"Cancelled", planned:"Planned (plan only)", running:"Running (plan only)", paused:"Paused (plan only)", completed:"Completed (plan only)" };
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "—";
 
+/* ───────── social posts ─────────
+   The editorial desk for BCA's pages. One row per post per platform: written here with the
+   platform's limits in view, approved, scheduled, copied out, posted on the page, and the live
+   URL recorded back. Direct publishing through the platform APIs is a later stage. */
+const SOC = {
+  linkedin:  { name:"LinkedIn",  max:3000, tip:"First two lines show before \"see more\". Three to five hashtags at the end. Company page posts with a document or image carry furthest." },
+  facebook:  { name:"Facebook",  max:63206, tip:"Keep it under 80 words; the link preview does the rest. Ask a question to invite comments." },
+  instagram: { name:"Instagram", max:2200, tip:"Caption up to 2,200 characters, the first 125 show in the feed. Links do not work in captions: put the link in the bio or a story. Image or video is required." },
+  youtube:   { name:"YouTube",   max:5000, titleMax:100, tip:"Title up to 100 characters, description up to 5,000. The first two lines of the description show above the fold. Video or Short required." },
+  x:         { name:"X",         max:280, tip:"280 characters including the link (links count as 23). One idea per post; use a thread for more." },
+};
+const SOC_ORDER = ["linkedin","facebook","instagram","youtube","x"];
+const SOC_PILL = { draft:"mut", approved:"cur", scheduled:"d30", published:"cur", cancelled:"mut" };
+let SOC_PAGES = null;
+async function socialPages(){
+  if (SOC_PAGES) return SOC_PAGES;
+  const cfg = (await q("tenant_config?select=business_rules&limit=1").catch(()=>[]))[0];
+  SOC_PAGES = cfg?.business_rules?.social_pages || {};
+  return SOC_PAGES;
+}
+const socLen = (s) => (s||"").replace(/https?:\/\/\S+/g, "x".repeat(23)).length;
+
+async function loadSocial(me, campaigns){
+  const canWrite = ["owner","admin"].includes(me?.role);
+  const rows = await q("social_posts?select=*&order=scheduled_for.desc.nullslast,created_at.desc&limit=300").catch(()=>null);
+  const wrap = $("socWrap");
+  if (rows === null) { wrap.innerHTML = `<div class="rule"></div><div class="panel"><div class="panel-h"><span class="panel-t">Social posts</span></div><p class="panel-m">Not switched on yet: the social_posts table is missing. Run 20261005_social_posts.sql.</p></div>`; return; }
+  const now = Date.now(), wk = now + 7*864e5;
+  const due = rows.filter(r => ["approved","scheduled"].includes(r.status) && r.scheduled_for && new Date(r.scheduled_for) <= wk);
+  const late = rows.filter(r => ["approved","scheduled"].includes(r.status) && r.scheduled_for && new Date(r.scheduled_for) < now);
+  const pub30 = rows.filter(r => r.status === "published" && r.published_at && now - new Date(r.published_at) < 30*864e5);
+  const byPlat = {}; pub30.forEach(r => byPlat[r.platform] = (byPlat[r.platform]||0)+1);
+  const camps = Object.fromEntries((campaigns||[]).map(c => [c.id, c.name]));
+  wrap.innerHTML = `
+    <div class="rule"></div>
+    <div class="eyebrow" style="margin-top:6px">Social media</div>
+    <p class="lede">${rows.length ? `${pub30.length} post${pub30.length===1?"":"s"} published in the last 30 days${pub30.length?` (${SOC_ORDER.filter(p=>byPlat[p]).map(p=>`${SOC[p].name} ${byPlat[p]}`).join(", ")})`:""}. ${due.length} due this week${late.length?`, <b style="color:var(--rust)">${late.length} overdue</b>`:""}.` : "No social posts yet. Write the first one below."}</p>
+    <div class="row-btn" style="margin:14px 0"><button class="btn" id="socNew" type="button"${canWrite?"":" disabled"}>New social post</button>
+      ${SOC_ORDER.map(p => `<button class="btn ghost soc-page" type="button" data-plat="${p}">${SOC[p].name} page</button>`).join("")}</div>
+    <div class="search-row"><input class="search" id="socSearch" type="search" placeholder="Search platform, text, campaign or status" autocomplete="off"><span class="search-n" id="socCount"></span></div>
+    <div class="tblwrap"><table class="tbl"><caption>Soonest first. Click a post to work on it.</caption>
+      <thead><tr><th>Platform</th><th>Post</th><th>Campaign</th><th>Status</th><th>When</th></tr></thead>
+      <tbody id="socBody">${rows.length ? rows.map(r => {
+        const overdue = ["approved","scheduled"].includes(r.status) && r.scheduled_for && new Date(r.scheduled_for) < now;
+        return `<tr class="click" data-soc="${esc(r.id)}" data-search="${searchKey(SOC[r.platform]?.name, r.title, r.body, camps[r.campaign_id], r.status)}">
+        <td><b>${esc(SOC[r.platform]?.name||r.platform)}</b></td>
+        <td class="wrap">${r.title?`<b>${esc(r.title)}</b><br>`:""}<span class="${r.title?"panel-m":""}">${esc((r.body||"").slice(0,140))}${(r.body||"").length>140?"…":""}</span></td>
+        <td>${esc(camps[r.campaign_id]||"—")}</td>
+        <td><span class="pill ${overdue?"d60":(SOC_PILL[r.status]||"mut")}">${esc(overdue?"Overdue":label(r.status))}</span></td>
+        <td>${r.status==="published"&&r.published_at?`Published ${esc(when(r.published_at))}`:r.scheduled_for?esc(when(r.scheduled_for)):`<span class="panel-m">Not scheduled</span>`}</td></tr>`; }).join("")
+        : `<tr><td colspan="5">Nothing yet.</td></tr>`}</tbody></table></div>
+    <p class="panel-m" style="margin-top:14px">Write once, make a version for each platform, approve, schedule. On the day: open the post, press Copy, open the page, paste and publish, then record the live link here so the calendar and the campaign show what went out.</p>`;
+  wireSearch("socSearch","socBody","socCount");
+  $("socNew").addEventListener("click", () => editSocial(null, me, campaigns));
+  wrap.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", async () => { const [p] = await q(`social_posts?select=*&id=eq.${tr.dataset.soc}&limit=1`); if (p) editSocial(p, me, campaigns); }));
+  const pages = await socialPages();
+  wrap.querySelectorAll(".soc-page").forEach(b => { const u = pages[b.dataset.plat]; if (!u) { b.disabled = true; b.title = "No page on record yet"; } else b.addEventListener("click", () => window.open(u, "_blank", "noopener")); });
+}
+
+async function editSocial(p, me, campaigns){
+  const isNew = !p;
+  p = p || { platform:"linkedin", status:"draft", body:"", campaign_id:null };
+  const canWrite = ["owner","admin"].includes(me?.role);
+  const locked = !canWrite || ["published","cancelled"].includes(p.status);
+  const pages = await socialPages();
+  const localDT = (iso) => iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16) : "";
+  const dr = drawer(isNew ? "New social post" : `${SOC[p.platform]?.name||p.platform} post`, isNew ? "Draft" : `${label(p.status)}${p.scheduled_for?` · ${when(p.scheduled_for)}`:""}${p.published_url?` · <a href="${esc(p.published_url)}" target="_blank" rel="noopener" style="color:var(--gold-lt)">live post</a>`:""}`, `
+    <div class="grid2">
+      <label class="fld"><span>Platform</span><select id="spPlat" ${locked?"disabled":""}>${SOC_ORDER.map(k=>`<option value="${k}"${k===p.platform?" selected":""}>${SOC[k].name}</option>`).join("")}</select></label>
+      <label class="fld"><span>Campaign (optional)</span><select id="spCamp" ${locked?"disabled":""}><option value="">—</option>${(campaigns||[]).map(c=>`<option value="${esc(c.id)}"${c.id===p.campaign_id?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
+    </div>
+    <p class="panel-m" id="spTip" style="margin:-6px 0 12px"></p>
+    <label class="fld" id="spTitleWrap"><span>Title <span class="panel-m" id="spTitleN"></span></span><input id="spTitle" value="${esc(p.title||"")}" ${locked?"disabled":""} placeholder="YouTube title"></label>
+    <label class="fld"><span>Text <span class="panel-m" id="spBodyN"></span></span><textarea id="spBody" rows="8" ${locked?"disabled":""} placeholder="Write the post as it will appear">${esc(p.body||"")}</textarea></label>
+    <div class="grid2">
+      <label class="fld"><span>Link (optional)</span><input id="spLink" value="${esc(p.link_url||"")}" ${locked?"disabled":""} placeholder="https://bcaleadership.com/…"></label>
+      <label class="fld"><span>Image or video</span><input id="spMedia" value="${esc(p.media_note||"")}" ${locked?"disabled":""} placeholder="Which creative, e.g. MLC banner v2 in the vault"></label>
+    </div>
+    <label class="fld"><span>Publish on (your local time)</span><input id="spWhen" type="datetime-local" value="${localDT(p.scheduled_for)}" ${locked?"disabled":""}></label>
+    ${p.status === "published" ? `<p class="panel-m">Published ${esc(when(p.published_at))}${p.posted_by?` by ${esc(staffNameOf(p.posted_by)||"")}`:""}.</p>` : ""}
+    <div class="row-btn" style="flex-wrap:wrap">
+      ${!locked ? `<button class="btn" id="spSave" type="button">${isNew?"Save draft":"Save"}</button>` : ""}
+      ${!isNew ? `<button class="btn ghost" id="spCopy" type="button">Copy text</button>` : ""}
+      ${!isNew && pages[p.platform] ? `<button class="btn ghost" id="spOpen" type="button">Open the ${esc(SOC[p.platform].name)} page</button>` : ""}
+      ${!isNew && !locked && p.status === "draft" ? `<button class="btn ghost" id="spApprove" type="button">Approve</button>` : ""}
+      ${!isNew && !locked && p.status === "approved" ? `<button class="btn ghost" id="spSchedule" type="button">Schedule</button><button class="btn ghost" id="spUnapprove" type="button">Back to draft</button>` : ""}
+      ${!isNew && !locked && p.status === "scheduled" ? `<button class="btn ghost" id="spUnapprove" type="button">Back to draft</button>` : ""}
+      ${!isNew && !locked && ["approved","scheduled"].includes(p.status) ? `<button class="btn" id="spPublished" type="button">Mark as published</button>` : ""}
+      ${!isNew && !locked ? `<button class="btn ghost" id="spVersions" type="button">Make versions for the other platforms</button>` : ""}
+      ${!isNew && !locked ? `<button class="btn ghost" id="spCancel" type="button" style="margin-left:auto">Cancel post</button>` : ""}
+    </div>
+    <div id="spPubWrap" hidden style="margin-top:10px"><label class="fld"><span>Link to the live post</span><input id="spPubUrl" placeholder="https://…"></label><div class="row-btn"><button class="btn" id="spPubSave" type="button">Record it</button></div></div>
+    <p class="note" id="spMsg" hidden></p>`);
+  const $$ = (s) => dr.querySelector(s);
+  const say = (t, ok) => note($$("#spMsg"), t, ok);
+  const refresh = () => {
+    const k = $$("#spPlat").value, s = SOC[k];
+    $$("#spTip").textContent = s.tip;
+    $$("#spTitleWrap").style.display = k === "youtube" ? "" : "none";
+    const n = socLen($$("#spBody").value); const over = n > s.max;
+    $$("#spBodyN").innerHTML = `· ${n.toLocaleString()} / ${s.max.toLocaleString()}${over?` <b style="color:var(--rust)">too long</b>`:""}`;
+    if (k === "youtube") { const tn = ($$("#spTitle").value||"").length; $$("#spTitleN").innerHTML = `· ${tn} / ${s.titleMax}${tn>s.titleMax?` <b style="color:var(--rust)">too long</b>`:""}`; }
+  };
+  ["#spPlat","#spBody","#spTitle"].forEach(s => $$(s).addEventListener("input", refresh)); $$("#spPlat").addEventListener("change", refresh); refresh();
+  const collect = () => ({
+    platform: $$("#spPlat").value, campaign_id: $$("#spCamp").value || null,
+    title: $$("#spPlat").value === "youtube" ? ($$("#spTitle").value.trim() || null) : null,
+    body: $$("#spBody").value, link_url: $$("#spLink").value.trim() || null, media_note: $$("#spMedia").value.trim() || null,
+    scheduled_for: $$("#spWhen").value ? new Date($$("#spWhen").value).toISOString() : null,
+  });
+  const check = (b) => { const s = SOC[b.platform]; if (!b.body.trim()) throw new Error("Write the post first."); if (socLen(b.body) > s.max) throw new Error(`${s.name} allows ${s.max.toLocaleString()} characters.`); if (b.platform==="youtube" && !b.title) throw new Error("YouTube needs a title."); };
+  const reopen = async (id) => { await loadCampaigns(); const [f] = await q(`social_posts?select=*&id=eq.${id}&limit=1`); if (f) editSocial(f, me, campaigns); };
+  const save = async (extra={}) => {
+    const b = { ...collect(), ...extra };
+    if (isNew) { const [row] = await w("POST", "social_posts", [{ tenant_id: TENANT, created_by: me?.person_id||null, ...b }]); p.id = row.id; }
+    else await w("PATCH", `social_posts?id=eq.${p.id}`, b);
+    return p.id;
+  };
+  $$("#spSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const id = await save(); say("Saved.", true); setTimeout(() => reopen(id), 400); } catch (err) { say(err.message); btn.disabled = false; } });
+  $$("#spCopy")?.addEventListener("click", async () => {
+    const t = ($$("#spPlat").value === "youtube" && $$("#spTitle").value ? $$("#spTitle").value + "\n\n" : "") + $$("#spBody").value + ($$("#spLink").value && $$("#spPlat").value !== "instagram" ? "\n" + $$("#spLink").value : "");
+    try { await navigator.clipboard.writeText(t); say("Copied. Open the page, paste, publish, then come back and record the link.", true); } catch { say("Copy failed; select the text and copy it by hand."); }
+  });
+  $$("#spOpen")?.addEventListener("click", () => window.open(pages[p.platform], "_blank", "noopener"));
+  $$("#spApprove")?.addEventListener("click", async () => { try { const b = collect(); check(b); await save({ status:"approved", approved_by: me?.person_id||null, approved_at: new Date().toISOString() }); say("Approved.", true); setTimeout(() => reopen(p.id), 400); } catch (err) { say(err.message); } });
+  $$("#spSchedule")?.addEventListener("click", async () => { try { const b = collect(); check(b); if (!b.scheduled_for) throw new Error("Pick the date and time first."); await save({ status:"scheduled" }); say("Scheduled. It shows on the calendar and turns red if the time passes without a live link.", true); setTimeout(() => reopen(p.id), 400); } catch (err) { say(err.message); } });
+  $$("#spUnapprove")?.addEventListener("click", async () => { try { await save({ status:"draft", approved_by:null, approved_at:null }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
+  $$("#spPublished")?.addEventListener("click", () => { $$("#spPubWrap").hidden = false; $$("#spPubUrl").focus(); });
+  $$("#spPubSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget;
+    const u = $$("#spPubUrl").value.trim();
+    if (!/^https?:\/\//.test(u)) return say("Paste the link to the live post.");
+    btn.disabled = true;
+    try { await save({ status:"published", published_url: u, published_at: new Date().toISOString(), posted_by: me?.person_id||null }); say("Recorded.", true); setTimeout(() => reopen(p.id), 400); }
+    catch (err) { say(err.message); btn.disabled = false; }
+  });
+  $$("#spVersions")?.addEventListener("click", async (e) => { const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const b = collect(); const id = await save();
+      const have = new Set((await q(`social_posts?select=platform&campaign_id=${b.campaign_id?"eq."+b.campaign_id:"is.null"}&body=eq.${encodeURIComponent(b.body)}`).catch(()=>[])).map(x=>x.platform));
+      const others = SOC_ORDER.filter(k => k !== b.platform && !have.has(k));
+      if (!others.length) throw new Error("Versions for the other platforms already exist.");
+      await w("POST", "social_posts", others.map(k => ({ tenant_id: TENANT, created_by: me?.person_id||null, platform: k, campaign_id: b.campaign_id, title: k==="youtube" ? (b.title || b.body.split("\n")[0].slice(0,100)) : null,
+        body: k === "x" && socLen(b.body) > 280 ? b.body.slice(0, 250).replace(/\s+\S*$/, "") + "…" : b.body, link_url: b.link_url, media_note: b.media_note, scheduled_for: b.scheduled_for, status: "draft" })));
+      say(`${others.length} draft${others.length===1?"":"s"} made: ${others.map(k=>SOC[k].name).join(", ")}. Each one still needs its own read before approval.`, true);
+      await loadCampaigns(); setTimeout(() => reopen(id), 600);
+    } catch (err) { say(err.message); btn.disabled = false; }
+  });
+  $$("#spCancel")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again to cancel this post"; setTimeout(() => { b.dataset.armed = ""; b.textContent = "Cancel post"; }, 6000); return; }
+    try { await w("PATCH", `social_posts?id=eq.${p.id}`, { status:"cancelled" }); await loadCampaigns(); closeDrawer(); } catch (err) { say(err.message); }
+  });
+}
+
 async function loadCampaigns(){
   const me = await myStaff(); await staffMap();
   const rows = await q("campaigns?select=*&order=created_at.desc&limit=200");
@@ -1368,6 +1560,7 @@ async function loadCampaigns(){
   wireSearch("campSearch","campBody","campCount");
   $("campNew").addEventListener("click", () => editCampaign(null, me));
   $("campWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openCampaign(tr.dataset.camp, me)));
+  await loadSocial(me, rows);
 }
 async function openCampaign(id, me){ const [c] = await q(`campaigns?select=*&id=eq.${id}&limit=1`); if (c) editCampaign(c, me); }
 
