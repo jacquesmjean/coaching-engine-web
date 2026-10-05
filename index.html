@@ -1377,6 +1377,115 @@ const CAMP_PILL = { draft:"mut", review:"d30", approved:"cur", scheduled:"d30", 
 const CAMP_LABEL = { draft:"Draft", review:"In review", approved:"Approved", scheduled:"Scheduled", sending:"Sending", sent:"Sent", cancelled:"Cancelled", planned:"Planned (plan only)", running:"Running (plan only)", paused:"Paused (plan only)", completed:"Completed (plan only)" };
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "—";
 
+/* ───────── the Nov 2026 – Apr 2027 strategy, loadable with one press ─────────
+   Six monthly campaigns under one headline. Each lands as a plan + 8 social drafts (Tue/Thu) + 1 blog draft
+   (the 5th) + 1 email campaign draft with its audience chosen. Everything is a draft the team edits, reviews
+   and approves in the console; nothing is sent, posted or published by the load itself. */
+const STRATEGY_HEADLINE = "Africa's leaders sharpen each other";
+const STRATEGY = [
+  { ym:"2026-11", title:"Nov 2026: Who is on your bench?", headline:"Who is on your bench?", goal:"attract",
+    objectives:"Attract leaders who do not know BCA. Targets: 30 new leads in the engine, 400 new followers across the five pages, 500 reads of the blog.",
+    audience:"CEOs, MDs and founders in Nigeria, Ghana, Kenya, South Africa and the diaspora who carry decisions alone.",
+    message:"The CEO has nobody to test a hard decision with. BCA was built for that gap: 45 certified coaches who have run things in Africa, 5,000+ leaders since 2017.",
+    cta:["Meet The Bench","https://bcaleadership.com/the-bench.html"],
+    email:{ audience:"leads_all", subject:"Who is on your bench?", preheader:"The CEO has nobody to test a hard decision with. We built BCA for that gap.", body:"Dear {first},\n\nMost leaders in Africa carry the weight alone. The board asks for growth. The team is stretched. The hard decision has nobody to test it against.\n\nBCA Leadership exists for that gap. Since 2017 we have worked with more than 5,000 leaders through a bench of 45 certified coaches, all of them people who have run organisations in Africa.\n\nIf you would like to see who is on the bench, the link below takes you there. A conversation costs nothing." },
+    blog:{ slug:"who-got-you-here-wont-get-you-there-2027", title:"Who Got You Here Won't Get You There", excerpt:"The people who helped you get the job are rarely the people who help you keep it. The essay BCA leaders quote most, with a 2027 opening." },
+    posts:[["The CEO has nobody to test a hard decision with. That is the gap BCA was built for.","Meet The Bench: 45 certified coaches, every one has run something in Africa."],
+           ["Three questions a board should ask its CEO about support. Most CEOs have no answer.","Coach spotlight: one coach, one hard lesson from their operating years."],
+           ["Peer learning in 60 seconds: what happens in a BCA room.","Since 2017, 5,000+ leaders. What they had in common when they arrived."],
+           ["Blog: Who Got You Here Won't Get You There. The essay BCA leaders quote most, with a 2027 opening.","Podcast clip: a Success in Africa guest on the loneliest moment of their career."]] },
+  { ym:"2026-12", title:"Dec 2026: The year the bench paid off", headline:"The year the bench paid off", goal:"retain",
+    objectives:"Retain current members. Targets: 80% of memberships due in Q1 renewed by 31 December, 60% open rate on the member email.",
+    audience:"Active members and their coaches. Secondary: followers who see members speak for BCA.",
+    message:"You did not carry 2026 alone. Here is what the bench gave you, in your own words and in numbers.",
+    cta:["Renew for 2027","https://bcaleadership.com/membership.html"],
+    email:{ audience:"members_active", subject:"What the bench gave us in 2026", preheader:"The year in numbers, one member's moment, and your place in 2027.", body:"Dear {first},\n\nBefore the year closes, a short account of what the bench carried in 2026: the sessions, the countries in the room, the hours of coaching, and one moment a member described as the decision that changed.\n\nYou were part of that. Your membership for 2027 keeps your seat, your coach and your peers.\n\nThe button below renews it in two minutes." },
+    blog:{ slug:"what-5000-african-leaders-taught-us-about-leading-in-hard-years", title:"What 5,000 African Leaders Taught Us About Leading in Hard Years", excerpt:"Nine years, 5,000 leaders, one bench. The patterns that separate the leaders who last from the ones who burn out." },
+    posts:[["By the numbers: sessions held, countries represented, hours of coaching in 2026.","Member story: one decision that changed because of a peer session."],
+           ["The renewal letter, in public: why members stay, in their words.","Coach reflection: what I learned from my members this year."],
+           ["Year-end gift: a reflection worksheet for leaders. Download on the site.","Podcast: the five most replayed moments of 2026."],
+           ["Blog: What 5,000 African leaders taught us about leading in hard years.","Thank you to the network. Signed, Nii and Modupe."]] },
+  { ym:"2027-01", title:"Jan 2027: Come back to the room", headline:"Come back to the room", goal:"win back",
+    objectives:"Win back lapsed members and past clients. Targets: 10 returning members, 5 conversations with past corporate clients, 20% click rate on the win-back email.",
+    audience:"Lapsed and cancelled members, past corporate clients, alumni of earlier cohorts.",
+    message:"The door is open and the room has changed: coaching packages, BCAOnline, a site in four languages. You do not start over.",
+    cta:["Come back","https://bcaleadership.com/membership.html"],
+    email:{ audience:"members_lapsed", subject:"The room has changed. Come and see.", preheader:"Three things that are new at BCA, and your seat is still yours.", body:"Dear {first},\n\nYou were once in a BCA room. Since then the room has changed: new coaching packages, BCAOnline for members between sessions, and a site in English, French, Spanish and Portuguese.\n\nWhat has not changed is the bench, and the fact that you do not start over. Your history with us is still here.\n\nThe button below shows what coming back looks like." },
+    blog:{ slug:"the-leaders-who-come-back-and-why-they-lead-differently", title:"The Leaders Who Come Back, and Why They Lead Differently", excerpt:"Members who return to the bench after years away lead differently the second time. What they say changed, and why it matters for the rest of us." },
+    posts:[["To everyone who was once in a BCA room: the door is open, and here is what changed.","Alumni spotlight: a former member on what they carry from BCA into their current role."],
+           ["Myth: coaching is for leaders in trouble. The opposite is true.","A returning member's question, answered: \"Do I start over?\" No. Here is how it works."],
+           ["Membership from $600 a year. What that buys, line by line.","The first 90 days for a returning member, in one picture."],
+           ["Blog: The leaders who come back, and why they lead differently.","Coach spotlight: a coach on the member who came back after three years."]] },
+  { ym:"2027-02", title:"Feb 2027: Teams, not heroes", headline:"Teams, not heroes", goal:"new corporate clients",
+    objectives:"Win new corporate clients. Targets: 6 corporate proposals sent from the engine, 2 signed, 15 corporate enquiries at info@.",
+    audience:"HR directors and CEOs of companies with 200+ staff in West and East Africa; board chairs; DFIs with portfolio companies.",
+    message:"The executive team that never argues is not aligned, it is silent. A bench for the team, not a boss, changes how decisions get made.",
+    cta:["Talk to BCA about your team","https://bcaleadership.com/services.html"],
+    email:{ audience:"selected", subject:"Your leadership team needs a bench, not a boss", preheader:"What a six-month BCA engagement does to how a team decides.", body:"Dear {first},\n\nThe executive team that never argues is not aligned. It is silent. Most of the leadership teams we meet have learned to avoid the hard conversation rather than have it well.\n\nA BCA corporate engagement puts a bench behind the team for six months: peer sessions, a coach for each executive, and a facilitator for the decisions that matter.\n\nIf that is a conversation worth having for your team, the button below asks us for a proposal." },
+    blog:{ slug:"why-your-leadership-team-needs-a-bench-not-a-boss", title:"Why Your Leadership Team Needs a Bench, Not a Boss", excerpt:"Alignment is not the absence of argument. How peer coaching changes the way an executive team decides, and what boards should look for." },
+    posts:[["The executive team that never argues is not aligned. It is silent.","Coach spotlight: a coach who has sat on both sides of the table, CEO and coach."],
+           ["Corporate programme explained: what a BCA engagement looks like over six months.","Case: a leadership team before and after peer coaching (anonymised, with permission)."],
+           ["For HR directors: how to make the case for executive coaching to a sceptical board.","Business matching: what happens when two BCA members' companies meet."],
+           ["Blog: Why your leadership team needs a bench, not a boss.","Succession: the question every African company avoids until it is late."]] },
+  { ym:"2027-03", title:"Mar 2027: The room where leaders are made", headline:"The room where leaders are made", goal:"awareness and MLC",
+    objectives:"Reach leaders who are not aware of BCA and fill MLC. Targets: MLC seats sold against target, 2 sponsors signed, 1,000 new site visitors. Depends on the MLC date; if MLC moves, March and May swap.",
+    audience:"Senior leaders within travel distance of the MLC city, sponsors' marketing heads, past attendees.",
+    message:"Something happens when 200 African leaders sit in one room and stop competing. Be in it.",
+    cta:["Reserve your seat","https://bcaleadership.com/programs.html"],
+    email:{ audience:"everyone", subject:"MLC 2027: the room where leaders are made", preheader:"Date, city, the first speakers, and the early-bird seat.", body:"Dear {first},\n\nOnce a year BCA puts 200 of Africa's leaders in one room. Something happens when they stop competing and start sharpening each other.\n\nMLC 2027 is on [date] in [city]. The first speakers are announced below, and the early-bird seat closes at the end of the month.\n\nThe button below reserves yours." },
+    blog:{ slug:"what-happens-when-african-leaders-stop-competing-and-start-sharpening", title:"What Happens When African Leaders Stop Competing and Start Sharpening", excerpt:"Inside the room BCA builds once a year, and why the leaders who attend keep coming back." },
+    posts:[["Announce MLC 2027: date, city, who is in the room.","A note from Modupe: what happens when 200 leaders sit together."],
+           ["Who should be in the room: a profile of the leader MLC is for.","Speaker and coach reveal, first group."],
+           ["Sponsors: what partnering with BCA puts in front of Africa's decision-makers.","From last time: three moments people still quote."],
+           ["Blog: stop competing, start sharpening. Early-bird closes this week.","Speaker reveal, second group, plus travel and agenda."]] },
+  { ym:"2027-04", title:"Apr 2027: Proof", headline:"Proof", goal:"convert",
+    objectives:"Convert six months of attention. Targets: 25 new memberships in April, 3 corporate contracts signed, every open lead answered.",
+    audience:"Every lead gathered since November, plus members whose first year ends in Q2.",
+    message:"Here is what changed for leaders who spent a year on the bench. Join by 30 April and start in May.",
+    cta:["Join by 30 April","https://bcaleadership.com/membership.html"],
+    email:{ audience:"leads_all", subject:"What a year on the bench changes", preheader:"Three members, three results, and a seat that starts in May.", body:"Dear {first},\n\nSix months ago we asked who was on your bench. Here is what a year on ours changed for three members, in their words.\n\nMembership is open until 30 April for a May start: a coach, a peer group, BCAOnline between sessions, from $600 a year.\n\nThe button below takes the seat." },
+    blog:{ slug:"six-months-of-sharpening-what-we-learned-what-comes-next", title:"Six Months of Sharpening: What We Learned, What Comes Next", excerpt:"What six months of the bench taught BCA about Africa's leaders, and the plan for the half-year ahead." },
+    posts:[["Results, plainly: what members say changed in their leadership after a year.","Member story as video, 90 seconds."],
+           ["Membership drive: join by 30 April, here is what you get in May.","Coach spotlight: the hardest question a member ever asked me."],
+           ["For boards: how to measure whether coaching worked.","The Bench by region: West, East, Southern Africa and the diaspora."],
+           ["Blog: six months of sharpening. Last call, 30 April.","Podcast: a member and their coach in the same conversation."]] },
+];
+const monthDays = (ym) => { const [y,m] = ym.split("-").map(Number); return new Date(Date.UTC(y, m, 0)).getUTCDate(); };
+const firstWeekday = (ym, wd) => { const [y,m] = ym.split("-").map(Number); const d = new Date(Date.UTC(y, m-1, 1)); while (d.getUTCDay() !== wd) d.setUTCDate(d.getUTCDate()+1); return d; };
+const isoAt = (d, h) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h)).toISOString();
+
+async function loadStrategy(me, btn){
+  const existing = await q("content_plans?select=id,title").catch(()=>null);
+  if (existing === null) throw new Error("Run 20261006_content_plans_blog.sql first.");
+  const have = new Set(existing.map(p=>p.title));
+  const months = STRATEGY.filter(m => !have.has(m.title));
+  if (!months.length) throw new Error("The strategy is already loaded. Edit the plans below.");
+  let nPosts = 0, nBlogs = 0, nMails = 0;
+  for (const m of months) {
+    btn.textContent = `Loading ${m.title.split(":")[0]}…`;
+    const start = `${m.ym}-01`, end = `${m.ym}-${String(monthDays(m.ym)).padStart(2,"0")}`;
+    const tue = firstWeekday(m.ym, 2);
+    const keyDates = [{ on: `${m.ym}-05`, what: `Blog: ${m.blog.title}` }, { on: isoAt(tue, 8).slice(0,10), what: `Email: ${m.email.subject}` }];
+    const [plan] = await w("POST", "content_plans", [{ tenant_id: TENANT, created_by: me?.person_id||null, title: m.title, headline: m.headline, period_start: start, period_end: end,
+      objectives: m.objectives, pillars: [`Goal: ${m.goal}`, `Message: ${m.message}`, `Call to action: ${m.cta[0]}`], key_dates: keyDates, audience: m.audience,
+      channels: ["linkedin","facebook","instagram","youtube","x","blog","email"], monthly_blog_day: 5, status: "draft",
+      notes: `Half-year headline: ${STRATEGY_HEADLINE}. Posts: Tuesday the idea, Thursday the people. Email audience: ${CAMP_AUD[m.email.audience]||m.email.audience}.` }]);
+    const utm = `h1-2027-${m.ym}`;
+    // 8 social drafts on LinkedIn, Tue/Thu 08:00 UTC; the team makes the other platforms' versions with one button
+    const posts = [];
+    m.posts.forEach((pair, wk) => { const t = new Date(tue); t.setUTCDate(t.getUTCDate() + wk*7); const th = new Date(t); th.setUTCDate(th.getUTCDate()+2);
+      posts.push({ tenant_id: TENANT, created_by: me?.person_id||null, plan_id: plan.id, platform: "linkedin", status: "draft", scheduled_for: isoAt(t, 8), body: pair[0], link_url: `${m.cta[1]}?utm_source=social&utm_medium=linkedin&utm_campaign=${utm}`, media_note: "Idea post: image or document carousel from the brand kit" });
+      posts.push({ tenant_id: TENANT, created_by: me?.person_id||null, plan_id: plan.id, platform: "linkedin", status: "draft", scheduled_for: isoAt(th, 8), body: pair[1], link_url: `${m.cta[1]}?utm_source=social&utm_medium=linkedin&utm_campaign=${utm}`, media_note: "People post: photo or short video of the coach, member or guest" }); });
+    await w("POST", "social_posts", posts); nPosts += posts.length;
+    // 1 blog draft, the 5th
+    await w("POST", "blog_posts", [{ tenant_id: TENANT, created_by: me?.person_id||null, plan_id: plan.id, slug: m.blog.slug, title_en: m.blog.title, excerpt_en: m.blog.excerpt, body_en: `## ${m.blog.title}\n\n[Draft. ${m.message}]`, publish_on: `${m.ym}-05`, status: "draft", author_name: "Modupe Taylor-Pearce, Ph.D." }]).catch((e) => { if (!/duplicate|unique/i.test(e.message)) throw e; }); nBlogs++;
+    // 1 email campaign draft with its audience chosen
+    await w("POST", "campaigns", [{ tenant_id: TENANT, created_by: me?.person_id||null, name: `${m.title.split(":")[0]} email: ${m.email.subject}`, audience: m.email.audience, audience_filter: {}, from_mailbox: "info@bcaleadership.com",
+      subject: m.email.subject, preheader: m.email.preheader, body: m.email.body, cta_text: m.cta[0], cta_url: m.cta[1], utm_campaign: utm, signer_name: "Nii Lokko", signer_title: "Executive Director", show_about: true, status: "draft" }]).catch((e) => { throw new Error(`Email draft for ${m.title}: ${e.message}`); }); nMails++;
+  }
+  return { months: months.length, nPosts, nBlogs, nMails };
+}
+
 /* ───────── content plans (six-month strategy) + review trail + blog ─────────
    A plan is the half-year campaign: title, public headline, period, objectives, pillars, key dates.
    Social posts and blog posts hang off it. Every piece of content carries a review trail
@@ -1430,8 +1539,11 @@ async function loadPlans(me){
   const current = plans.find(p => inPeriod(p) && ["approved","active"].includes(p.status)) || plans.find(p => inPeriod(p));
   wrap.innerHTML = `
     <div class="eyebrow" style="margin-top:6px">Strategy</div>
-    <p class="lede">${current ? `Current plan: <b style="color:var(--parch)">${esc(current.title)}</b>${current.headline?` · “${esc(current.headline)}”`:""} · ${esc(label(current.status))}.` : "No plan covers today. Every six months the team sets the headline and the pillars; posts and blogs then hang off it."}</p>
-    <div class="row-btn" style="margin:14px 0"><button class="btn" id="planNew" type="button"${canWrite?"":" disabled"}>New six-month plan</button></div>
+    <p class="lede">${current ? `Current campaign: <b style="color:var(--parch)">${esc(current.title)}</b>${current.headline?` · “${esc(current.headline)}”`:""} · ${esc(label(current.status))}.` : "No plan covers today. Every six months the team sets the headline and the pillars; posts and blogs then hang off it."}</p>
+    <div class="row-btn" style="margin:14px 0;flex-wrap:wrap"><button class="btn" id="planNew" type="button"${canWrite?"":" disabled"}>New plan</button>
+      ${canWrite && STRATEGY.some(m => !plans.some(p => p.title === m.title)) ? `<button class="btn ghost" id="planLoad" type="button">Load the Nov 2026 to Apr 2027 strategy</button>` : ""}
+      <a class="btn ghost" href="https://claude.ai/code/artifact/8e837c4b-411f-40ca-abf4-5f7737436c32" target="_blank" rel="noopener" style="text-decoration:none">Read the strategy</a></div>
+    <p class="note" id="planMsg" hidden></p>
     <div class="tblwrap"><table class="tbl"><caption>Latest first. Click a plan to work on it.</caption>
       <thead><tr><th>Plan</th><th>Period</th><th>Status</th><th class="num">Social</th><th class="num">Blog</th><th>Approved</th></tr></thead>
       <tbody>${plans.length ? plans.map(p=>`<tr class="click" data-plan="${esc(p.id)}">
@@ -1442,6 +1554,13 @@ async function loadPlans(me){
         <td>${p.approved_at?`${esc(staffNameOf(p.approved_by)||"")} · ${esc(day(p.approved_at))}`:"<span class='panel-m'>—</span>"}</td></tr>`).join("") : `<tr><td colspan="6">No plan yet.</td></tr>`}</tbody></table></div>
     <div class="rule"></div>`;
   $("planNew").addEventListener("click", () => editPlan(null, me));
+  $("planLoad")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again: creates 6 plans, 48 social drafts, 6 blog drafts, 6 email drafts"; setTimeout(()=>{ b.dataset.armed=""; b.textContent="Load the Nov 2026 to Apr 2027 strategy"; }, 8000); return; }
+    b.disabled = true;
+    try { const r = await loadStrategy(me, b); await loadCampaigns(); note($("planMsg"), `Loaded: ${r.months} monthly plans, ${r.nPosts} social drafts, ${r.nBlogs} blog drafts, ${r.nMails} email drafts. Everything is a draft: open any item to edit, review and approve.`, true); }
+    catch (err) { note($("planMsg"), err.message); b.disabled = false; b.dataset.armed = ""; b.textContent = "Load the Nov 2026 to Apr 2027 strategy"; }
+  });
   wrap.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => editPlan(plans.find(p=>p.id===tr.dataset.plan), me)));
   return plans;
 }
@@ -1453,7 +1572,7 @@ async function editPlan(p, me){
   const canWrite = ["owner","admin"].includes(me?.role);
   const locked = !canWrite || p.status === "closed";
   const ALLCH = [["linkedin","LinkedIn"],["facebook","Facebook"],["instagram","Instagram"],["youtube","YouTube"],["x","X"],["blog","Blog"],["email","Email campaigns"]];
-  const dr = drawer(isNew ? "New six-month plan" : p.title, isNew ? "Draft" : `${fmtPeriod(p)} · ${label(p.status)}`, `
+  const dr = drawer(isNew ? "New plan" : p.title, isNew ? "Draft" : `${fmtPeriod(p)} · ${label(p.status)}`, `
     <div class="grid2">
       <label class="fld"><span>Plan name (internal)</span><input id="plTitle" value="${esc(p.title)}" ${locked?"disabled":""}></label>
       <label class="fld"><span>Public headline (the campaign's title)</span><input id="plHead" value="${esc(p.headline||"")}" ${locked?"disabled":""} placeholder="e.g. Africa's leaders sharpen each other"></label>
