@@ -11,11 +11,12 @@ const TIERS: Record<string, { product: string; amount: number }> = {
   Executive: { product: "39e83444-a697-4bec-81e2-e3969792fd5a", amount: 160000 },
 };
 const DEFAULT_ROUTING: Record<string, string> = {
-  membership_application: "admin@bcaleadership.com", consultation: "admin@bcaleadership.com",
-  coach_booking: "admin@bcaleadership.com", corporate_proposal: "admin@bcaleadership.com",
-  sponsorship: "admin@bcaleadership.com", consulting: "admin@bcaleadership.com",
-  project_management: "admin@bcaleadership.com", business_matching: "admin@bcaleadership.com",
-  bench_application: "admin@bcaleadership.com",
+  // Jacques, 5 Oct 2026: every website enquiry goes to info@bcaleadership.com.
+  membership_application: "info@bcaleadership.com", consultation: "info@bcaleadership.com",
+  coach_booking: "info@bcaleadership.com", corporate_proposal: "info@bcaleadership.com",
+  sponsorship: "info@bcaleadership.com", consulting: "info@bcaleadership.com",
+  project_management: "info@bcaleadership.com", business_matching: "info@bcaleadership.com",
+  bench_application: "info@bcaleadership.com",
   concierge: "info@bcaleadership.com", general: "info@bcaleadership.com",
   newsletter: "info@bcaleadership.com", podcast: "info@bcaleadership.com",
 };
