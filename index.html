@@ -125,6 +125,7 @@ table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
 .pill.d30{color:var(--amber);border-color:rgba(214,163,74,.4);background:rgba(214,163,74,.1)}
 .pill.d60{color:var(--rust);border-color:rgba(192,106,78,.45);background:rgba(192,106,78,.12)}
 .pill.mut{color:var(--mute);border-color:var(--line);background:transparent}
+.btn.ghost.on{border-color:var(--gold);color:var(--gold-lt)}
 .ini{width:26px;height:26px;border-radius:99px;background:var(--navy-2);border:1px solid var(--line);display:inline-grid;place-items:center;font-size:10.5px;font-weight:600;color:var(--gold-lt);margin-right:9px;vertical-align:middle}
 
 .money{display:flex;flex-wrap:wrap;gap:10px}
@@ -425,8 +426,11 @@ table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines 
       <div class="rule"></div>
       <div class="stats" id="campStats"></div>
       <div class="rule"></div>
+      <div id="planWrap"></div>
+      <div class="eyebrow" style="margin-top:6px">Email campaigns</div>
       <div id="campWrap"></div>
       <div id="socWrap"></div>
+      <div id="blogWrap"></div>
     </section>
 
     <!-- ───── board ───── -->
@@ -1373,6 +1377,262 @@ const CAMP_PILL = { draft:"mut", review:"d30", approved:"cur", scheduled:"d30", 
 const CAMP_LABEL = { draft:"Draft", review:"In review", approved:"Approved", scheduled:"Scheduled", sending:"Sending", sent:"Sent", cancelled:"Cancelled", planned:"Planned (plan only)", running:"Running (plan only)", paused:"Paused (plan only)", completed:"Completed (plan only)" };
 const pct = (a, b) => b ? Math.round(100 * a / b) + "%" : "—";
 
+/* ───────── content plans (six-month strategy) + review trail + blog ─────────
+   A plan is the half-year campaign: title, public headline, period, objectives, pillars, key dates.
+   Social posts and blog posts hang off it. Every piece of content carries a review trail
+   (content_reviews): who looked, what they said, what they decided. The blog is written in four
+   languages and published to bcaleadership.com by the bca-blog function. */
+const PLAN_PILL = { draft:"mut", review:"d30", approved:"cur", active:"cur", closed:"mut" };
+const BLOG_PILL = { draft:"mut", review:"d30", approved:"cur", published:"cur", archived:"mut" };
+const BLOG_LANGS = [["en","English"],["fr","Français"],["es","Español"],["pt","Português"]];
+const halfOf = (d) => { const y = d.getFullYear(), h = d.getMonth() < 6 ? 1 : 2; return { title: `H${h} ${y}`, start: `${y}-${h===1?"01":"07"}-01`, end: `${y}-${h===1?"06-30":"12-31"}` }; };
+const nextHalf = (plans) => { const last = plans.map(p=>p.period_end).sort().pop(); const d = last ? new Date(last + "T12:00:00Z") : new Date(); if (last) d.setUTCDate(d.getUTCDate()+1); return halfOf(d); };
+const fmtPeriod = (p) => `${day(p.period_start)} – ${day(p.period_end)}`;
+const inPeriod = (p, d = new Date().toISOString().slice(0,10)) => p.period_start <= d && d <= p.period_end;
+
+/* review trail, shared by plans, social posts and blog posts */
+async function reviewPanel(dr, entity, id, me, onDecision){
+  const host = dr.querySelector("#rvWrap"); if (!host || !id) return;
+  const rows = await q(`content_reviews?select=*&entity=eq.${entity}&entity_id=eq.${id}&order=created_at.desc&limit=50`).catch(()=>[]);
+  const canReview = ["owner","admin","board"].includes(me?.role);
+  host.innerHTML = `<div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Review trail</b> · ${rows.length ? `${rows.length} note${rows.length===1?"":"s"}` : "nothing yet"}</p>
+    ${rows.length ? `<ul class="tl">${rows.map(r=>`<li><time>${esc(when(r.created_at))}</time><b>${esc(staffNameOf(r.reviewer)||"someone")}</b> · <span class="pill ${r.decision==="approved"?"cur":r.decision==="changes"?"d60":"mut"}" style="font-size:11px">${esc(label(r.decision))}</span>${r.note?`<br><span class="panel-m">${esc(r.note)}</span>`:""}</li>`).join("")}</ul>` : ""}
+    ${canReview ? `<label class="fld"><span>Add a review note</span><textarea id="rvNote" rows="2" placeholder="What works, what must change"></textarea></label>
+    <div class="row-btn"><button class="btn ghost" id="rvComment" type="button">Comment</button><button class="btn ghost" id="rvChanges" type="button">Request changes</button><button class="btn" id="rvApprove" type="button">Approve</button></div>
+    <p class="note" id="rvMsg" hidden></p>` : ""}`;
+  const add = async (decision) => {
+    const note = host.querySelector("#rvNote").value.trim();
+    if (decision !== "approved" && !note) return note_(host, "Write the note first.");
+    try {
+      await w("POST", "content_reviews", [{ tenant_id: TENANT, entity, entity_id: id, reviewer: me?.person_id||null, decision, note: note || null }]);
+      if (onDecision) await onDecision(decision, note);
+      await reviewPanel(dr, entity, id, me, onDecision);
+    } catch (e) { note_(host, e.message); }
+  };
+  const note_ = (h, t) => note(h.querySelector("#rvMsg"), t);
+  host.querySelector("#rvComment")?.addEventListener("click", () => add("comment"));
+  host.querySelector("#rvChanges")?.addEventListener("click", () => add("changes"));
+  host.querySelector("#rvApprove")?.addEventListener("click", () => add("approved"));
+}
+
+/* ── plans ── */
+let PLANS_CACHE = [];
+async function loadPlans(me){
+  const canWrite = ["owner","admin"].includes(me?.role);
+  const plans = await q("content_plans?select=*&order=period_start.desc&limit=50").catch(()=>null);
+  const wrap = $("planWrap");
+  if (plans === null) { wrap.innerHTML = `<div class="panel"><div class="panel-h"><span class="panel-t">Six-month plan</span></div><p class="panel-m">Not switched on yet: run 20261006_content_plans_blog.sql.</p></div><div class="rule"></div>`; PLANS_CACHE = []; return []; }
+  PLANS_CACHE = plans;
+  const soc = await q("social_posts?select=plan_id,status").catch(()=>[]);
+  const blog = await q("blog_posts?select=plan_id,status").catch(()=>[]);
+  const cnt = (arr, id, f) => arr.filter(x => x.plan_id === id && (!f || f(x))).length;
+  const current = plans.find(p => inPeriod(p) && ["approved","active"].includes(p.status)) || plans.find(p => inPeriod(p));
+  wrap.innerHTML = `
+    <div class="eyebrow" style="margin-top:6px">Strategy</div>
+    <p class="lede">${current ? `Current plan: <b style="color:var(--parch)">${esc(current.title)}</b>${current.headline?` · “${esc(current.headline)}”`:""} · ${esc(label(current.status))}.` : "No plan covers today. Every six months the team sets the headline and the pillars; posts and blogs then hang off it."}</p>
+    <div class="row-btn" style="margin:14px 0"><button class="btn" id="planNew" type="button"${canWrite?"":" disabled"}>New six-month plan</button></div>
+    <div class="tblwrap"><table class="tbl"><caption>Latest first. Click a plan to work on it.</caption>
+      <thead><tr><th>Plan</th><th>Period</th><th>Status</th><th class="num">Social</th><th class="num">Blog</th><th>Approved</th></tr></thead>
+      <tbody>${plans.length ? plans.map(p=>`<tr class="click" data-plan="${esc(p.id)}">
+        <td class="wrap"><b>${esc(p.title)}</b>${inPeriod(p)?` <span class="pill cur" style="margin-left:6px">Now</span>`:""}<br><span class="panel-m">${esc(p.headline||"No headline yet")}</span></td>
+        <td>${esc(fmtPeriod(p))}</td><td><span class="pill ${PLAN_PILL[p.status]||"mut"}">${esc(label(p.status))}</span></td>
+        <td class="num">${cnt(soc,p.id,x=>x.status==="published")}<span class="panel-m"> / ${cnt(soc,p.id)}</span></td>
+        <td class="num">${cnt(blog,p.id,x=>x.status==="published")}<span class="panel-m"> / ${cnt(blog,p.id)}</span></td>
+        <td>${p.approved_at?`${esc(staffNameOf(p.approved_by)||"")} · ${esc(day(p.approved_at))}`:"<span class='panel-m'>—</span>"}</td></tr>`).join("") : `<tr><td colspan="6">No plan yet.</td></tr>`}</tbody></table></div>
+    <div class="rule"></div>`;
+  $("planNew").addEventListener("click", () => editPlan(null, me));
+  wrap.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => editPlan(plans.find(p=>p.id===tr.dataset.plan), me)));
+  return plans;
+}
+
+async function editPlan(p, me){
+  const isNew = !p;
+  const nh = nextHalf(PLANS_CACHE);
+  p = p || { title: nh.title, period_start: nh.start, period_end: nh.end, status: "draft", pillars: [], key_dates: [], channels: ["linkedin","facebook","instagram","youtube","x","blog","email"], monthly_blog_day: 1 };
+  const canWrite = ["owner","admin"].includes(me?.role);
+  const locked = !canWrite || p.status === "closed";
+  const ALLCH = [["linkedin","LinkedIn"],["facebook","Facebook"],["instagram","Instagram"],["youtube","YouTube"],["x","X"],["blog","Blog"],["email","Email campaigns"]];
+  const dr = drawer(isNew ? "New six-month plan" : p.title, isNew ? "Draft" : `${fmtPeriod(p)} · ${label(p.status)}`, `
+    <div class="grid2">
+      <label class="fld"><span>Plan name (internal)</span><input id="plTitle" value="${esc(p.title)}" ${locked?"disabled":""}></label>
+      <label class="fld"><span>Public headline (the campaign's title)</span><input id="plHead" value="${esc(p.headline||"")}" ${locked?"disabled":""} placeholder="e.g. Africa's leaders sharpen each other"></label>
+    </div>
+    <div class="grid2">
+      <label class="fld"><span>From</span><input id="plStart" type="date" value="${esc(p.period_start)}" ${locked?"disabled":""}></label>
+      <label class="fld"><span>To</span><input id="plEnd" type="date" value="${esc(p.period_end)}" ${locked?"disabled":""}></label>
+    </div>
+    <label class="fld"><span>Objectives · what this half-year must achieve</span><textarea id="plObj" rows="3" ${locked?"disabled":""} placeholder="e.g. 40 new members, 3 corporate contracts, MLC sold out">${esc(p.objectives||"")}</textarea></label>
+    <div class="grid2">
+      <label class="fld"><span>Content pillars · one per line</span><textarea id="plPillars" rows="4" ${locked?"disabled":""} placeholder="Peer coaching\nThe Bench\nMLC 2027">${esc((p.pillars||[]).join("\n"))}</textarea></label>
+      <label class="fld"><span>Key dates · one per line, date then what</span><textarea id="plDates" rows="4" ${locked?"disabled":""} placeholder="2027-03-12 MLC Lagos\n2027-05-01 Membership drive">${esc((p.key_dates||[]).map(k=>`${k.on} ${k.what}`).join("\n"))}</textarea></label>
+    </div>
+    <div class="grid2">
+      <label class="fld"><span>Audience</span><input id="plAud" value="${esc(p.audience||"")}" ${locked?"disabled":""} placeholder="e.g. CEOs and heads of HR in West Africa"></label>
+      <label class="fld"><span>Monthly blog goes out on day</span><input id="plDay" type="number" min="1" max="28" value="${esc(p.monthly_blog_day||1)}" ${locked?"disabled":""}></label>
+    </div>
+    <p class="panel-m" style="margin:-4px 0 6px">Channels</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px 18px;margin-bottom:14px">${ALLCH.map(([k,n])=>`<label style="display:flex;gap:6px;align-items:center;font-size:13px;text-transform:none;letter-spacing:0;color:var(--parch)"><input type="checkbox" class="plCh" value="${k}" style="width:auto;margin:0" ${(p.channels||[]).includes(k)?"checked":""} ${locked?"disabled":""}> ${n}</label>`).join("")}</div>
+    <label class="fld"><span>Notes</span><textarea id="plNotes" rows="2" ${locked?"disabled":""}>${esc(p.notes||"")}</textarea></label>
+    <div class="row-btn" style="flex-wrap:wrap">
+      ${!locked ? `<button class="btn" id="plSave" type="button">${isNew?"Save plan":"Save"}</button>` : ""}
+      ${!isNew && !locked && p.status === "draft" ? `<button class="btn ghost" id="plReview" type="button">Submit for review</button>` : ""}
+      ${!isNew && !locked && p.status === "review" ? `<button class="btn ghost" id="plDraft" type="button">Back to draft</button>` : ""}
+      ${!isNew && !locked && p.status === "approved" ? `<button class="btn ghost" id="plActivate" type="button">Activate</button>` : ""}
+      ${!isNew && !locked && ["approved","active"].includes(p.status) ? `<button class="btn ghost" id="plClose" type="button" style="margin-left:auto">Close plan</button>` : ""}
+    </div>
+    <p class="note" id="plMsg" hidden></p>
+    <div id="rvWrap"></div>`);
+  const $$ = (s) => dr.querySelector(s);
+  const say = (t, ok) => note($$("#plMsg"), t, ok);
+  const collect = () => ({
+    title: $$("#plTitle").value.trim(), headline: $$("#plHead").value.trim() || null, period_start: $$("#plStart").value, period_end: $$("#plEnd").value,
+    objectives: $$("#plObj").value.trim() || null, pillars: $$("#plPillars").value.split("\n").map(s=>s.trim()).filter(Boolean),
+    key_dates: $$("#plDates").value.split("\n").map(s=>s.trim()).filter(Boolean).map(l => { const m = l.match(/^(\d{4}-\d{2}-\d{2})\s+(.*)$/); return m ? { on: m[1], what: m[2] } : { on: null, what: l }; }),
+    audience: $$("#plAud").value.trim() || null, monthly_blog_day: Number($$("#plDay").value) || 1,
+    channels: [...dr.querySelectorAll(".plCh:checked")].map(c=>c.value), notes: $$("#plNotes").value.trim() || null,
+  });
+  const reopen = async (id) => { await loadCampaigns(); const [f] = await q(`content_plans?select=*&id=eq.${id}&limit=1`); if (f) editPlan(f, me); };
+  const save = async (extra={}) => {
+    const b = { ...collect(), ...extra };
+    if (!b.title) throw new Error("Give the plan a name."); if (!b.period_start || !b.period_end || b.period_end <= b.period_start) throw new Error("Check the period.");
+    if (isNew) { const [row] = await w("POST", "content_plans", [{ tenant_id: TENANT, created_by: me?.person_id||null, ...b }]); p.id = row.id; } else await w("PATCH", `content_plans?id=eq.${p.id}`, b);
+    return p.id;
+  };
+  $$("#plSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const id = await save(); say("Saved.", true); setTimeout(() => reopen(id), 400); } catch (err) { say(err.message); btn.disabled = false; } });
+  $$("#plReview")?.addEventListener("click", async () => { try { await save({ status:"review" }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
+  $$("#plDraft")?.addEventListener("click", async () => { try { await save({ status:"draft" }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
+  $$("#plActivate")?.addEventListener("click", async () => { try { await save({ status:"active" }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
+  $$("#plClose")?.addEventListener("click", async (e) => { const b = e.currentTarget; if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again to close"; setTimeout(()=>{ b.dataset.armed=""; b.textContent="Close plan"; }, 6000); return; } try { await w("PATCH", `content_plans?id=eq.${p.id}`, { status:"closed" }); await loadCampaigns(); closeDrawer(); } catch (err) { say(err.message); } });
+  if (!isNew) reviewPanel(dr, "plan", p.id, me, async (decision) => {
+    if (decision === "approved" && ["draft","review"].includes(p.status)) { await w("PATCH", `content_plans?id=eq.${p.id}`, { status:"approved", approved_by: me?.person_id||null, approved_at: new Date().toISOString() }); setTimeout(() => reopen(p.id), 300); }
+    if (decision === "changes" && p.status === "review") { await w("PATCH", `content_plans?id=eq.${p.id}`, { status:"draft" }); setTimeout(() => reopen(p.id), 300); }
+  });
+}
+
+/* ── blog ── */
+const slugify = (s) => String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,70);
+const blogComplete = (p) => BLOG_LANGS.every(([l]) => (p[`title_${l}`]||"").trim() && (p[`excerpt_${l}`]||"").trim() && (p[`body_${l}`]||"").trim());
+const blogLangs = (p) => BLOG_LANGS.filter(([l]) => (p[`title_${l}`]||"").trim() && (p[`excerpt_${l}`]||"").trim() && (p[`body_${l}`]||"").trim()).length;
+async function blogCall(action, id){
+  const res = await fetch(`${API}/functions/v1/bca-blog`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+(await freshToken()) }, body: JSON.stringify({ action, post_id: id }) });
+  const j = await res.json().catch(()=>({}));
+  if (!res.ok || !j.ok) throw new Error({ not_approved:"Approve the post before publishing.", incomplete:`Fill in every language first (missing: ${(j.missing||[]).join(", ")}).`, no_github_token:"The website connection is not set up yet (GITHUB_TOKEN missing in the engine's secrets).", forbidden:"Only owners and admins can publish." }[j.error] || j.error || `Failed (${res.status})`);
+  return j;
+}
+async function loadBlog(me, plans){
+  const canWrite = ["owner","admin"].includes(me?.role);
+  const rows = await q("blog_posts?select=*&order=publish_on.desc.nullslast,created_at.desc&limit=200").catch(()=>null);
+  const wrap = $("blogWrap");
+  if (rows === null) { wrap.innerHTML = ""; return; }
+  const plansById = Object.fromEntries((plans||[]).map(p=>[p.id,p]));
+  const pub = rows.filter(r=>r.status==="published");
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const monthDone = pub.some(r => (r.publish_on||"").startsWith(thisMonth));
+  const monthDraft = rows.find(r => r.status !== "published" && r.status !== "archived" && (r.publish_on||"").startsWith(thisMonth));
+  wrap.innerHTML = `
+    <div class="rule"></div>
+    <div class="eyebrow" style="margin-top:6px">Monthly blog</div>
+    <p class="lede">${pub.length} post${pub.length===1?"":"s"} live on bcaleadership.com. ${monthDone ? "This month's post is out." : monthDraft ? `This month's post (<b style="color:var(--parch)">${esc(monthDraft.title_en||monthDraft.slug)}</b>) is ${esc(label(monthDraft.status))}, ${blogLangs(monthDraft)}/4 languages ready.` : `<b style="color:var(--rust)">No post planned for this month yet.</b>`}</p>
+    <div class="row-btn" style="margin:14px 0"><button class="btn" id="blogNew" type="button"${canWrite?"":" disabled"}>New blog post</button><button class="btn ghost" type="button" onclick="window.open('https://bcaleadership.com/insights.html','_blank','noopener')">Open Insights on the site</button></div>
+    <div class="tblwrap"><table class="tbl"><caption>Newest slot first. Click a post to write or review it.</caption>
+      <thead><tr><th>Post</th><th>Plan</th><th>Languages</th><th>Status</th><th>Slot</th></tr></thead>
+      <tbody>${rows.length ? rows.map(r=>`<tr class="click" data-blog="${esc(r.id)}">
+        <td class="wrap"><b>${esc(r.title_en||r.slug)}</b><br><span class="panel-m">${r.published_url?`<a href="${esc(r.published_url)}" target="_blank" rel="noopener" style="color:var(--gold-lt)">${esc(r.published_url.replace(/^https?:\/\//,""))}</a>`:`insight-${esc(r.slug)}`}</span></td>
+        <td>${esc(plansById[r.plan_id]?.title||"—")}</td>
+        <td>${BLOG_LANGS.map(([l,n])=>`<span class="pill ${(r[`title_${l}`]&&r[`excerpt_${l}`]&&r[`body_${l}`])?"cur":"mut"}" style="font-size:11px;margin-right:4px">${l.toUpperCase()}</span>`).join("")}</td>
+        <td><span class="pill ${BLOG_PILL[r.status]||"mut"}">${esc(label(r.status))}</span></td>
+        <td>${r.publish_on?esc(day(r.publish_on)):"<span class='panel-m'>—</span>"}</td></tr>`).join("") : `<tr><td colspan="5">No blog posts yet.</td></tr>`}</tbody></table></div>
+    <p class="panel-m" style="margin-top:14px">Write in English, then the three translations. Preview shows the page exactly as the site will render it. Publish writes the page into the website and it is live about a minute later, in the Insights section and the sitemap.</p>`;
+  $("blogNew").addEventListener("click", () => editBlog(null, me, plans));
+  wrap.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", async () => { const [p] = await q(`blog_posts?select=*&id=eq.${tr.dataset.blog}&limit=1`); if (p) editBlog(p, me, plans); }));
+}
+
+async function editBlog(p, me, plans){
+  const isNew = !p;
+  const curPlan = (plans||[]).find(x => inPeriod(x) && ["approved","active"].includes(x.status));
+  const slotDay = String(curPlan?.monthly_blog_day || 1).padStart(2,"0");
+  const nextSlot = (() => { const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()+1); return `${d.toISOString().slice(0,7)}-${slotDay}`; })();
+  p = p || { status:"draft", plan_id: curPlan?.id || null, publish_on: nextSlot, author_name: "Modupe Taylor-Pearce, Ph.D.", slug: "" };
+  const canWrite = ["owner","admin"].includes(me?.role);
+  const locked = !canWrite || p.status === "archived";
+  const images = await q("documents?select=id,title,file_name,mime_type&mime_type=like.image/*&order=created_at.desc&limit=50").catch(()=>[]);
+  const dr = drawer(isNew ? "New blog post" : (p.title_en || p.slug), isNew ? "Draft" : `${label(p.status)}${p.publish_on?` · slot ${day(p.publish_on)}`:""}${p.published_url?` · <a href="${esc(p.published_url)}" target="_blank" rel="noopener" style="color:var(--gold-lt)">live page</a>`:""}`, `
+    <div class="grid2">
+      <label class="fld"><span>Plan</span><select id="bgPlan" ${locked?"disabled":""}><option value="">—</option>${(plans||[]).map(x=>`<option value="${esc(x.id)}"${x.id===p.plan_id?" selected":""}>${esc(x.title)}</option>`).join("")}</select></label>
+      <label class="fld"><span>Slot (publish on)</span><input id="bgOn" type="date" value="${esc(p.publish_on||"")}" ${locked?"disabled":""}></label>
+    </div>
+    <div class="grid2">
+      <label class="fld"><span>Web address · insight-<i>slug</i></span><input id="bgSlug" value="${esc(p.slug||"")}" ${locked||p.status==="published"?"disabled":""} placeholder="made from the English title"></label>
+      <label class="fld"><span>Author</span><input id="bgAuthor" value="${esc(p.author_name||"")}" ${locked?"disabled":""}></label>
+    </div>
+    <div class="grid2">
+      <label class="fld"><span>Cover image from the vault</span><select id="bgCover" ${locked?"disabled":""}><option value="">—</option>${images.map(d=>`<option value="${esc(d.id)}"${d.id===p.cover_document_id?" selected":""}>${esc(d.title)} · ${esc(d.file_name)}</option>`).join("")}</select></label>
+      <label class="fld"><span>…or a public image URL</span><input id="bgCoverUrl" value="${esc(p.cover_url||"")}" ${locked?"disabled":""} placeholder="https://…/image.jpg"></label>
+    </div>
+    <div class="tabs" id="bgTabs" style="display:flex;gap:6px;margin:6px 0 10px">${BLOG_LANGS.map(([l,n],i)=>`<button type="button" class="btn ghost bg-tab${i===0?" on":""}" data-l="${l}" style="padding:6px 12px;font-size:12px">${n} <span class="panel-m" id="bgOk-${l}"></span></button>`).join("")}</div>
+    ${BLOG_LANGS.map(([l,n],i)=>`<div class="bg-pane" data-l="${l}" ${i===0?"":"hidden"}>
+      <label class="fld"><span>Title (${l.toUpperCase()})</span><input id="bgTitle-${l}" value="${esc(p[`title_${l}`]||"")}" ${locked?"disabled":""}></label>
+      <label class="fld"><span>Excerpt (${l.toUpperCase()}) · shows on the card and in search, under 200 characters <span class="panel-m" id="bgExN-${l}"></span></span><textarea id="bgEx-${l}" rows="2" ${locked?"disabled":""}>${esc(p[`excerpt_${l}`]||"")}</textarea></label>
+      <label class="fld"><span>Article (${l.toUpperCase()}) · blank line between paragraphs · a line starting "## " is a heading</span><textarea id="bgBody-${l}" rows="16" ${locked?"disabled":""} style="font-size:14px;line-height:1.55">${esc(p[`body_${l}`]||"")}</textarea></label>
+    </div>`).join("")}
+    <div class="row-btn" style="flex-wrap:wrap">
+      ${!locked ? `<button class="btn" id="bgSave" type="button">${isNew?"Save draft":"Save"}</button>` : ""}
+      ${!isNew ? `<button class="btn ghost" id="bgPreview" type="button">Preview the page</button>` : ""}
+      ${!isNew && !locked && p.status === "draft" ? `<button class="btn ghost" id="bgReview" type="button">Submit for review</button>` : ""}
+      ${!isNew && !locked && ["review","approved"].includes(p.status) ? `<button class="btn ghost" id="bgDraft" type="button">Back to draft</button>` : ""}
+      ${!isNew && !locked && ["approved","published"].includes(p.status) ? `<button class="btn" id="bgPublish" type="button">${p.status==="published"?"Publish the update":"Publish to the website"}</button>` : ""}
+      ${!isNew && !locked && p.status === "published" ? `<button class="btn ghost" id="bgUnpub" type="button" style="margin-left:auto">Take it down</button>` : ""}
+    </div>
+    <p class="note" id="bgMsg" hidden></p>
+    <div id="rvWrap"></div>`);
+  const $$ = (s) => dr.querySelector(s);
+  const say = (t, ok) => note($$("#bgMsg"), t, ok);
+  dr.querySelectorAll(".bg-tab").forEach(b => b.addEventListener("click", () => { dr.querySelectorAll(".bg-tab").forEach(x=>x.classList.toggle("on", x===b)); dr.querySelectorAll(".bg-pane").forEach(x=>x.hidden = x.dataset.l !== b.dataset.l); }));
+  const refresh = () => { BLOG_LANGS.forEach(([l]) => { const n = $$(`#bgEx-${l}`).value.length; $$(`#bgExN-${l}`).innerHTML = `· ${n}/200${n>200?` <b style="color:var(--rust)">too long</b>`:""}`; const ok = $$(`#bgTitle-${l}`).value.trim() && $$(`#bgEx-${l}`).value.trim() && $$(`#bgBody-${l}`).value.trim(); $$(`#bgOk-${l}`).textContent = ok ? "✓" : ""; }); };
+  dr.querySelectorAll("input,textarea").forEach(el => el.addEventListener("input", refresh)); refresh();
+  $$("#bgTitle-en").addEventListener("input", () => { if (!$$("#bgSlug").disabled && (!$$("#bgSlug").dataset.touched)) $$("#bgSlug").value = slugify($$("#bgTitle-en").value); });
+  $$("#bgSlug").addEventListener("input", () => { $$("#bgSlug").dataset.touched = "1"; });
+  const collect = () => {
+    const o = { plan_id: $$("#bgPlan").value || null, publish_on: $$("#bgOn").value || null, slug: slugify($$("#bgSlug").value || $$("#bgTitle-en").value), author_name: $$("#bgAuthor").value.trim() || "BCA Leadership",
+      cover_document_id: $$("#bgCover").value || null, cover_url: $$("#bgCoverUrl").value.trim() || null };
+    BLOG_LANGS.forEach(([l]) => { o[`title_${l}`] = $$(`#bgTitle-${l}`).value.trim() || null; o[`excerpt_${l}`] = $$(`#bgEx-${l}`).value.trim() || null; o[`body_${l}`] = $$(`#bgBody-${l}`).value || null; });
+    return o;
+  };
+  const reopen = async (id) => { await loadCampaigns(); const [f] = await q(`blog_posts?select=*&id=eq.${id}&limit=1`); if (f) editBlog(f, me, plans); };
+  const save = async (extra={}) => {
+    const b = { ...collect(), ...extra };
+    if (!b.slug) throw new Error("Give it an English title first."); if (!b.title_en) throw new Error("The English title is needed.");
+    if (BLOG_LANGS.some(([l]) => (b[`excerpt_${l}`]||"").length > 200)) throw new Error("An excerpt is over 200 characters.");
+    if (isNew) { const [row] = await w("POST", "blog_posts", [{ tenant_id: TENANT, created_by: me?.person_id||null, ...b }]); p.id = row.id; } else await w("PATCH", `blog_posts?id=eq.${p.id}`, b);
+    return p.id;
+  };
+  $$("#bgSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const id = await save(); say("Saved.", true); setTimeout(() => reopen(id), 400); } catch (err) { say(/duplicate|unique/i.test(err.message) ? "That web address is already used by another post." : err.message); btn.disabled = false; } });
+  $$("#bgPreview")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { if (!locked) await save(); const j = await blogCall("preview", p.id); const win = window.open("", "_blank"); win.document.open(); win.document.write(j.html); win.document.close(); if (j.missing?.length) say(`Preview open. Still missing before publish: ${j.missing.join(", ")}.`); } catch (err) { say(err.message); } btn.disabled = false; });
+  $$("#bgReview")?.addEventListener("click", async () => { try { const b = collect(); if (!blogComplete(b)) throw new Error(`All four languages are needed before review (${blogLangs(b)}/4 ready).`); await save({ status:"review" }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
+  $$("#bgDraft")?.addEventListener("click", async () => { try { await save({ status:"draft", approved_by:null, approved_at:null }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
+  $$("#bgPublish")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again to publish to bcaleadership.com"; setTimeout(()=>{ b.dataset.armed=""; b.textContent = p.status==="published"?"Publish the update":"Publish to the website"; }, 6000); return; }
+    b.disabled = true; b.textContent = "Publishing…";
+    try { await save(); const j = await blogCall("publish", p.id); say(`Live in about a minute at ${j.url}`, true); setTimeout(() => reopen(p.id), 1200); }
+    catch (err) { say(err.message); b.disabled = false; b.textContent = "Publish to the website"; b.dataset.armed = ""; }
+  });
+  $$("#bgUnpub")?.addEventListener("click", async (e) => {
+    const b = e.currentTarget;
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again to remove it from the site"; setTimeout(()=>{ b.dataset.armed=""; b.textContent="Take it down"; }, 6000); return; }
+    b.disabled = true;
+    try { await blogCall("unpublish", p.id); await loadCampaigns(); closeDrawer(); } catch (err) { say(err.message); b.disabled = false; }
+  });
+  if (!isNew) reviewPanel(dr, "blog", p.id, me, async (decision) => {
+    if (decision === "approved" && ["draft","review"].includes(p.status)) {
+      if (!blogComplete(p)) { say(`Approval noted, but the post stays in ${label(p.status)} until all four languages are filled (${blogLangs(p)}/4).`); return; }
+      await w("PATCH", `blog_posts?id=eq.${p.id}`, { status:"approved", approved_by: me?.person_id||null, approved_at: new Date().toISOString() }); setTimeout(() => reopen(p.id), 300);
+    }
+    if (decision === "changes" && p.status === "review") { await w("PATCH", `blog_posts?id=eq.${p.id}`, { status:"draft" }); setTimeout(() => reopen(p.id), 300); }
+  });
+}
+
 /* ───────── social posts ─────────
    The editorial desk for BCA's pages. One row per post per platform: written here with the
    platform's limits in view, approved, scheduled, copied out, posted on the page, and the live
@@ -1395,7 +1655,7 @@ async function socialPages(){
 }
 const socLen = (s) => (s||"").replace(/https?:\/\/\S+/g, "x".repeat(23)).length;
 
-async function loadSocial(me, campaigns){
+async function loadSocial(me, campaigns, plans){
   const canWrite = ["owner","admin"].includes(me?.role);
   const rows = await q("social_posts?select=*&order=scheduled_for.desc.nullslast,created_at.desc&limit=300").catch(()=>null);
   const wrap = $("socWrap");
@@ -1426,13 +1686,13 @@ async function loadSocial(me, campaigns){
         : `<tr><td colspan="5">Nothing yet.</td></tr>`}</tbody></table></div>
     <p class="panel-m" style="margin-top:14px">Write once, make a version for each platform, approve, schedule. On the day: open the post, press Copy, open the page, paste and publish, then record the live link here so the calendar and the campaign show what went out.</p>`;
   wireSearch("socSearch","socBody","socCount");
-  $("socNew").addEventListener("click", () => editSocial(null, me, campaigns));
-  wrap.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", async () => { const [p] = await q(`social_posts?select=*&id=eq.${tr.dataset.soc}&limit=1`); if (p) editSocial(p, me, campaigns); }));
+  $("socNew").addEventListener("click", () => editSocial(null, me, campaigns, plans));
+  wrap.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", async () => { const [p] = await q(`social_posts?select=*&id=eq.${tr.dataset.soc}&limit=1`); if (p) editSocial(p, me, campaigns, plans); }));
   const pages = await socialPages();
   wrap.querySelectorAll(".soc-page").forEach(b => { const u = pages[b.dataset.plat]; if (!u) { b.disabled = true; b.title = "No page on record yet"; } else b.addEventListener("click", () => window.open(u, "_blank", "noopener")); });
 }
 
-async function editSocial(p, me, campaigns){
+async function editSocial(p, me, campaigns, plans){
   const isNew = !p;
   p = p || { platform:"linkedin", status:"draft", body:"", campaign_id:null };
   const canWrite = ["owner","admin"].includes(me?.role);
@@ -1442,8 +1702,9 @@ async function editSocial(p, me, campaigns){
   const dr = drawer(isNew ? "New social post" : `${SOC[p.platform]?.name||p.platform} post`, isNew ? "Draft" : `${label(p.status)}${p.scheduled_for?` · ${when(p.scheduled_for)}`:""}${p.published_url?` · <a href="${esc(p.published_url)}" target="_blank" rel="noopener" style="color:var(--gold-lt)">live post</a>`:""}`, `
     <div class="grid2">
       <label class="fld"><span>Platform</span><select id="spPlat" ${locked?"disabled":""}>${SOC_ORDER.map(k=>`<option value="${k}"${k===p.platform?" selected":""}>${SOC[k].name}</option>`).join("")}</select></label>
-      <label class="fld"><span>Campaign (optional)</span><select id="spCamp" ${locked?"disabled":""}><option value="">—</option>${(campaigns||[]).map(c=>`<option value="${esc(c.id)}"${c.id===p.campaign_id?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
+      <label class="fld"><span>Six-month plan</span><select id="spPlan" ${locked?"disabled":""}><option value="">—</option>${(plans||[]).map(x=>`<option value="${esc(x.id)}"${x.id===(p.plan_id||(isNew?(plans||[]).find(y=>inPeriod(y)&&["approved","active"].includes(y.status))?.id:null))?" selected":""}>${esc(x.title)}</option>`).join("")}</select></label>
     </div>
+    <label class="fld"><span>Email campaign (optional)</span><select id="spCamp" ${locked?"disabled":""}><option value="">—</option>${(campaigns||[]).map(c=>`<option value="${esc(c.id)}"${c.id===p.campaign_id?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
     <p class="panel-m" id="spTip" style="margin:-6px 0 12px"></p>
     <label class="fld" id="spTitleWrap"><span>Title <span class="panel-m" id="spTitleN"></span></span><input id="spTitle" value="${esc(p.title||"")}" ${locked?"disabled":""} placeholder="YouTube title"></label>
     <label class="fld"><span>Text <span class="panel-m" id="spBodyN"></span></span><textarea id="spBody" rows="8" ${locked?"disabled":""} placeholder="Write the post as it will appear">${esc(p.body||"")}</textarea></label>
@@ -1465,7 +1726,8 @@ async function editSocial(p, me, campaigns){
       ${!isNew && !locked ? `<button class="btn ghost" id="spCancel" type="button" style="margin-left:auto">Cancel post</button>` : ""}
     </div>
     <div id="spPubWrap" hidden style="margin-top:10px"><label class="fld"><span>Link to the live post</span><input id="spPubUrl" placeholder="https://…"></label><div class="row-btn"><button class="btn" id="spPubSave" type="button">Record it</button></div></div>
-    <p class="note" id="spMsg" hidden></p>`);
+    <p class="note" id="spMsg" hidden></p>
+    <div id="rvWrap"></div>`);
   const $$ = (s) => dr.querySelector(s);
   const say = (t, ok) => note($$("#spMsg"), t, ok);
   const refresh = () => {
@@ -1478,7 +1740,7 @@ async function editSocial(p, me, campaigns){
   };
   ["#spPlat","#spBody","#spTitle"].forEach(s => $$(s).addEventListener("input", refresh)); $$("#spPlat").addEventListener("change", refresh); refresh();
   const collect = () => ({
-    platform: $$("#spPlat").value, campaign_id: $$("#spCamp").value || null,
+    platform: $$("#spPlat").value, campaign_id: $$("#spCamp").value || null, plan_id: $$("#spPlan").value || null,
     title: $$("#spPlat").value === "youtube" ? ($$("#spTitle").value.trim() || null) : null,
     body: $$("#spBody").value, link_url: $$("#spLink").value.trim() || null, media_note: $$("#spMedia").value.trim() || null,
     scheduled_for: $$("#spWhen").value ? new Date($$("#spWhen").value).toISOString() : null,
@@ -1515,11 +1777,15 @@ async function editSocial(p, me, campaigns){
       const have = new Set((await q(`social_posts?select=platform&campaign_id=${b.campaign_id?"eq."+b.campaign_id:"is.null"}&body=eq.${encodeURIComponent(b.body)}`).catch(()=>[])).map(x=>x.platform));
       const others = SOC_ORDER.filter(k => k !== b.platform && !have.has(k));
       if (!others.length) throw new Error("Versions for the other platforms already exist.");
-      await w("POST", "social_posts", others.map(k => ({ tenant_id: TENANT, created_by: me?.person_id||null, platform: k, campaign_id: b.campaign_id, title: k==="youtube" ? (b.title || b.body.split("\n")[0].slice(0,100)) : null,
+      await w("POST", "social_posts", others.map(k => ({ tenant_id: TENANT, created_by: me?.person_id||null, platform: k, campaign_id: b.campaign_id, plan_id: b.plan_id, title: k==="youtube" ? (b.title || b.body.split("\n")[0].slice(0,100)) : null,
         body: k === "x" && socLen(b.body) > 280 ? b.body.slice(0, 250).replace(/\s+\S*$/, "") + "…" : b.body, link_url: b.link_url, media_note: b.media_note, scheduled_for: b.scheduled_for, status: "draft" })));
       say(`${others.length} draft${others.length===1?"":"s"} made: ${others.map(k=>SOC[k].name).join(", ")}. Each one still needs its own read before approval.`, true);
       await loadCampaigns(); setTimeout(() => reopen(id), 600);
     } catch (err) { say(err.message); btn.disabled = false; }
+  });
+  if (!isNew) reviewPanel(dr, "social", p.id, me, async (decision) => {
+    if (decision === "approved" && p.status === "draft") { await w("PATCH", `social_posts?id=eq.${p.id}`, { status:"approved", approved_by: me?.person_id||null, approved_at: new Date().toISOString() }); setTimeout(() => reopen(p.id), 300); }
+    if (decision === "changes" && ["approved","scheduled"].includes(p.status)) { await w("PATCH", `social_posts?id=eq.${p.id}`, { status:"draft" }); setTimeout(() => reopen(p.id), 300); }
   });
   $$("#spCancel")?.addEventListener("click", async (e) => {
     const b = e.currentTarget;
@@ -1530,6 +1796,7 @@ async function editSocial(p, me, campaigns){
 
 async function loadCampaigns(){
   const me = await myStaff(); await staffMap();
+  const plans = await loadPlans(me);
   const rows = await q("campaigns?select=*&order=created_at.desc&limit=200");
   const sent = rows.filter(r=>r.status==="sent");
   const tot = (k) => sent.reduce((t,r)=>t+Number(r[k]||0),0);
@@ -1560,7 +1827,8 @@ async function loadCampaigns(){
   wireSearch("campSearch","campBody","campCount");
   $("campNew").addEventListener("click", () => editCampaign(null, me));
   $("campWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openCampaign(tr.dataset.camp, me)));
-  await loadSocial(me, rows);
+  await loadSocial(me, rows, plans);
+  await loadBlog(me, plans);
 }
 async function openCampaign(id, me){ const [c] = await q(`campaigns?select=*&id=eq.${id}&limit=1`); if (c) editCampaign(c, me); }
 
