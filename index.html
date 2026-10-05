@@ -470,6 +470,8 @@ const money2 = (m, c="USD") => (Number(m||0)/100).toLocaleString("en-US",{style:
 const day = (d) => d ? new Date(d+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}) : "—";
 const initials = (s) => (s||"").split(/[\s@._-]+/).filter(Boolean).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("") || "··";
 const todayISO = () => new Date().toISOString().slice(0,10);
+/* ISO instant → value for <input type="datetime-local">, in the browser's zone AT THAT DATE (DST-safe). */
+const toLocalInput = (iso) => { if (!iso) return ""; const d = new Date(iso); return new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,16); };
 const note = (el,t,ok=false) => { el.textContent=t; el.className="note"+(ok?" ok":""); el.hidden=!t; };
 
 /* ───────── session ───────── */
@@ -1817,7 +1819,7 @@ async function editSocial(p, me, campaigns, plans){
   const canWrite = ["owner","admin"].includes(me?.role);
   const locked = !canWrite || ["published","cancelled"].includes(p.status);
   const pages = await socialPages();
-  const localDT = (iso) => iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16) : "";
+  const localDT = toLocalInput;
   const dr = drawer(isNew ? "New social post" : `${SOC[p.platform]?.name||p.platform} post`, isNew ? "Draft" : `${label(p.status)}${p.scheduled_for?` · ${when(p.scheduled_for)}`:""}${p.published_url?` · <a href="${esc(p.published_url)}" target="_blank" rel="noopener" style="color:var(--gold-lt)">live post</a>`:""}`, `
     <div class="grid2">
       <label class="fld"><span>Platform</span><select id="spPlat" ${locked?"disabled":""}>${SOC_ORDER.map(k=>`<option value="${k}"${k===p.platform?" selected":""}>${SOC[k].name}</option>`).join("")}</select></label>
@@ -1996,7 +1998,7 @@ async function editCampaign(c, me){
       <label class="fld"><span>Signed by</span><input id="cpSigner" value="${esc(c.signer_name||"")}" placeholder="e.g. Nii Lokko" ${locked?"disabled":""}></label>
       <label class="fld"><span>Signer's title</span><input id="cpSignerT" value="${esc(c.signer_title||"")}" placeholder="e.g. Executive Director" ${locked?"disabled":""}></label>
       <label class="fld" style="display:flex;gap:8px;align-items:center"><input id="cpAbout" type="checkbox" style="width:auto" ${c.show_about!==false?"checked":""} ${locked?"disabled":""}> <span style="margin:0;text-transform:none;letter-spacing:0;font-size:13px">Include the "About BCA Leadership" panel with links</span></label>
-      ${!locked && ["approved","scheduled"].includes(c.status) ? `<label class="fld"><span>Schedule for (your local time)</span><input id="cpWhen" type="datetime-local" value="${c.scheduled_for?esc(new Date(c.scheduled_for).toISOString().slice(0,16)):""}"></label>` : ""}
+      ${!locked && ["approved","scheduled"].includes(c.status) ? `<label class="fld"><span>Schedule for (your local time)</span><input id="cpWhen" type="datetime-local" value="${esc(toLocalInput(c.scheduled_for))}"></label>` : ""}
     </div>
     <div class="row-btn">
       ${locked ? "" : `<button class="btn" id="cpSave" type="button">${isNew?"Save draft":"Save"}</button>`}
