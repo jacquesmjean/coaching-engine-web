@@ -1470,7 +1470,7 @@ async function loadStrategy(me, btn){
     const keyDates = [{ on: `${m.ym}-05`, what: `Blog: ${m.blog.title}` }, { on: isoAt(tue, 8).slice(0,10), what: `Email: ${m.email.subject}` }];
     const [plan] = await w("POST", "content_plans", [{ tenant_id: TENANT, created_by: me?.person_id||null, title: m.title, headline: m.headline, period_start: start, period_end: end,
       objectives: m.objectives, pillars: [`Goal: ${m.goal}`, `Message: ${m.message}`, `Call to action: ${m.cta[0]}`], key_dates: keyDates, audience: m.audience,
-      channels: ["linkedin","facebook","instagram","youtube","x","blog","email"], monthly_blog_day: 5, status: "draft",
+      channels: [...SOC_ORDER,"blog","email"], monthly_blog_day: 5, status: "draft",
       notes: `Half-year headline: ${STRATEGY_HEADLINE}. Posts: Tuesday the idea, Thursday the people. Email audience: ${CAMP_AUD[m.email.audience]||m.email.audience}.` }]);
     const utm = `h1-2027-${m.ym}`;
     // 8 social drafts on LinkedIn, Tue/Thu 08:00 UTC; the team makes the other platforms' versions with one button
@@ -1570,10 +1570,10 @@ async function loadPlans(me){
 async function editPlan(p, me){
   const isNew = !p;
   const nh = nextHalf(PLANS_CACHE);
-  p = p || { title: nh.title, period_start: nh.start, period_end: nh.end, status: "draft", pillars: [], key_dates: [], channels: ["linkedin","facebook","instagram","youtube","x","blog","email"], monthly_blog_day: 1 };
+  p = p || { title: nh.title, period_start: nh.start, period_end: nh.end, status: "draft", pillars: [], key_dates: [], channels: [...SOC_ORDER,"blog","email"], monthly_blog_day: 1 };
   const canWrite = ["owner","admin"].includes(me?.role);
   const locked = !canWrite || p.status === "closed";
-  const ALLCH = [["linkedin","LinkedIn"],["facebook","Facebook"],["instagram","Instagram"],["youtube","YouTube"],["x","X"],["blog","Blog"],["email","Email campaigns"]];
+  const ALLCH = [["linkedin","LinkedIn"],["facebook","Facebook"],["instagram","Instagram"],["youtube","YouTube (paused)"],["x","X (paused)"],["blog","Blog"],["email","Email campaigns"]];
   const dr = drawer(isNew ? "New plan" : p.title, isNew ? "Draft" : `${fmtPeriod(p)} · ${label(p.status)}`, `
     <div class="grid2">
       <label class="fld"><span>Plan name (internal)</span><input id="plTitle" value="${esc(p.title)}" ${locked?"disabled":""}></label>
@@ -1836,7 +1836,11 @@ const SOC = {
   youtube:   { name:"YouTube",   max:5000, titleMax:100, tip:"Title up to 100 characters, description up to 5,000. The first two lines of the description show above the fold. Video or Short required." },
   x:         { name:"X",         max:280, tip:"280 characters including the link (links count as 23). One idea per post; use a thread for more." },
 };
-const SOC_ORDER = ["linkedin","facebook","instagram","youtube","x"];
+const SOC_ALL = ["linkedin","facebook","instagram","youtube","x"];
+/* Platforms in use. YouTube and X are paused (Jacques, 5 Oct 2026): hidden from new posts, versions and the page buttons.
+   Posts already on a paused platform stay in the database and reappear the day the platform is switched back on. */
+const SOC_ORDER = ["linkedin","facebook","instagram"];
+const SOC_PAUSED = SOC_ALL.filter(k => !SOC_ORDER.includes(k));
 const SOC_PILL = { draft:"mut", approved:"cur", scheduled:"d30", published:"cur", cancelled:"mut" };
 let SOC_PAGES = null;
 async function socialPages(){
@@ -1849,7 +1853,9 @@ const socLen = (s) => (s||"").replace(/https?:\/\/\S+/g, "x".repeat(23)).length;
 
 async function loadSocial(me, campaigns, plans){
   const canWrite = ["owner","admin"].includes(me?.role);
-  const rows = await q("social_posts?select=*&order=scheduled_for.desc.nullslast,created_at.desc&limit=300").catch(()=>null);
+  const rowsAll = await q("social_posts?select=*&order=scheduled_for.desc.nullslast,created_at.desc&limit=300").catch(()=>null);
+  const rows = rowsAll === null ? null : rowsAll.filter(r => SOC_ORDER.includes(r.platform));
+  const nPaused = rowsAll ? rowsAll.length - rows.length : 0;
   const wrap = $("socWrap");
   if (rows === null) { wrap.innerHTML = `<div class="rule"></div><div class="panel"><div class="panel-h"><span class="panel-t">Social posts</span></div><p class="panel-m">Not switched on yet: the social_posts table is missing. Run 20261005_social_posts.sql.</p></div>`; return; }
   const now = Date.now(), wk = now + 7*864e5;
@@ -1876,6 +1882,7 @@ async function loadSocial(me, campaigns, plans){
         <td><span class="pill ${overdue?"d60":(SOC_PILL[r.status]||"mut")}">${esc(overdue?"Overdue":label(r.status))}</span></td>
         <td>${r.status==="published"&&r.published_at?`Published ${esc(when(r.published_at))}`:r.scheduled_for?esc(when(r.scheduled_for)):`<span class="panel-m">Not scheduled</span>`}</td></tr>`; }).join("")
         : `<tr><td colspan="5">Nothing yet.</td></tr>`}</tbody></table></div>
+    ${nPaused ? `<p class="panel-m" style="margin-top:10px">${nPaused} post${nPaused===1?"":"s"} on paused platforms (${SOC_PAUSED.map(k=>SOC[k].name).join(", ")}) ${nPaused===1?"is":"are"} kept but hidden.</p>` : ""}
     <p class="panel-m" style="margin-top:14px">Write once, make a version for each platform, approve, schedule. On the day: open the post, press Copy, open the page, paste and publish, then record the live link here so the calendar and the campaign show what went out.</p>
     <div id="socBrand"></div>`;
   brandKit().then(k => { const el = $("socBrand"); if (el) el.innerHTML = brandPanelHtml(k); });
@@ -1895,7 +1902,7 @@ async function editSocial(p, me, campaigns, plans){
   const localDT = toLocalInput;
   const dr = drawer(isNew ? "New social post" : `${SOC[p.platform]?.name||p.platform} post`, isNew ? "Draft" : `${label(p.status)}${p.scheduled_for?` · ${when(p.scheduled_for)}`:""}${p.published_url?` · <a href="${esc(p.published_url)}" target="_blank" rel="noopener" style="color:var(--gold-lt)">live post</a>`:""}`, `
     <div class="grid2">
-      <label class="fld"><span>Platform</span><select id="spPlat" ${locked?"disabled":""}>${SOC_ORDER.map(k=>`<option value="${k}"${k===p.platform?" selected":""}>${SOC[k].name}</option>`).join("")}</select></label>
+      <label class="fld"><span>Platform</span><select id="spPlat" ${locked?"disabled":""}>${(SOC_ORDER.includes(p.platform)?SOC_ORDER:[...SOC_ORDER,p.platform]).map(k=>`<option value="${k}"${k===p.platform?" selected":""}>${SOC[k].name}</option>`).join("")}</select></label>
       <label class="fld"><span>Six-month plan</span><select id="spPlan" ${locked?"disabled":""}><option value="">—</option>${(plans||[]).map(x=>`<option value="${esc(x.id)}"${x.id===(p.plan_id||(isNew?(plans||[]).find(y=>inPeriod(y)&&["approved","active"].includes(y.status))?.id:null))?" selected":""}>${esc(x.title)}</option>`).join("")}</select></label>
     </div>
     <label class="fld"><span>Email campaign (optional)</span><select id="spCamp" ${locked?"disabled":""}><option value="">—</option>${(campaigns||[]).map(c=>`<option value="${esc(c.id)}"${c.id===p.campaign_id?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
