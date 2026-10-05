@@ -1077,6 +1077,7 @@ async function loadWorklog(){
       <div class="lang" role="group"><button type="button" data-wlv="week" aria-pressed="${WL_VIEW==="week"}">This week</button><button type="button" data-wlv="all" aria-pressed="${WL_VIEW==="all"}">Everything</button></div>
       ${WL_VIEW==="week" ? `<div class="lang" role="group"><button type="button" id="wlPrev">‹</button><button type="button" id="wlToday">Week of ${esc(fmtWeek(WL_WEEK))}</button><button type="button" id="wlNext">›</button></div>` : ""}
       <button class="btn mini" id="wlAdd" type="button">Add an item</button>
+      <button class="btn mini ghost" id="wlExport" type="button" title="The same tracker as an Excel file, for sharing outside the console">Download as Excel</button>
     </div>
     ${WL_VIEW==="week" ? `<div class="stats" style="margin-bottom:14px">
         <div class="stat"><span class="stat-k">TechFides this week</span><span class="stat-v">${tf.length}</span><span class="stat-n">${tf.filter(r=>r.status==="done").length} done</span></div>
@@ -1091,7 +1092,42 @@ async function loadWorklog(){
   $("wlNext")?.addEventListener("click", () => { const d=new Date(WL_WEEK+"T00:00:00Z"); d.setUTCDate(d.getUTCDate()+7); WL_WEEK=d.toISOString().slice(0,10); loadWorklog(); });
   $("wlToday")?.addEventListener("click", () => { WL_WEEK = mondayOf(new Date()); loadWorklog(); });
   $("wlAdd").addEventListener("click", () => editWorklog(null, me));
+  $("wlExport").addEventListener("click", (e) => exportWorklog(rows, e.currentTarget));
   $("wlWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => editWorklog(rows.find(r=>r.id===tr.dataset.wl), me)));
+}
+
+/* The tracker as an Excel workbook: Summary, Tracker (filter on "Next action with" = BCA for their items), This week. Built from the live rows,
+   so there is one tracker, this screen; the file is a snapshot for people outside the console. */
+let XLSX_LIB = null;
+async function xlsxLib(){
+  if (XLSX_LIB) return XLSX_LIB;
+  await new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"; sc.onload = res; sc.onerror = () => rej(new Error("Could not load the Excel library.")); document.head.appendChild(sc); });
+  XLSX_LIB = window.XLSX; return XLSX_LIB;
+}
+async function exportWorklog(rows, btn){
+  btn.disabled = true; const was = btn.textContent; btn.textContent = "Building…";
+  try {
+    const X = await xlsxLib(); const today = todayISO();
+    const AREA = { website:"Website", engine:"Engine", email:"Email", data:"Data", commercial:"Commercial", other:"Other" };
+    const ST = { done:"Done", in_progress:"In progress", planned:"Planned", waiting:"Waiting", blocked:"Blocked", dropped:"Dropped" };
+    const sorted = [...rows].sort((a,b) => (a.area>b.area?1:a.area<b.area?-1:0) || (a.side>b.side?1:a.side<b.side?-1:0) || a.sort-b.sort);
+    const head = ["Area","Item","Detail","Next action with","Status","Done on","Week of","Owner"];
+    const data = sorted.map(r => [AREA[r.area]||r.area, r.title, r.detail||"", r.side==="bca"?"BCA":"TechFides", ST[r.status]||r.status, r.done_on||"", r.week_of||"", staffNameOf(r.owner_id)||""]);
+    const ws = X.utils.aoa_to_sheet([["BCA Leadership: website and coaching engine tracker"],[`As of ${today}. Shared by TechFides and BCA. The live version is the Work tracker in the console; this file is a snapshot.`],[],head,...data]);
+    ws["!cols"] = [{wch:11},{wch:48},{wch:80},{wch:16},{wch:12},{wch:11},{wch:11},{wch:18}];
+    ws["!autofilter"] = { ref: `A4:H${4+data.length}` };
+    const open = rows.filter(r => !["done","dropped"].includes(r.status));
+    const sum = [["Where things stand", `as of ${today}`],[],["", "Website","Engine","Email","Data","Commercial","Other","Total"]];
+    for (const st of ["done","in_progress","planned","waiting","blocked","dropped"]) { const line = [ST[st]]; let t = 0; for (const a of ["website","engine","email","data","commercial","other"]) { const n = rows.filter(r=>r.status===st&&r.area===a).length; line.push(n); t += n; } line.push(t); sum.push(line); }
+    sum.push([], ["Open items waiting on BCA", open.filter(r=>r.side==="bca").length], ["Open items with TechFides", open.filter(r=>r.side==="techfides").length], ["Done so far", rows.filter(r=>r.status==="done").length]);
+    const wsS = X.utils.aoa_to_sheet(sum); wsS["!cols"] = [{wch:28},{wch:10},{wch:10},{wch:10},{wch:10},{wch:12},{wch:10},{wch:10}];
+    const wk = rows.filter(r => r.week_of === WL_WEEK).sort((a,b)=>(a.side>b.side?1:-1)||a.sort-b.sort);
+    const wsW = X.utils.aoa_to_sheet([[`Week of ${fmtWeek(WL_WEEK)}`],["What each side is delivering this week."],[],["Side","Item","Detail","Status","Owner"],...wk.map(r=>[r.side==="bca"?"BCA":"TechFides", r.title, r.detail||"", ST[r.status]||r.status, staffNameOf(r.owner_id)||""])]);
+    wsW["!cols"] = [{wch:11},{wch:48},{wch:80},{wch:12},{wch:18}];
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, wsS, "Summary"); X.utils.book_append_sheet(wb, ws, "Tracker"); X.utils.book_append_sheet(wb, wsW, "This week");
+    X.writeFile(wb, `BCA_tracker_${today}.xlsx`);
+  } catch (e) { alert(e.message); }
+  btn.disabled = false; btn.textContent = was;
 }
 
 async function editWorklog(r, me){
