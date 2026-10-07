@@ -1287,6 +1287,13 @@ async function editProposal(p, me){
     q("opportunities?select=id,name,stage,organization_id&stage=in.(prospect,qualified,proposal,negotiation)&order=name&limit=200").catch(()=>[]),
     Promise.resolve(Object.values(await staffMap()).filter(x=>x.status==="active")),
   ]);
+  /* The list above is open deals only. If this proposal is attached to one that
+     has since closed, it has to stay in the dropdown, or a save silently cuts
+     the proposal loose from the deal it belongs to. */
+  if (p.opportunity_id && !opps.some(o => o.id === p.opportunity_id)) {
+    const [closed] = await q(`opportunities?select=id,name,stage,organization_id&id=eq.${p.opportunity_id}&limit=1`).catch(()=>[]);
+    if (closed) opps.unshift(closed);
+  }
   const locked = ["accepted","declined","withdrawn","expired","superseded"].includes(p.status);
   const who = p.people ? [p.people.first_name,p.people.last_name].filter(Boolean).join(" ") : "";
   const events = isNew ? [] : await q(`proposal_events?select=kind,detail,at,person_id&proposal_id=eq.${p.id}&order=at.desc&limit=40`).catch(()=>[]);
@@ -1300,7 +1307,7 @@ async function editProposal(p, me){
       <label class="fld"><span>Currency</span><select id="prCur" ${locked?"disabled":""}>${["USD","EUR","GBP","ZAR","MUR","GHS","KES","NGN"].map(c=>`<option${c===p.currency?" selected":""}>${c}</option>`).join("")}</select></label>
       <label class="fld"><span>Recipient</span><input id="prWho" placeholder="Type a name or email to find them" value="${esc(who?`${who} <${p.people.email}>`:"")}" autocomplete="off" ${locked?"disabled":""}><input type="hidden" id="prPerson" value="${esc(p.person_id||"")}"><div id="prWhoList"></div></label>
       <label class="fld"><span>Company</span><select id="prOrg" ${locked?"disabled":""}><option value="">None</option>${orgs.map(o=>`<option value="${esc(o.id)}"${o.id===p.organization_id?" selected":""}>${esc(o.name)}</option>`).join("")}</select></label>
-      <label class="fld"><span>Linked opportunity</span><select id="prOpp" ${locked?"disabled":""}><option value="">None</option>${opps.map(o=>`<option value="${esc(o.id)}"${o.id===p.opportunity_id?" selected":""}>${esc(o.name)} · ${esc(label(o.stage))}</option>`).join("")}</select></label>
+      <label class="fld"><span>Linked opportunity</span><select id="prOpp" ${locked?"disabled":""}><option value="">None</option>${opps.map(o=>`<option value="${esc(o.id)}"${o.id===p.opportunity_id?" selected":""}>${esc(o.name)} · ${esc(stageLabel(o.stage))}</option>`).join("")}</select></label>
       <label class="fld"><span>Valid until</span><input id="prValid" type="date" value="${esc(p.valid_until||"")}" ${locked?"disabled":""}></label>
       <label class="fld"><span>Owner</span><select id="prOwner" ${locked?"disabled":""}><option value="">Me</option>${staff.map(s=>`<option value="${esc(s.person_id)}"${s.person_id===p.owner_id?" selected":""}>${esc(s.full_name||s.email)}</option>`).join("")}</select></label>
     </div>
@@ -2795,20 +2802,34 @@ function wireLifecycle(totalRows){
     document.querySelector('.nav-item[data-v="leads"]')?.click());
 }
 
+/* Which proposal speaks for a deal when several exist: the furthest along, and
+   among equals the most recent, since the query comes back newest first. */
+const PROP_RANK = { accepted:5, viewed:4, sent:3, internal_review:2, draft:1 };
+
 async function loadPipeline(){
   const LIMIT = 300;
-  const [rows, leadTotal] = await Promise.all([
+  const [rows, leadTotal, props] = await Promise.all([
     q(`opportunities?select=id,name,line,stage,lead_id,value_minor,currency,probability,expected_close,next_step,next_step_on,lost_reason,people!opportunities_owner_id_fkey(first_name,last_name),organizations(name)&order=expected_close.asc&limit=${LIMIT}`),
     count("leads"),
+    q(`proposals?select=id,number,status,currency,value_minor,opportunity_id&opportunity_id=not.is.null&order=created_at.desc&limit=400`).catch(()=>[]),
   ]);
+
+  const propOf = {};
+  for (const x of props) {
+    const cur = propOf[x.opportunity_id];
+    if (!cur || (PROP_RANK[x.status]||0) > (PROP_RANK[cur.status]||0)) propOf[x.opportunity_id] = x;
+  }
+  const outFor = (r) => { const x = propOf[r.id]; return x && ["sent","viewed"].includes(x.status) ? x : null; };
 
   const open = rows.filter(r => OPEN_STAGES.includes(r.stage));
   const sum  = (a) => a.reduce((t,r)=>t+Number(r.value_minor||0),0);
   const weighted = open.reduce((t,r)=>t+Number(r.value_minor||0)*(Number(r.probability ?? STAGE_P[r.stage] ?? 0)/100),0);
   const won = rows.filter(r=>r.stage==="closed_won");
 
+  const outCount = open.filter(outFor).length;
   $("pipLede").textContent = rows.length
-    ? `${open.length} open ${open.length===1?"opportunity":"opportunities"} worth ${money(sum(open))}, weighted to ${money(weighted)}.`
+    ? `${open.length} open ${open.length===1?"opportunity":"opportunities"} worth ${money(sum(open))}, weighted to ${money(weighted)}. `
+      + (outCount ? `${outCount} ${outCount===1?"has a proposal":"have proposals"} with the client.` : "None has a proposal with the client yet.")
     : "No opportunities yet. Open a lead and raise one to start the pipeline.";
 
   $("pipStats").innerHTML =
@@ -2822,7 +2843,7 @@ async function loadPipeline(){
   const today = todayISO();
   $("pipWrap").innerHTML = rows.length
     ? `<div class="tblwrap"><table class="tbl"><caption>Opportunities, soonest expected close first</caption>
-        <thead><tr><th>Opportunity</th><th>Line</th><th>Stage</th><th class="num">Value</th>
+        <thead><tr><th>Opportunity</th><th>Line</th><th>Stage</th><th>Proposal</th><th class="num">Value</th>
         <th class="num">%</th><th>Expected</th><th>Next step</th><th>Owner</th></tr></thead><tbody>` +
       rows.map(r=>{
         const overdue = r.next_step_on && r.next_step_on < today && OPEN_STAGES.includes(r.stage);
@@ -2831,6 +2852,9 @@ async function loadPipeline(){
           <td class="wrap">${esc(r.name||"—")}${r.organizations?.name?`<br><span class="panel-m">${esc(r.organizations.name)}</span>`:""}</td>
           <td>${esc(label(r.line))}</td>
           <td><span class="pill ${r.stage==="closed_won"?"ok":r.stage==="closed_lost"?"bad":"mut"}">${esc(stageLabel(r.stage))}</span></td>
+          <td>${(()=>{ const x = propOf[r.id]; return x
+              ? `<span class="pill ${x.status==="accepted"?"ok":["declined","withdrawn","expired"].includes(x.status)?"bad":"mut"}">${esc(PROP_LABEL(x.status))}</span>`
+              : `<span class="panel-m">\u2014</span>`; })()}</td>
           <td class="num">${money(r.value_minor, r.currency||"USD")}</td>
           <td class="num">${esc(r.probability ?? STAGE_P[r.stage] ?? "—")}</td>
           <td>${esc(day(r.expected_close))}</td>
@@ -2921,7 +2945,25 @@ const actBlock = () => `
 async function openLead(id){
   const [lead] = await q(`leads?select=*&id=eq.${id}`);
   if (!lead) return;
-  const who = await owners();
+  const [who, deals] = await Promise.all([
+    owners(),
+    q(`opportunities?select=id,name,stage,value_minor,currency,expected_close&lead_id=eq.${id}&order=created_at.desc&limit=10`).catch(()=>[]),
+  ]);
+  const openDeal = deals.find(x => !["closed_won","closed_lost"].includes(x.stage));
+  /* An enquiry that never becomes a deal never reaches the Pipeline, and nobody
+     looking at Leads can currently tell which is which. */
+  const dealBlock = deals.length
+    ? `<div class="panel" style="margin:16px 0">
+         <div class="panel-h"><span class="panel-t">${deals.length===1?"On the pipeline":"On the pipeline, newest first"}</span></div>
+         <table class="tbl"><thead><tr><th>Opportunity</th><th>Stage</th><th class="num">Value</th><th>Expected</th></tr></thead><tbody>${
+           deals.map(x=>`<tr class="click" data-deal="${esc(x.id)}">
+             <td class="wrap">${esc(x.name||"\u2014")}</td>
+             <td><span class="pill ${x.stage==="closed_won"?"ok":x.stage==="closed_lost"?"bad":"mut"}">${esc(stageLabel(x.stage))}</span></td>
+             <td class="num">${money2(x.value_minor, x.currency||"USD")}</td>
+             <td>${esc(day(x.expected_close))}</td></tr>`).join("")
+         }</tbody></table></div>`
+    : `<div class="panel" style="margin:16px 0"><div class="panel-h"><span class="panel-t">On the pipeline</span></div>
+         <p class="panel-m">Nothing. This enquiry does not appear on the Pipeline and carries no value on the forecast until an opportunity is raised from it.</p></div>`;
   const d = drawer(lead.full_name || "Lead",
     [lead.organization, lead.role, lead.country].filter(Boolean).join(" · ") || "No organisation recorded",
     `<label class="fld"><span>Status</span><select id="fStatus">${optsFor(LEAD_STATUS, lead.status)}</select></label>
@@ -2931,10 +2973,11 @@ async function openLead(id){
      </select>${who.length ? "" : `<p class="panel-m" style="margin-top:5px">No BCA staff records exist to assign to yet.</p>`}</label>
      <label class="fld"><span>Follow up on</span><input id="fNext" type="date" value="${esc(lead.next_touch_on||"")}"></label>
      <div class="row-btn"><button class="btn" id="drSave" type="button">Save</button>
-       <button class="btn ghost" id="drOpp" type="button">Raise an opportunity</button>
+       <button class="btn ghost" id="drOpp" type="button">${openDeal ? "Raise another opportunity" : "Raise an opportunity"}</button>
        <span id="drMsg"></span></div>
      <div class="rule"></div>
      <p class="panel-m">Source ${esc(label(lead.source)||"unknown")} · score ${esc(lead.score ?? "—")}${lead.email?` · ${esc(lead.email)}`:""}</p>
+     ${dealBlock}
      ${actBlock()}
      <div class="rule"></div>
      <h3 style="font-size:16px;margin-bottom:4px">History</h3>
@@ -2962,7 +3005,12 @@ async function openLead(id){
       d.querySelector("#drTl").innerHTML = await timelineFor(`lead_id=eq.${id}`);
     });
 
-  d.querySelector("#drOpp").addEventListener("click", () => newOpp(lead));
+  d.querySelectorAll("tr[data-deal]").forEach(tr =>
+    tr.addEventListener("click", () => openOpp(tr.dataset.deal)));
+  d.querySelector("#drOpp").addEventListener("click", () => {
+    if (openDeal && !confirm(`This lead already has an open deal, ${openDeal.name || "unnamed"}, at ${stageLabel(openDeal.stage)}. Raise a second one anyway?`)) return;
+    newOpp(lead);
+  });
 }
 
 async function newOpp(lead){
@@ -3011,6 +3059,34 @@ async function openOpp(id){
   const [o] = await q(`opportunities?select=*&id=eq.${id}`);
   if (!o) return;
   const who = await owners();
+  /* The chain, both ways: the lead this deal came from, and every proposal
+     raised against it. A deal with no visible origin and no visible paper is a
+     deal nobody can check. */
+  const [[lead], props, me] = await Promise.all([
+    o.lead_id ? q(`leads?select=id,full_name,organization,email,source,created_at&id=eq.${o.lead_id}&limit=1`).catch(()=>[]) : Promise.resolve([]),
+    q(`proposals?select=id,number,title,status,currency,value_minor,sent_at,first_viewed_at,open_count,decided_at&opportunity_id=eq.${id}&order=created_at.desc&limit=20`).catch(()=>[]),
+    myStaff().catch(()=>null),
+  ]);
+  const livePr = props.find(x => ["sent","viewed","accepted"].includes(x.status));
+  const chain = `<div class="panel" style="margin:16px 0">
+      <div class="panel-h"><span class="panel-t">Where it came from, and what is out</span></div>
+      ${lead
+        ? `<p class="panel-m">Raised from a lead${lead.source?` that came in by ${esc(label(lead.source))}`:""}${lead.created_at?` on ${esc(day(lead.created_at))}`:""}.</p>
+           <div class="row-btn" style="margin-top:8px"><button class="btn ghost" id="oToLead" type="button">Open ${esc(lead.full_name || lead.email || "the lead")}</button></div>`
+        : `<p class="panel-m">No lead is linked, so there is no record of where this deal came from.</p>`}
+      <div class="rule"></div>
+      ${props.length
+        ? `<table class="tbl"><thead><tr><th>Proposal</th><th>State</th><th class="num">Value</th></tr></thead><tbody>${
+            props.map(x=>`<tr class="click" data-prop="${esc(x.id)}">
+              <td class="wrap">${esc(x.number||"\u2014")}${x.title?`<br><span class="panel-m">${esc(x.title)}</span>`:""}</td>
+              <td><span class="pill ${x.status==="accepted"?"ok":["declined","withdrawn","expired"].includes(x.status)?"bad":"mut"}">${esc(PROP_LABEL(x.status))}</span>${x.first_viewed_at?`<br><span class="panel-m">opened ${esc(x.open_count||1)}\u00d7</span>`:""}</td>
+              <td class="num">${money2(x.value_minor, x.currency||"USD")}</td></tr>`).join("")
+          }</tbody></table>${
+            livePr && Number(livePr.value_minor||0)
+              ? `<p class="panel-m" style="margin-top:9px">${esc(livePr.number||"That proposal")} is with the client, so it sets the value below. Change its lines and this figure follows.</p>`
+              : ""}`
+        : `<p class="panel-m">No proposal has been raised against this deal.</p>`}
+    </div>`;
   const d = drawer(o.name || "Opportunity",
     `${label(o.line)} · ${money2(o.value_minor, o.currency||"USD")}`,
     `<label class="fld"><span>Stage</span><select id="fStage">${stageOpts(STAGES, o.stage)}</select></label>
@@ -3026,16 +3102,21 @@ async function openOpp(id){
      <label class="fld" id="lostWrap" ${o.stage==="closed_lost"?"":'hidden'}><span>Why it was lost</span>
        <input id="fLost" value="${esc(o.lost_reason||"")}"></label>
      <div class="row-btn"><button class="btn" id="drSave" type="button">Save</button><span id="drMsg"></span></div>
+     ${chain}
      ${actBlock()}
      <div class="rule"></div>
      <h3 style="font-size:16px;margin-bottom:4px">History</h3>
      <div id="drTl">${await timelineFor(`opportunity_id=eq.${id}`)}</div>`);
 
+  d.querySelector("#oToLead")?.addEventListener("click", () => openLead(o.lead_id));
+  d.querySelectorAll("tr[data-prop]").forEach(tr =>
+    tr.addEventListener("click", () => openProposal(tr.dataset.prop, me)));
+
   // Probability follows the stage unless someone has deliberately set it.
   const stageSel = d.querySelector("#fStage"), probIn = d.querySelector("#fProb");
   stageSel.addEventListener("change", () => {
     probIn.value = STAGE_P[stageSel.value] ?? probIn.value;
-    d.querySelector("#lostWrap").hidden = stageSel.value !== "lost";
+    d.querySelector("#lostWrap").hidden = stageSel.value !== "closed_lost";
   });
 
   wireSave(d,
@@ -3049,7 +3130,7 @@ async function openOpp(id){
         owner_id: d.querySelector("#fOwner").value || null,
         next_step: d.querySelector("#fNext").value || null,
         next_step_on: d.querySelector("#fNextOn").value || null,
-        lost_reason: stage === "lost" ? (d.querySelector("#fLost").value || null) : null,
+        lost_reason: stage === "closed_lost" ? (d.querySelector("#fLost").value || null) : null,
         closed_at: (stage==="closed_won"||stage==="closed_lost") ? (o.closed_at || new Date().toISOString()) : null,
       });
       await guardReload(loadPipeline, "pipeline", "pipWrap");

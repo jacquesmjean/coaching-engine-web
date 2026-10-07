@@ -118,13 +118,11 @@ Deno.serve(async (req) => {
     const now = new Date().toISOString(); const note = String(b.note || "").trim().slice(0, 2000) || null;
     await db.from("proposals").update({ status: decision, decided_at: now, decision_note: note }).eq("id", p.id);
     await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: decision, detail: note });
-    if (p.opportunity_id) await db.from("opportunities").update({
-      stage: decision === "accepted" ? "negotiation" : "closed_lost",
-      // An accepted proposal is a commitment, not a signature. It sits in
-      // Negotiation with the signature as the next step until a human closes it.
-      ...(decision === "accepted" ? { next_step: "Proposal accepted. Get the agreement signed." } : {}),
-      ...(decision === "declined" ? { lost_reason: note || "Proposal declined", closed_at: now } : {}),
-    }).eq("id", p.opportunity_id);
+    /* The deal is not touched from here. The proposals update above fires
+       proposal_advances_stage, which calls advance_opportunity and carries the
+       next step on an acceptance and the lost reason on a decline. One owner of
+       stage movement, and it refuses to walk a closed deal backwards, which this
+       function could not. See 20261007_growth_sync.sql. */
     try {
       const from = Deno.env.get("RESEND_FROM") || "BCA Leadership <info@bcaleadership.com>";
       const who = p.people ? [p.people.first_name, p.people.last_name].filter(Boolean).join(" ") : "The recipient";
@@ -172,8 +170,10 @@ Deno.serve(async (req) => {
     const resent = !!p.sent_at;
     await db.from("proposals").update({ status: p.status === "viewed" ? "viewed" : "sent", sent_at: p.sent_at || now, ...(staff?.id && !p.owner_id ? { owner_id: staff.id } : {}) }).eq("id", p.id);
     await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: resent ? "resent" : "sent", person_id: staff?.id || null, detail: `To ${p.people.email}${sent?.id ? " · Resend " + sent.id : ""}` });
-    if (p.opportunity_id) await db.from("opportunities").update({ stage: "proposal" }).eq("id", p.opportunity_id).in("stage", ["prospect", "qualified"]);
-    if (p.person_id) await db.from("activities").insert({ tenant_id: p.tenant_id, kind: "proposal_sent", direction: "out", person_id: p.person_id, actor_id: staff?.id || null, subject: `Proposal ${p.number}: ${p.title}`, body: link }).then(() => {}, (e: unknown) => console.error("activity", e));
+    /* No stage write here either. The status change fires the trigger; on a
+       resend, where the status does not change, the activity below carries it,
+       because the activity is now linked to the deal. */
+    if (p.person_id || p.opportunity_id) await db.from("activities").insert({ tenant_id: p.tenant_id, kind: "proposal_sent", direction: "out", person_id: p.person_id || null, opportunity_id: p.opportunity_id || null, actor_id: staff?.id || null, subject: `Proposal ${p.number}: ${p.title}`, body: link }).then(() => {}, (e: unknown) => console.error("activity", e));
     return json({ ok: true, link, resent });
   }
   return json({ ok: false, error: "bad_action" }, 400);
