@@ -14,6 +14,8 @@ const cors = {
 };
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: cors });
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+/* Every address BCA sends from or is notified on. One constant, one place to change. */
+const BCA_MAILBOX = "info@bcaleadership.com";
 const PAGE = "https://bca.coachingengine.app/proposal.html";
 const money = (m: number, c = "USD") => (Number(m || 0) / 100).toLocaleString("en-US", { style: "currency", currency: c, maximumFractionDigits: 0 });
 const day = (d?: string | null) => d ? new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }) : "";
@@ -116,11 +118,17 @@ Deno.serve(async (req) => {
     const now = new Date().toISOString(); const note = String(b.note || "").trim().slice(0, 2000) || null;
     await db.from("proposals").update({ status: decision, decided_at: now, decision_note: note }).eq("id", p.id);
     await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: decision, detail: note });
-    if (p.opportunity_id) await db.from("opportunities").update({ stage: decision === "accepted" ? "verbal" : "lost", ...(decision === "declined" ? { lost_reason: note || "Proposal declined" } : {}) }).eq("id", p.opportunity_id);
+    if (p.opportunity_id) await db.from("opportunities").update({
+      stage: decision === "accepted" ? "negotiation" : "closed_lost",
+      // An accepted proposal is a commitment, not a signature. It sits in
+      // Negotiation with the signature as the next step until a human closes it.
+      ...(decision === "accepted" ? { next_step: "Proposal accepted. Get the agreement signed." } : {}),
+      ...(decision === "declined" ? { lost_reason: note || "Proposal declined", closed_at: now } : {}),
+    }).eq("id", p.opportunity_id);
     try {
       const from = Deno.env.get("RESEND_FROM") || "BCA Leadership <info@bcaleadership.com>";
       const who = p.people ? [p.people.first_name, p.people.last_name].filter(Boolean).join(" ") : "The recipient";
-      await resend(from, ["admin@bcaleadership.com"], `${decision === "accepted" ? "Accepted" : "Declined"}: ${p.number} ${p.title}`,
+      await resend(from, [BCA_MAILBOX], `${decision === "accepted" ? "Accepted" : "Declined"}: ${p.number} ${p.title}`,
         brandEmail(`<p><b>${esc(who)}</b>${p.organizations?.name ? ` of ${esc(p.organizations.name)}` : ""} has <b>${decision}</b> proposal ${esc(p.number)}, <i>${esc(p.title)}</i>, worth ${money(p.value_minor, p.currency)}.</p>${note ? `<blockquote style="margin:14px 0;padding:6px 14px;border-left:3px solid ${BRAND.gold};color:#555;font-size:15px">${nl2p(note)}</blockquote>` : ""}${button("https://bca.coachingengine.app/#proposals", "Open in the console")}`, { preheader: `${p.number} ${decision}` }));
     } catch (e) { console.error("notify_failed", e); }
     return json({ ok: true, status: decision });
@@ -141,7 +149,7 @@ Deno.serve(async (req) => {
     if (!p.lines.length) return json({ ok: false, error: "no_lines" }, 422);
     if (["accepted", "declined"].includes(p.status)) return json({ ok: false, error: "closed" }, 409);
 
-    const mailbox = "admin@bcaleadership.com";
+    const mailbox = BCA_MAILBOX;
     const from = `${member.full_name || "BCA Leadership"} · BCA Leadership <${mailbox}>`;
     const link = `${PAGE}?t=${p.public_token}`;
     const first = p.people.first_name || "there";
@@ -164,7 +172,7 @@ Deno.serve(async (req) => {
     const resent = !!p.sent_at;
     await db.from("proposals").update({ status: p.status === "viewed" ? "viewed" : "sent", sent_at: p.sent_at || now, ...(staff?.id && !p.owner_id ? { owner_id: staff.id } : {}) }).eq("id", p.id);
     await db.from("proposal_events").insert({ tenant_id: p.tenant_id, proposal_id: p.id, kind: resent ? "resent" : "sent", person_id: staff?.id || null, detail: `To ${p.people.email}${sent?.id ? " · Resend " + sent.id : ""}` });
-    if (p.opportunity_id) await db.from("opportunities").update({ stage: "proposal" }).eq("id", p.opportunity_id).in("stage", ["qualifying", "briefing"]);
+    if (p.opportunity_id) await db.from("opportunities").update({ stage: "proposal" }).eq("id", p.opportunity_id).in("stage", ["prospect", "qualified"]);
     if (p.person_id) await db.from("activities").insert({ tenant_id: p.tenant_id, kind: "proposal_sent", direction: "out", person_id: p.person_id, actor_id: staff?.id || null, subject: `Proposal ${p.number}: ${p.title}`, body: link }).then(() => {}, (e: unknown) => console.error("activity", e));
     return json({ ok: true, link, resent });
   }

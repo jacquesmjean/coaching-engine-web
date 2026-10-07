@@ -394,7 +394,7 @@ table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines 
       <div class="rule"></div>
       <div class="stats" id="leadStats"></div>
       <div class="rule"></div>
-      <div class="search-row"><input class="search" id="leadSearch" type="search" placeholder="Search name, organisation, source, sector, region or status" autocomplete="off"><span class="search-n" id="leadCount"></span></div>
+      <div class="search-row"><input class="search" id="leadSearch" type="search" placeholder="Search name, organisation, source, sector, region or status" autocomplete="off"><span class="search-n" id="leadCount"></span><button class="btn" id="leadNew" type="button" style="margin-left:auto;white-space:nowrap">Log a call or add a lead</button></div>
       <div class="tblwrap"><table class="tbl">
         <caption>Highest scoring first</caption>
         <thead><tr><th>Name</th><th>Organisation</th><th>Source</th><th>Sector</th><th>Region</th><th class="num">Score</th><th>Status</th></tr></thead>
@@ -1266,7 +1266,7 @@ async function loadProposals(){
           <td class="${stale?"due":""}">${esc(day(r.valid_until))}${stale?"<br><span class='panel-m due'>past</span>":""}</td>
           <td>${esc(staffNameOf(r.owner_id)||"—")}</td></tr>`;}).join("")
         : `<tr><td colspan="9">Nothing yet.</td></tr>`}</tbody></table></div>
-    <p class="panel-m" style="margin-top:14px">Each proposal goes out as admin@bcaleadership.com with a private link. The recipient's opens and decision show here, and the linked opportunity moves stage on its own: sent puts it at Proposal, accepted at Verbal, declined at Lost.</p>`;
+    <p class="panel-m" style="margin-top:14px">Each proposal goes out as info@bcaleadership.com with a private link. The recipient's opens and decision show here, and the linked opportunity moves stage on its own: sent puts it at Proposal, accepted at Negotiation with the signature as the next step, declined at Closed Lost.</p>`;
   wireSearch("propSearch","propBody","propCount");
   $("propNew").addEventListener("click", () => editProposal(null, me));
   $("propWrap").querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => openProposal(tr.dataset.prop, me)));
@@ -1424,7 +1424,7 @@ async function loadIntel(){
     <div class="grid2">
       <div class="panel"><div class="panel-h"><span class="panel-t">Monday briefings</span></div>
         ${briefs.length ? briefs.map(b=>`<details style="margin-bottom:10px"><summary style="cursor:pointer"><b>Week of ${esc(day(b.week_of))}</b> <span class="panel-m">· ${esc(when(b.created_at))}${b.sent_to?.length?` · sent to ${esc(b.sent_to.join(", "))}`:""}</span></summary><div style="white-space:pre-wrap;margin-top:8px;line-height:1.6">${esc(b.body)}</div></details>`).join("")
-          : `<p class="panel-m">No briefing yet. It is written every Monday at 06:00 UTC from that week's figures and emailed to admin@bcaleadership.com.</p>`}</div>
+          : `<p class="panel-m">No briefing yet. It is written every Monday at 06:00 UTC from that week's figures and emailed to info@bcaleadership.com.</p>`}</div>
       <div class="panel"><div class="panel-h"><span class="panel-t">Recent questions</span></div>
         ${hist.length ? `<ul class="tl">${hist.map(h=>`<li><time>${esc(when(h.created_at))}</time> <b>${esc(h.question)}</b>${staffNameOf(h.asked_by)?` <span class="panel-m">· ${esc(staffNameOf(h.asked_by))}</span>`:""}<p>${h.ok ? esc((h.answer||"").slice(0,260)) : `<span class="due">Could not run: ${esc(h.error||"")}</span>`}</p></li>`).join("")}</ul>`
           : `<p class="panel-m">Nothing asked yet.</p>`}</div>
@@ -2149,7 +2149,7 @@ async function editCampaign(c, me){
       <label class="fld"><span>Audience</span><select id="cpAud" ${locked?"disabled":""}>${Object.entries(CAMP_AUD).map(([k,v])=>`<option value="${k}"${k===c.audience?" selected":""}>${v}</option>`).join("")}</select></label>
       <label class="fld"><span>Country filter (ISO code, optional)</span><input id="cpCountry" value="${esc(c.audience_filter?.country||"")}" placeholder="e.g. GH" maxlength="2" ${locked?"disabled":""}></label>
       <label class="fld"><span>Language filter (optional)</span><select id="cpLang" ${locked?"disabled":""}><option value="">Any</option>${["en","fr","es","pt"].map(l=>`<option value="${l}"${l===(c.audience_filter?.language||"")?" selected":""}>${l.toUpperCase()}</option>`).join("")}</select></label>
-      <label class="fld"><span>Send as</span><select id="cpFrom" ${locked?"disabled":""}>${["info@bcaleadership.com","admin@bcaleadership.com"].map(m=>`<option${m===c.from_mailbox?" selected":""}>${m}</option>`).join("")}</select></label>
+      <label class="fld"><span>Send as</span><select id="cpFrom" ${locked?"disabled":""}>${["info@bcaleadership.com"].map(m=>`<option${m===c.from_mailbox?" selected":""}>${m}</option>`).join("")}</select></label>
     </div>
     <p class="panel-m" id="cpAudN" style="margin:-6px 0 12px">${isNew?"Save the draft to count the audience.":"Counting the audience…"}</p>
     <div id="cpPick" class="panel" style="margin-bottom:14px;${c.audience==="selected"?"":"display:none"}">
@@ -2484,6 +2484,56 @@ async function loadLeads(){
   $("leadBody").querySelectorAll("tr.click").forEach(tr =>
     tr.addEventListener("click", () => openLead(tr.dataset.lead)));
   wireSearch("leadSearch", "leadBody", "leadCount"); $("leadSearch").runSearch?.();
+  const nb = $("leadNew");
+  if (nb && !nb.dataset.wired) { nb.dataset.wired = "1"; nb.addEventListener("click", newLead); }
+}
+
+/* Anyone who telephones, emails or walks up belongs in Leads the same minute.
+   This records the person and the conversation together: the conversation is what
+   opens a deal at Prospect, so a caller shows on the Pipeline with a follow-up
+   date instead of living in somebody's notebook. */
+function newLead(){
+  const d = drawer("Log a call or add a lead",
+    "Someone who phoned, emailed or came to us directly",
+    `<label class="fld"><span>Their name</span><input id="nlName" placeholder="Who got in touch"></label>
+     <label class="fld"><span>Organisation</span><input id="nlOrg"></label>
+     <label class="fld"><span>Email</span><input id="nlEmail" type="email"></label>
+     <label class="fld"><span>Phone, or how to reach them</span><input id="nlPhone"></label>
+     <label class="fld"><span>How they reached us</span><select id="nlSource">${optsFor(LEAD_SOURCES,"phone")}</select></label>
+     <label class="fld"><span>What they wanted</span><textarea id="nlNote" rows="4" placeholder="What was said, in a sentence or two"></textarea></label>
+     <div class="row-btn"><button class="btn" id="drSave" type="button">Save</button><span id="drMsg"></span></div>
+     <p class="panel-m" style="margin-top:12px">This saves the person and the conversation together. The lead appears in this
+     register at once, and the conversation opens a deal at Prospect on the Pipeline with a follow-up date three days out.</p>`);
+
+  wireSave(d, async () => {
+    const name = d.querySelector("#nlName").value.trim();
+    if (!name) throw new Error("A name is needed before this can be saved.");
+    const src   = d.querySelector("#nlSource").value;
+    const phone = d.querySelector("#nlPhone").value.trim();
+    const note  = d.querySelector("#nlNote").value.trim();
+
+    const [lead] = await w("POST", "leads", [{
+      tenant_id: TENANT, full_name: name,
+      organization: d.querySelector("#nlOrg").value.trim() || null,
+      email: d.querySelector("#nlEmail").value.trim() || null,
+      source: src, status: "new", score: 50, interest: note || null,
+    }]);
+
+    // The conversation, not the bare record. This is what raises the opportunity.
+    await w("POST", "activities", [{
+      tenant_id: TENANT, lead_id: lead.id,
+      kind: src === "phone" ? "call" : "note", direction: "in",
+      subject: src === "phone" ? "Inbound call" : "First contact",
+      body: [note, phone ? `Reach them on ${phone}` : null].filter(Boolean).join("\n\n") || null,
+      occurred_at: new Date().toISOString(),
+    }]);
+
+    await Promise.all([
+      guardReload(loadLeads, "leads", "leadStats"),
+      guardReload(loadPipeline, "pipeline", "pipWrap"),
+    ]);
+    setTimeout(() => openLead(lead.id), 350);
+  }, async () => {});
 }
 
 /* ───────── bench ───────── */
@@ -2647,6 +2697,7 @@ const stageLabel = (s) => STAGE_LABEL[s] || label(s);
    pair a colour-blind reader cannot separate, so the outcome is never the colour. */
 const STAGE_GLYPH = { closed_won:"\u2713", closed_lost:"\u2715" };
 const LEAD_STATUS = ["new","working","nurturing","qualified","converted","disqualified"];
+const LEAD_SOURCES = ["phone","website","referral","event","campaign","outbound","podcast","linkedin","member_intro","request_form","other"];
 const ACT_KINDS = ["call","meeting","email_sent","email_replied","linkedin","whatsapp","note","proposal_sent","contract_sent"];
 const LINES = ["individual_membership","corporate_membership","coaching_package","consulting","project_management","business_matching","sponsorship","conference","other"];
 const label = (s) => String(s||"").replace(/_/g," ").replace(/^./,c=>c.toUpperCase());

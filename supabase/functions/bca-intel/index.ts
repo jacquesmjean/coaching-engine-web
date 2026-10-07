@@ -155,8 +155,8 @@ Deno.serve(async (req) => {
       invoices_open_usd: await sum("invoices", "total_minor", (q) => q.in("status", ["sent", "overdue", "partial"])),
       invoices_overdue: await n("invoices", (q) => q.in("status", ["sent", "overdue", "partial"]).lt("due_on", today)),
       paid_last_week_usd: await sum("invoices", "paid_minor", (q) => q.eq("status", "paid").gte("updated_at", since)),
-      opportunities_open: await n("opportunities", (q) => q.in("stage", ["qualifying", "briefing", "proposal", "negotiation", "verbal"])),
-      opportunities_open_usd: await sum("opportunities", "value_minor", (q) => q.in("stage", ["qualifying", "briefing", "proposal", "negotiation", "verbal"])),
+      opportunities_open: await n("opportunities", (q) => q.in("stage", ["prospect", "qualified", "proposal", "negotiation"])),
+      opportunities_open_usd: await sum("opportunities", "value_minor", (q) => q.in("stage", ["prospect", "qualified", "proposal", "negotiation"])),
       proposals_out: await n("proposals", (q) => q.in("status", ["sent", "viewed"])),
       proposals_out_usd: await sum("proposals", "value_minor", (q) => q.in("status", ["sent", "viewed"])),
       proposals_accepted_last_week: await n("proposals", (q) => q.eq("status", "accepted").gte("decided_at", since)),
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
     let body: string;
     try { body = await ask(BRIEF_RULES, JSON.stringify(figures, null, 1), 700); }
     catch (e) { console.error("briefing_model", e); body = `Figures for the week of ${weekOf}: ${figures.invoices_open} invoices open worth $${figures.invoices_open_usd.toLocaleString()}, ${figures.invoices_overdue} overdue. ${figures.opportunities_open} opportunities open, ${figures.proposals_out} proposals out. ${figures.requests_new_last_week} new requests last week, ${figures.requests_unanswered_over_24h} unanswered past 24 hours. (Written summary unavailable: model key missing.)`; }
-    const to = ["admin@bcaleadership.com"];
+    const to = ["info@bcaleadership.com"];
     await admin.from("intel_briefings").upsert({ tenant_id: tenant, week_of: weekOf, figures, body, sent_to: to }, { onConflict: "tenant_id,week_of" });
     const key = Deno.env.get("RESEND_API_KEY");
     if (key) {
