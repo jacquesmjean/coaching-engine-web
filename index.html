@@ -147,6 +147,42 @@ table.tbl{border-collapse:collapse;width:100%;min-width:680px;font-size:14px}
 .col-k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--mute)}
 .col-n{font-family:var(--disp);font-size:25px;line-height:1.1;margin-top:5px;font-variant-numeric:tabular-nums}
 .col-v{font-family:var(--num);font-size:11.5px;color:var(--mute);margin-top:2px;font-variant-numeric:tabular-nums}
+
+/* ───────── lifecycle rail ─────────
+   Six stages, fixed order, fixed hues. The four open stages take the first four
+   categorical slots, validated as a set against this navy surface. Closed Won and
+   Closed Lost take the reserved status colours and also carry a glyph, because
+   red against green is the one pair a colour-blind reader cannot separate. Every
+   stage is directly labelled, so colour never carries the meaning on its own. */
+.lc{--st-prospect:#3987e5;--st-qualified:#d95926;--st-proposal:#199e70;
+    --st-negotiation:#c98500;--st-closed_won:#0ca30c;--st-closed_lost:#d03b3b}
+.lc-head{display:flex;flex-wrap:wrap;gap:3px 16px;align-items:baseline;margin-bottom:9px}
+.lc-t{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.lc-s{font-size:13px;color:var(--mute);margin:0}
+.lc-s b{color:var(--parch);font-weight:500;font-variant-numeric:tabular-nums}
+.lc-link{background:none;border:0;padding:0;font:inherit;color:var(--gold-lt);
+         border-bottom:1px solid var(--line);cursor:pointer}
+.lc-link:hover{border-bottom-color:var(--gold)}
+.lc-rail{display:flex;flex-wrap:wrap;align-items:stretch;gap:2px}
+.lc-step{flex:1 1 130px;min-width:130px;background:var(--navy-2);
+         border:1px solid var(--line-soft);border-top:2px solid var(--sc,var(--mute));
+         padding:10px 11px 11px;display:flex;flex-direction:column;gap:4px;
+         text-align:left;font:inherit;color:inherit;cursor:pointer}
+.lc-step:hover{border-color:var(--mute);border-top-color:var(--sc)}
+.lc-step[aria-pressed="true"]{background:var(--navy);border-color:var(--sc)}
+.lc-step.idle{opacity:.68}
+.lc-k{display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.09em;
+      text-transform:uppercase;color:var(--mute);white-space:nowrap}
+.lc-dot{width:8px;height:8px;border-radius:50%;background:var(--sc);flex:none}
+.lc-g{font-size:11px;color:var(--sc);flex:none;line-height:1}
+.lc-n{font-family:var(--disp);font-size:26px;line-height:1.05;font-variant-numeric:tabular-nums}
+.lc-v{font-family:var(--num);font-size:11.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.lc-bar{height:4px;background:var(--line-soft);border-radius:2px;overflow:hidden;margin-top:2px}
+.lc-fill{display:block;height:100%;background:var(--sc);border-radius:2px}
+.lc-sh{font-family:var(--num);font-size:10.5px;color:var(--mute)}
+.lc-arrow{align-self:center;color:var(--mute);flex:none;font-size:19px;line-height:1;padding:0 3px}
+.lc-split{align-self:stretch;width:1px;background:var(--line);margin:0 8px;flex:none}
+@media (max-width:780px){.lc-arrow,.lc-split{display:none}}
 tr.click{cursor:pointer} tr.click:hover{background:var(--navy-2)}
 .due{color:var(--rust)} .ok{color:var(--sage)}
 
@@ -568,13 +604,25 @@ async function w(method, path, body){
 }
 
 /** Row count without pulling the rows. */
+/* An exact row count from PostgREST.
+   This used to return 0 whenever the response or the content-range header could
+   not be read, which is why the Leads page reported "0 leads captured to date"
+   against 1,746 real rows. A count that cannot be read is now retried once and
+   then raised: a visible failure is recoverable, a false zero shown to the client
+   is not. */
 async function count(table, filter=""){
-  const r = await fetch(`${API}/rest/v1/${table}?select=id${filter?"&"+filter:""}`, {
-    headers:{ apikey:KEY, Authorization:"Bearer "+session.access_token, Prefer:"count=exact", Range:"0-0" },
-  });
-  const cr = r.headers.get("content-range") || "";
-  const n = Number(cr.split("/")[1]);
-  return Number.isFinite(n) ? n : 0;
+  const url = `${API}/rest/v1/${table}?select=id${filter?"&"+filter:""}`;
+  const hit = async () => {
+    const r = await fetch(url, {
+      headers:{ apikey:KEY, Authorization:"Bearer "+session.access_token, Prefer:"count=exact", Range:"0-0" },
+    });
+    if (!r.ok && r.status !== 206) throw new Error(`count ${table}: HTTP ${r.status}`);
+    const n = Number((r.headers.get("content-range") || "").split("/")[1]);
+    if (!Number.isFinite(n)) throw new Error(`count ${table}: no content-range`);
+    return n;
+  };
+  try { return await hit(); }
+  catch { await new Promise(r => setTimeout(r, 400)); return await hit(); }
 }
 
 /* ───────── shell text, EN / FR ───────── */
@@ -1236,7 +1284,7 @@ async function editProposal(p, me){
   p = p || { title:"", kind:"corporate_membership", status:"draft", currency:"USD", valid_until:"", intro:"", terms:"", notes:"", lines: [] };
   const [orgs, opps, staff] = await Promise.all([
     q("organizations?select=id,name&order=name&limit=400").catch(()=>[]),
-    q("opportunities?select=id,name,stage,organization_id&stage=in.(qualifying,briefing,proposal,negotiation)&order=name&limit=200").catch(()=>[]),
+    q("opportunities?select=id,name,stage,organization_id&stage=in.(prospect,qualified,proposal,negotiation)&order=name&limit=200").catch(()=>[]),
     Promise.resolve(Object.values(await staffMap()).filter(x=>x.status==="active")),
   ]);
   const locked = ["accepted","declined","withdrawn","expired","superseded"].includes(p.status);
@@ -2408,11 +2456,11 @@ async function openRequest(id){
     try {
       const line = REQ_LINE[r.kind] || "other";
       const [o] = await w("POST", "opportunities", [{ tenant_id: TENANT, request_id: id, person_id: r.person_id || null,
-        name: `${r.full_name}${r.organization ? " · " + r.organization : ""} — ${r.topic || label(r.kind)}`, line, stage: "qualifying", probability: 10,
+        name: `${r.full_name}${r.organization ? " · " + r.organization : ""} — ${r.topic || label(r.kind)}`, line, stage: "prospect", probability: 10,
         owner_id: $$("#reqOwner").value || myStaff?.person_id || null, next_step: "Qualify the request", next_step_on: todayISO() }]);
       await w("PATCH", `requests?id=eq.${id}`, { opportunity_id: o.id, status: r.status === "new" ? "triaging" : r.status, updated_at: new Date().toISOString() });
       await w("POST", "activities", [{ tenant_id: TENANT, kind: "note", direction: "internal", person_id: r.person_id || null, request_id: id, opportunity_id: o.id, actor_id: myStaff?.person_id || null, subject: "Opportunity raised", body: `Line: ${label(line)}. Raised from Inbound requests.` }]);
-      say("#reqMsg2", "Opportunity raised. Find it under Pipeline, stage Qualifying.", true); await loadRequests(); if (typeof loadPipeline === "function") loadPipeline().catch(()=>{}); setTimeout(() => { closeDrawer(); openRequest(id); }, 900);
+      say("#reqMsg2", "Opportunity raised. Find it under Pipeline, stage Prospect.", true); await loadRequests(); if (typeof loadPipeline === "function") loadPipeline().catch(()=>{}); setTimeout(() => { closeDrawer(); openRequest(id); }, 900);
     } catch (e) { say("#reqMsg2", e.message); }
   });
 }
@@ -2587,9 +2635,17 @@ async function loadWebsite(){
    is fixed by a check constraint in the database, so the console
    offers exactly those values and nothing that would be rejected.
    ───────────────────────────────────────────────────────────── */
-const STAGES = ["qualifying","briefing","proposal","negotiation","verbal","won","lost"];
-const OPEN_STAGES = STAGES.filter(s => s !== "won" && s !== "lost");
-const STAGE_P = { qualifying:10, briefing:25, proposal:50, negotiation:70, verbal:90, won:100, lost:0 };
+const STAGES = ["prospect","qualified","proposal","negotiation","closed_won","closed_lost"];
+const OPEN_STAGES = STAGES.filter(s => s !== "closed_won" && s !== "closed_lost");
+const CLOSED_STAGES = ["closed_won","closed_lost"];
+const STAGE_P = { prospect:10, qualified:25, proposal:50, negotiation:75, closed_won:100, closed_lost:0 };
+/* Written out rather than derived, so "Closed Won" never renders as "Closed won". */
+const STAGE_LABEL = { prospect:"Prospect", qualified:"Qualified", proposal:"Proposal",
+                      negotiation:"Negotiation", closed_won:"Closed Won", closed_lost:"Closed Lost" };
+const stageLabel = (s) => STAGE_LABEL[s] || label(s);
+/* Won and Lost carry a glyph as well as a colour. Red against green is the one
+   pair a colour-blind reader cannot separate, so the outcome is never the colour. */
+const STAGE_GLYPH = { closed_won:"\u2713", closed_lost:"\u2715" };
 const LEAD_STATUS = ["new","working","nurturing","qualified","converted","disqualified"];
 const ACT_KINDS = ["call","meeting","email_sent","email_replied","linkedin","whatsapp","note","proposal_sent","contract_sent"];
 const LINES = ["individual_membership","corporate_membership","coaching_package","consulting","project_management","business_matching","sponsorship","conference","other"];
@@ -2618,13 +2674,87 @@ async function owners(){
 }
 
 /* ───────── pipeline ───────── */
+
+/* The lead lifecycle, drawn.
+   Four open stages read left to right as a funnel; the two closed outcomes sit
+   apart behind a divider, because they are results and not steps you pass
+   through. Each stage carries its count, the money in it, a bar scaled against
+   the busiest stage, and its share of the pipeline. Clicking one filters the
+   table underneath. Nothing here is estimated: every figure is counted from the
+   rows just read. */
+function lifecycleRail(rows, leadTotal, capped){
+  const sum   = (a) => a.reduce((t,r)=>t+Number(r.value_minor||0),0);
+  const total = rows.length;
+  const max   = Math.max(1, ...STAGES.map(s => rows.filter(r=>r.stage===s).length));
+
+  const step = (s) => {
+    const inSt = rows.filter(r=>r.stage===s);
+    const n = inSt.length, v = sum(inSt);
+    const share = total ? Math.round(n/total*100) : 0;
+    const g = STAGE_GLYPH[s];
+    const tip = n
+      ? `${stageLabel(s)} — ${n} ${n===1?"opportunity":"opportunities"}, ${money(v)}, ${share}% of the pipeline. Click to filter the list below.`
+      : `${stageLabel(s)} — nothing at this stage yet.`;
+    return `<button type="button" class="lc-step${n?"":" idle"}" style="--sc:var(--st-${esc(s)})"
+        data-stage="${esc(s)}" aria-pressed="false" title="${esc(tip)}">
+        <span class="lc-k"><span class="lc-dot" aria-hidden="true"></span>${g?`<span class="lc-g" aria-hidden="true">${g}</span>`:""}${esc(stageLabel(s))}</span>
+        <span class="lc-n">${n}</span>
+        <span class="lc-v">${n?esc(money(v)):"—"}</span>
+        <span class="lc-bar" aria-hidden="true"><span class="lc-fill" style="width:${Math.round(n/max*100)}%"></span></span>
+        <span class="lc-sh">${total?share+"% of pipeline":"&nbsp;"}</span>
+      </button>`;
+  };
+
+  const raised = new Set(rows.map(r=>r.lead_id).filter(Boolean)).size;
+  const never  = Math.max(0, leadTotal - raised);
+  const head = total
+    ? `<b>${leadTotal.toLocaleString()}</b> leads on record · <b>${raised.toLocaleString()}</b> with an opportunity raised · <button type="button" class="lc-link" id="lcToLeads"><b>${never.toLocaleString()}</b> never raised</button>`
+    : `<b>${leadTotal.toLocaleString()}</b> leads on record, and no opportunity raised against any of them yet`;
+
+  return `<div class="lc">
+    <div class="lc-head"><span class="lc-t">Lead lifecycle</span><p class="lc-s">${head}</p></div>
+    <div class="lc-rail">
+      ${OPEN_STAGES.map(step).join('<span class="lc-arrow" aria-hidden="true">\u203a</span>')}
+      <span class="lc-split" aria-hidden="true"></span>
+      ${CLOSED_STAGES.map(step).join("")}
+    </div>
+    ${capped ? `<p class="lc-s" style="margin-top:8px">The list is capped at ${total} opportunities by soonest expected close, and these counts cover those.</p>` : ""}
+  </div>`;
+}
+
+/* Stage click filters the table. Clicking the live stage again clears it. */
+function wireLifecycle(totalRows){
+  const rail = $("pipBoard"), wrap = $("pipWrap");
+  rail.querySelectorAll(".lc-step").forEach(b => b.addEventListener("click", () => {
+    const already = b.getAttribute("aria-pressed") === "true";
+    rail.querySelectorAll(".lc-step").forEach(x => x.setAttribute("aria-pressed","false"));
+    const stage = already ? null : b.dataset.stage;
+    if (stage) b.setAttribute("aria-pressed","true");
+    let shown = 0;
+    wrap.querySelectorAll("tr[data-stage]").forEach(tr => {
+      const hit = !stage || tr.dataset.stage === stage;
+      tr.hidden = !hit; if (hit) shown++;
+    });
+    const cap = wrap.querySelector("caption");
+    if (cap) cap.textContent = stage
+      ? `${stageLabel(stage)} — ${shown} of ${totalRows} ${totalRows===1?"opportunity":"opportunities"}. Click the stage again to show all.`
+      : "Opportunities, soonest expected close first";
+  }));
+  $("lcToLeads")?.addEventListener("click", () =>
+    document.querySelector('.nav-item[data-v="leads"]')?.click());
+}
+
 async function loadPipeline(){
-  const rows = await q("opportunities?select=id,name,line,stage,value_minor,currency,probability,expected_close,next_step,next_step_on,lost_reason,people!opportunities_owner_id_fkey(first_name,last_name),organizations(name)&order=expected_close.asc&limit=300");
+  const LIMIT = 300;
+  const [rows, leadTotal] = await Promise.all([
+    q(`opportunities?select=id,name,line,stage,lead_id,value_minor,currency,probability,expected_close,next_step,next_step_on,lost_reason,people!opportunities_owner_id_fkey(first_name,last_name),organizations(name)&order=expected_close.asc&limit=${LIMIT}`),
+    count("leads"),
+  ]);
 
   const open = rows.filter(r => OPEN_STAGES.includes(r.stage));
   const sum  = (a) => a.reduce((t,r)=>t+Number(r.value_minor||0),0);
   const weighted = open.reduce((t,r)=>t+Number(r.value_minor||0)*(Number(r.probability ?? STAGE_P[r.stage] ?? 0)/100),0);
-  const won = rows.filter(r=>r.stage==="won");
+  const won = rows.filter(r=>r.stage==="closed_won");
 
   $("pipLede").textContent = rows.length
     ? `${open.length} open ${open.length===1?"opportunity":"opportunities"} worth ${money(sum(open))}, weighted to ${money(weighted)}.`
@@ -2636,13 +2766,7 @@ async function loadPipeline(){
      <div class="stat"><span class="stat-k">Won</span><span class="stat-v">${money(sum(won))}</span><span class="stat-n">${won.length} closed won</span></div>
      <div class="stat"><span class="stat-k">Needing a next step</span><span class="stat-v">${open.filter(r=>!r.next_step_on).length}</span><span class="stat-n">of ${open.length} open</span></div>`;
 
-  $("pipBoard").innerHTML = STAGES.map(s => {
-    const inSt = rows.filter(r=>r.stage===s);
-    const cls = s==="won" ? "won" : s==="lost" ? "lost" : (inSt.length ? "on" : "");
-    return `<div class="col ${cls}"><div class="col-k">${esc(label(s))}</div>
-      <div class="col-n">${inSt.length}</div>
-      <div class="col-v">${inSt.length ? money(sum(inSt)) : "—"}</div></div>`;
-  }).join("");
+  $("pipBoard").innerHTML = lifecycleRail(rows, leadTotal, rows.length >= LIMIT);
 
   const today = todayISO();
   $("pipWrap").innerHTML = rows.length
@@ -2652,10 +2776,10 @@ async function loadPipeline(){
       rows.map(r=>{
         const overdue = r.next_step_on && r.next_step_on < today && OPEN_STAGES.includes(r.stage);
         const who = r.people ? [r.people.first_name,r.people.last_name].filter(Boolean).join(" ") : "";
-        return `<tr class="click" data-opp="${esc(r.id)}">
+        return `<tr class="click" data-opp="${esc(r.id)}" data-stage="${esc(r.stage)}">
           <td class="wrap">${esc(r.name||"—")}${r.organizations?.name?`<br><span class="panel-m">${esc(r.organizations.name)}</span>`:""}</td>
           <td>${esc(label(r.line))}</td>
-          <td><span class="pill ${r.stage==="won"?"ok":r.stage==="lost"?"bad":"mut"}">${esc(label(r.stage))}</span></td>
+          <td><span class="pill ${r.stage==="closed_won"?"ok":r.stage==="closed_lost"?"bad":"mut"}">${esc(stageLabel(r.stage))}</span></td>
           <td class="num">${money(r.value_minor, r.currency||"USD")}</td>
           <td class="num">${esc(r.probability ?? STAGE_P[r.stage] ?? "—")}</td>
           <td>${esc(day(r.expected_close))}</td>
@@ -2663,10 +2787,12 @@ async function loadPipeline(){
           <td>${esc(who||"—")}</td></tr>`;
       }).join("") + `</tbody></table></div>`
     : `<div class="empty"><b>The pipeline is empty</b>
-        <p class="panel-m">BCA has ${(await count("leads")).toLocaleString()} leads on record and no opportunities raised against any of them. Open Leads, choose one, and raise an opportunity to begin.</p></div>`;
+        <p class="panel-m">BCA has ${leadTotal.toLocaleString()} leads on record and no opportunities raised against any of them. Open Leads, choose one, and raise an opportunity to begin.</p></div>`;
 
   $("pipWrap").querySelectorAll("tr.click").forEach(tr =>
     tr.addEventListener("click", () => openOpp(tr.dataset.opp)));
+
+  wireLifecycle(rows.length);
 }
 
 /* ───────── drawer ───────── */
@@ -2698,6 +2824,8 @@ function drawer(title, sub, bodyHTML){
 
 const optsFor = (list, sel) => list.map(v =>
   `<option value="${esc(v)}"${v===sel?" selected":""}>${esc(label(v))}</option>`).join("");
+const stageOpts = (list, sel) => list.map(v =>
+  `<option value="${esc(v)}"${v===sel?" selected":""}>${esc(stageLabel(v))}</option>`).join("");
 
 async function timelineFor(filter){
   const acts = await q(`activities?select=kind,direction,subject,body,occurred_at&${filter}&order=occurred_at.desc&limit=25`);
@@ -2793,7 +2921,7 @@ async function newOpp(lead){
     `<label class="fld"><span>Name it</span>
        <input id="oName" value="${esc((lead.organization || lead.full_name || "New opportunity"))}"></label>
      <label class="fld"><span>Line of business</span><select id="oLine">${optsFor(LINES,"individual_membership")}</select></label>
-     <label class="fld"><span>Stage</span><select id="oStage">${optsFor(OPEN_STAGES,"qualifying")}</select></label>
+     <label class="fld"><span>Stage</span><select id="oStage">${stageOpts(OPEN_STAGES,"prospect")}</select></label>
      <label class="fld"><span>Value, in whole ${"USD"}</span><input id="oValue" type="number" min="0" step="50" value="0"></label>
      <label class="fld"><span>Expected close</span><input id="oClose" type="date" value="${in90}"></label>
      <label class="fld"><span>Owner</span><select id="oOwner"><option value="">Unassigned</option>
@@ -2834,7 +2962,7 @@ async function openOpp(id){
   const who = await owners();
   const d = drawer(o.name || "Opportunity",
     `${label(o.line)} · ${money2(o.value_minor, o.currency||"USD")}`,
-    `<label class="fld"><span>Stage</span><select id="fStage">${optsFor(STAGES, o.stage)}</select></label>
+    `<label class="fld"><span>Stage</span><select id="fStage">${stageOpts(STAGES, o.stage)}</select></label>
      <label class="fld"><span>Probability, per cent</span>
        <input id="fProb" type="number" min="0" max="100" value="${esc(o.probability ?? STAGE_P[o.stage] ?? 10)}"></label>
      <label class="fld"><span>Value, in whole ${esc(o.currency||"USD")}</span>
@@ -2844,7 +2972,7 @@ async function openOpp(id){
        ${who.map(p=>`<option value="${esc(p.id)}"${p.id===o.owner_id?" selected":""}>${esc(p.name)}</option>`).join("")}</select></label>
      <label class="fld"><span>Next step</span><input id="fNext" value="${esc(o.next_step||"")}"></label>
      <label class="fld"><span>Next step by</span><input id="fNextOn" type="date" value="${esc(o.next_step_on||"")}"></label>
-     <label class="fld" id="lostWrap" ${o.stage==="lost"?"":'hidden'}><span>Why it was lost</span>
+     <label class="fld" id="lostWrap" ${o.stage==="closed_lost"?"":'hidden'}><span>Why it was lost</span>
        <input id="fLost" value="${esc(o.lost_reason||"")}"></label>
      <div class="row-btn"><button class="btn" id="drSave" type="button">Save</button><span id="drMsg"></span></div>
      ${actBlock()}
@@ -2871,7 +2999,7 @@ async function openOpp(id){
         next_step: d.querySelector("#fNext").value || null,
         next_step_on: d.querySelector("#fNextOn").value || null,
         lost_reason: stage === "lost" ? (d.querySelector("#fLost").value || null) : null,
-        closed_at: (stage==="won"||stage==="lost") ? (o.closed_at || new Date().toISOString()) : null,
+        closed_at: (stage==="closed_won"||stage==="closed_lost") ? (o.closed_at || new Date().toISOString()) : null,
       });
       await guardReload(loadPipeline, "pipeline", "pipWrap");
     },
