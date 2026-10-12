@@ -54,5 +54,10 @@ from auth.users u
 where p.tenant_id = '6b3d4f12-121f-4f17-9ab9-3be82c74ca03' and p.user_id is null and lower(u.email) = lower(p.email)
   and p.email in ('ablankson@bcaleadership.com','mngombe@bcaleadership.com');
 
+-- 5. BCA's Instagram page (Claudia, 7 Oct 2026), read by the console's "Open the page" button.
+update public.tenant_config
+set business_rules = jsonb_set(business_rules, '{social_pages,instagram}', '"https://www.instagram.com/bcaafrica"'::jsonb, true)
+where tenant_id = '6b3d4f12-121f-4f17-9ab9-3be82c74ca03';
+
 notify pgrst, 'reload schema';
 select business_rules->'country_routing' as country_routing from public.tenant_config where tenant_id = '6b3d4f12-121f-4f17-9ab9-3be82c74ca03';
