@@ -131,6 +131,15 @@ Deno.serve(async (req) => {
     const routing = { ...DEFAULT_ROUTING, ...(rules.inbound_routing || {}) };
     const owner = routing[kind] || routing.general;
     const hours = Number(rules.inbound_response_hours || 24);
+    // Owner by country (Claudia's table, tenant_config.business_rules.country_routing):
+    // { default: <person id>, owners: { <person id>: { name, email, countries: [...] } } }.
+    const cr = (rules.country_routing || {}) as { default?: string; owners?: Record<string, { name?: string; email?: string; countries?: string[] }> };
+    const norm = (c: unknown) => String(c || "").trim().toLowerCase().replace(/^the\s+/, "");
+    let ownerId: string | null = null;
+    for (const [pid, o] of Object.entries(cr.owners || {})) if ((o.countries || []).some((c) => norm(c) === norm(p.country))) { ownerId = pid; break; }
+    if (!ownerId) ownerId = cr.default || null;
+    const ownerPerson = ownerId ? (cr.owners || {})[ownerId] : undefined;
+    const ownerEmail = ownerPerson?.email && /@/.test(ownerPerson.email) ? ownerPerson.email : null;
 
     let personId: string | null = null;
     const { data: existing } = await supabase.from("people").select("id").eq("tenant_id", TENANT).eq("email", email).maybeSingle();
@@ -175,7 +184,7 @@ Deno.serve(async (req) => {
       tenant_id: TENANT, kind, full_name: fullName, work_email: email,
       organization: p.company || null, country: p.country || null,
       summary, topic, page_url: p.page || null, status: "new", source: "website", language: lang,
-      person_id: personId, owner_mailbox: owner, received_at: new Date().toISOString(),
+      person_id: personId, owner_mailbox: owner, owner_id: ownerId, received_at: new Date().toISOString(),
     }).select("id").single();
     if (re) console.error("request_insert_error", re);
     const requestId = reqRow?.id || null;
@@ -199,8 +208,10 @@ Deno.serve(async (req) => {
       ["Tier", p.tier || "—"], ["Topic", topic], ["Message", p.message || "—"], ["Reference", ref || "—"], ["Page", p.page || "—"],
     ].map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#666;vertical-align:top">${esc(k)}</td><td style="padding:4px 0"><b>${esc(v)}</b></td></tr>`).join("");
     const console_ = "https://bca.coachingengine.app/";
-    await send(Deno.env.get("RESEND_FROM") || mailboxName(owner), (Deno.env.get("RESEND_TO") || owner).split(",").map((x) => x.trim()).filter(Boolean),
-      subject, brandEmail(`<p>A new reach-out just came in from the BCA website. It is yours to answer within ${hours} hours.</p><table>${rows}</table><p style="margin-top:14px"><a href="${console_}" style="color:#24170C"><b>Open Inbound requests to reply</b></a> — the visitor has already received an acknowledgment${acked ? "" : " (email sending is off)"}.</p>`, { preheader: subject }), email);
+    const alertTo = Array.from(new Set((Deno.env.get("RESEND_TO") || [owner, ownerEmail].filter(Boolean).join(",")).split(",").map((x) => x.trim()).filter(Boolean)));
+    const assigned = ownerPerson?.name ? `<p>Assigned to <b>${esc(ownerPerson.name)}</b>${p.country ? ` (${esc(p.country)})` : " (no country given, so the default owner)"}.</p>` : "";
+    await send(Deno.env.get("RESEND_FROM") || mailboxName(owner), alertTo,
+      subject, brandEmail(`<p>A new reach-out just came in from the BCA website. It is yours to answer within ${hours} hours.</p>${assigned}<table>${rows}</table><p style="margin-top:14px"><a href="${console_}" style="color:#24170C"><b>Open Inbound requests to reply</b></a> — the visitor has already received an acknowledgment${acked ? "" : " (email sending is off)"}.</p>`, { preheader: subject }), email);
 
     return json({ ok: true, kind: isJoin ? "membership" : "enquiry", ref });
   } catch (e) {

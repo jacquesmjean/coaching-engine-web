@@ -383,7 +383,8 @@ table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines 
         <thead><tr><th>Who</th><th>Asked for</th><th>Owner</th><th>Received</th><th class="num">Waiting</th><th>Status</th></tr></thead>
         <tbody id="reqBody"><tr><td colspan="6"><span class="sk"></span></td></tr></tbody>
       </table></div>
-      <p class="panel-m" style="margin-top:10px">Every visitor gets an automatic acknowledgment in their language. Owner mailboxes follow BCA's routing rules: info@ for website enquiries and the Concierge, admin@ for applications, bookings and proposals. Replies from this screen go out as that mailbox. Anything past the target shows in red, and the owner gets a reminder each weekday morning.</p>
+      <p class="panel-m" style="margin-top:10px">Every visitor gets an automatic acknowledgment in their language. Every enquiry lands in info@bcaleadership.com and is assigned to the admin who owns the visitor's country; that admin is copied on the alert. Replies from this screen go out as info@. Anything past the target shows in red, and the owner gets a reminder each weekday morning.</p>
+      <div id="reqRouting"></div>
     </section>
 
     <!-- ───── leads ───── -->
@@ -2308,6 +2309,38 @@ If a call would be easier, tell me when suits you and I will set it up.` },
 };
 let REQ_TARGET_H = 24;
 let REQ_STAFF = [];
+let REQ_ROUTING = { default: null, owners: {} };
+/* Who owns which country: Claudia's table (7 Oct 2026), kept in tenant_config.business_rules.country_routing.
+   The intake function reads the same table when a request arrives. */
+function renderRouting(){
+  const el = $("reqRouting"); if (!el) return;
+  const owners = Object.entries(REQ_ROUTING.owners || {});
+  el.innerHTML = `<div class="panel" style="margin-top:18px"><div class="panel-h"><span class="panel-t">Who owns which country</span><span class="panel-m">New requests are assigned by the visitor's country</span></div>
+    ${owners.length ? `<table class="tbl"><tbody>${owners.map(([pid, o]) => `<tr><td style="white-space:nowrap"><b>${esc(o.name || "—")}</b>${pid === REQ_ROUTING.default ? ` <span class="pill mut">default</span>` : ""}<br><span class="panel-m">${esc(o.email || "")}</span></td><td class="wrap">${esc((o.countries || []).join(", ") || "—")}</td></tr>`).join("")}</tbody></table>`
+             : `<p class="panel-m">No country table yet. Run the country routing SQL, then edit it here.</p>`}
+    <div class="row-btn" style="margin-top:10px"><button class="btn ghost" id="reqRoutingEdit" type="button">Edit the table</button></div></div>`;
+  $("reqRoutingEdit").addEventListener("click", editRouting);
+}
+function editRouting(){
+  const staff = REQ_STAFF.filter(x => x.status === "active");
+  const owners = REQ_ROUTING.owners || {};
+  const d = drawer("Who owns which country", "One line per admin: the countries they answer for, separated by commas. Everything not listed goes to the default owner.", `
+    ${staff.map(s => `<label class="fld"><span>${esc(s.full_name || s.email)} · ${esc(s.email || "")}</span><input data-rt="${esc(s.person_id)}" value="${esc((owners[s.person_id]?.countries || []).join(", "))}" placeholder="Ghana, Nigeria, …"></label>`).join("")}
+    <label class="fld"><span>Default owner (blank or unlisted country)</span><select id="rtDefault">${staff.map(s => `<option value="${esc(s.person_id)}"${s.person_id === REQ_ROUTING.default ? " selected" : ""}>${esc(s.full_name || s.email)}</option>`).join("")}</select></label>
+    <p class="panel-m">Spell countries the way the website's country list does (Côte d’Ivoire, Congo (DRC), Gambia). "Francophone Africa" and "North Africa" are labels for people, not matches: list the countries themselves, or leave them to the default owner.</p>
+    <div class="row-btn"><button class="btn" id="rtSave" type="button">Save</button></div><p class="note" id="rtMsg" hidden></p>`);
+  d.querySelector("#rtSave").addEventListener("click", async (e) => {
+    const btn = e.currentTarget; btn.disabled = true;
+    try {
+      const next = { default: d.querySelector("#rtDefault").value || null, owners: {} };
+      d.querySelectorAll("input[data-rt]").forEach(inp => { const s = staff.find(x => x.person_id === inp.dataset.rt); const list = inp.value.split(",").map(x => x.trim()).filter(Boolean); if (list.length || inp.dataset.rt === next.default) next.owners[inp.dataset.rt] = { name: s?.full_name || s?.email || "", email: s?.email || "", countries: list }; });
+      const [cfg] = await q("tenant_config?select=tenant_id,business_rules&limit=1");
+      await w("PATCH", `tenant_config?tenant_id=eq.${cfg.tenant_id}`, { business_rules: { ...(cfg.business_rules || {}), country_routing: next } });
+      REQ_ROUTING = next; renderRouting(); note(d.querySelector("#rtMsg"), "Saved. New requests follow this table from now on.", true);
+    } catch (err) { note(d.querySelector("#rtMsg"), "Could not save: " + (err.message || err)); }
+    btn.disabled = false;
+  });
+}
 const hoursBetween = (a, b) => Math.max(0, (new Date(b) - new Date(a)) / 36e5);
 const fmtWait = (h) => h < 1 ? `${Math.round(h*60)} min` : h < 48 ? `${h.toFixed(h<10?1:0)} h` : `${(h/24).toFixed(1)} d`;
 const when = (iso) => iso ? new Date(iso).toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
@@ -2317,6 +2350,9 @@ async function loadRequests(){
   const cfg = (await q("tenant_config?select=business_rules&limit=1"))[0];
   REQ_TARGET_H = Number(cfg?.business_rules?.inbound_response_hours || 24);
   try { REQ_STAFF = await q("staff?select=person_id,full_name,email,role,status&status=eq.active&order=full_name"); } catch { REQ_STAFF = []; }
+  REQ_ROUTING = cfg?.business_rules?.country_routing || { default: null, owners: {} };
+  for (const [pid, o] of Object.entries(REQ_ROUTING.owners || {})) if (!REQ_STAFF.some(x => x.person_id === pid)) REQ_STAFF.push({ person_id: pid, full_name: o.name, email: o.email, role: "admin", status: "active", routing_only: true });
+  renderRouting();
   const rows = await q("requests?select=id,kind,topic,full_name,work_email,organization,country,owner_mailbox,owner_id,status,received_at,first_response_at,acknowledged_at&order=received_at.desc&limit=300");
   const now = new Date();
   const open = rows.filter(r => !r.first_response_at && !["declined","dormant","won"].includes(r.status));
