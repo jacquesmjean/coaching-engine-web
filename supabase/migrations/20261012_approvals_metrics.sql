@@ -44,7 +44,7 @@ alter table public.social_posts
 
 update public.tenant_config
 set business_rules = business_rules || jsonb_build_object('approver', coalesce(business_rules->'approver',
-  '{"name":"Dr. Modupe Taylor-Pearce","email":"modupetp@gmail.com"}'::jsonb))
+  '{"name":"Dr. Modupe Taylor-Pearce","email":"mtaylorpearce@bcaleadership.com"}'::jsonb))
 where tenant_id = '6b3d4f12-121f-4f17-9ab9-3be82c74ca03';
 
 notify pgrst, 'reload schema';
