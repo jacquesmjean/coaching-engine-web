@@ -1594,16 +1594,38 @@ const fmtPeriod = (p) => `${day(p.period_start)} – ${day(p.period_end)}`;
 const inPeriod = (p, d = new Date().toISOString().slice(0,10)) => p.period_start <= d && d <= p.period_end;
 
 /* review trail, shared by plans, social posts and blog posts */
+/* ── AI drafting (bca-write) and approval by email (bca-approve) ── */
+async function fnCall(fn, body){
+  const res = await fetch(`${API}/functions/v1/${fn}`, { method:"POST", headers:{ "Content-Type":"application/json", apikey:KEY, Authorization:"Bearer "+(await freshToken()) }, body: JSON.stringify(body) });
+  const j = await res.json().catch(()=>({}));
+  if (!res.ok || !j.ok) throw new Error({ no_model_key:"AI drafting is not switched on yet: the model key (ANTHROPIC_API_KEY) is missing in Supabase.", no_plan:"Pick the six-month plan first; the draft is written from it.", forbidden:"Only owners and admins can do this.", unauthenticated:"Your session expired. Reload and sign in again.", bad_email:"That does not look like an email address.", not_found:"That item no longer exists." }[j.error] || (j.detail || j.error || "That did not work."));
+  return j;
+}
+const aiCall = (body) => fnCall("bca-write", body);
+const approveCall = (body) => fnCall("bca-approve", body);
+let APPROVER = null;
+async function approver(){ if (APPROVER) return APPROVER; const cfg = (await q("tenant_config?select=business_rules&limit=1").catch(()=>[]))[0]; APPROVER = cfg?.business_rules?.approver || { name:"", email:"" }; return APPROVER; }
+const busy = (btn, on, text) => { if (!btn) return; btn.disabled = on; if (text !== undefined) { if (on) { btn.dataset.t = btn.textContent; btn.textContent = text; } else if (btn.dataset.t) btn.textContent = btn.dataset.t; } };
+
 async function reviewPanel(dr, entity, id, me, onDecision){
   const host = dr.querySelector("#rvWrap"); if (!host || !id) return;
   const rows = await q(`content_reviews?select=*&entity=eq.${entity}&entity_id=eq.${id}&order=created_at.desc&limit=50`).catch(()=>[]);
   const canReview = ["owner","admin","board"].includes(me?.role);
+  const canWrite = ["owner","admin"].includes(me?.role);
+  const ap = canWrite ? await approver() : {};
+  const sentReqs = canWrite ? await q(`approval_requests?select=recipient_name,recipient_email,sent_at,opened_at,decided_at,decision&entity=eq.${entity}&entity_id=eq.${id}&order=sent_at.desc&limit=5`).catch(()=>[]) : [];
   host.innerHTML = `<div class="rule"></div>
     <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Review trail</b> · ${rows.length ? `${rows.length} note${rows.length===1?"":"s"}` : "nothing yet"}</p>
     ${rows.length ? `<ul class="tl">${rows.map(r=>`<li><time>${esc(when(r.created_at))}</time><b>${esc(staffNameOf(r.reviewer)||"someone")}</b> · <span class="pill ${r.decision==="approved"?"cur":r.decision==="changes"?"d60":"mut"}" style="font-size:11px">${esc(label(r.decision))}</span>${r.note?`<br><span class="panel-m">${esc(r.note)}</span>`:""}</li>`).join("")}</ul>` : ""}
     ${canReview ? `<label class="fld"><span>Add a review note</span><textarea id="rvNote" rows="2" placeholder="What works, what must change"></textarea></label>
     <div class="row-btn"><button class="btn ghost" id="rvComment" type="button">Comment</button><button class="btn ghost" id="rvChanges" type="button">Request changes</button><button class="btn" id="rvApprove" type="button">Approve</button></div>
-    <p class="note" id="rvMsg" hidden></p>` : ""}`;
+    <p class="note" id="rvMsg" hidden></p>` : ""}
+    ${canWrite ? `<div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Send for approval by email</b> · the approver gets a summary with Approve and Request changes buttons; no login needed. ${sentReqs.length ? `Sent ${sentReqs.length} time${sentReqs.length===1?"":"s"}; last to ${esc(sentReqs[0].recipient_name||sentReqs[0].recipient_email)} ${esc(when(sentReqs[0].sent_at))}${sentReqs[0].decided_at?` · <b>${esc(label(sentReqs[0].decision))}</b> ${esc(when(sentReqs[0].decided_at))}`:sentReqs[0].opened_at?" · opened, no decision yet":" · not opened yet"}.` : ""}</p>
+    <div class="grid2"><label class="fld"><span>To (name)</span><input id="apName" value="${esc(ap.name||"")}" placeholder="Dr. Modupe Taylor-Pearce"></label><label class="fld"><span>Email</span><input id="apEmail" type="email" value="${esc(ap.email||"")}" placeholder="name@bcaleadership.com"></label></div>
+    <label class="fld"><span>A line for the approver (optional)</span><input id="apMsg" placeholder="e.g. This is November's first post; the other seven follow the same line."></label>
+    <div class="row-btn"><button class="btn ghost" id="apSend" type="button">Send for approval</button></div>
+    <p class="note" id="apMsgOut" hidden></p>` : ""}`;
   const add = async (decision) => {
     const note = host.querySelector("#rvNote").value.trim();
     if (decision !== "approved" && !note) return note_(host, "Write the note first.");
@@ -1617,6 +1639,17 @@ async function reviewPanel(dr, entity, id, me, onDecision){
   host.querySelector("#rvComment")?.addEventListener("click", () => add("comment"));
   host.querySelector("#rvChanges")?.addEventListener("click", () => add("changes"));
   host.querySelector("#rvApprove")?.addEventListener("click", () => add("approved"));
+  host.querySelector("#apSend")?.addEventListener("click", async (e) => {
+    const btn = e.currentTarget; const to_email = host.querySelector("#apEmail").value.trim(), to_name = host.querySelector("#apName").value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to_email)) return note(host.querySelector("#apMsgOut"), "Add the approver's email address.");
+    busy(btn, true, "Sending…");
+    try {
+      const r = await approveCall({ action:"send", entity, entity_id: id, to_email, to_name, message: host.querySelector("#apMsg").value.trim() });
+      note(host.querySelector("#apMsgOut"), r.sent ? `Sent to ${to_name||to_email}. You will get an email when they decide.` : `Email sending is off, so share this link by hand: ${r.link}`, true);
+      if (onDecision) await onDecision("sent", null);
+      setTimeout(() => reviewPanel(dr, entity, id, me, onDecision), 1200);
+    } catch (err) { note(host.querySelector("#apMsgOut"), err.message); busy(btn, false); }
+  });
 }
 
 /* ── plans ── */
@@ -1789,6 +1822,7 @@ async function editBlog(p, me, plans){
       <label class="fld"><span>Excerpt (${l.toUpperCase()}) · shows on the card and in search, under 200 characters <span class="panel-m" id="bgExN-${l}"></span></span><textarea id="bgEx-${l}" rows="2" ${locked?"disabled":""}>${esc(p[`excerpt_${l}`]||"")}</textarea></label>
       <label class="fld"><span>Article (${l.toUpperCase()}) · blank line between paragraphs · a line starting "## " is a heading</span><textarea id="bgBody-${l}" rows="16" ${locked?"disabled":""} style="font-size:14px;line-height:1.55">${esc(p[`body_${l}`]||"")}</textarea></label>
     </div>`).join("")}
+    ${!locked ? `<div class="row-btn" style="margin:-4px 0 10px"><button class="btn ghost mini" id="bgAI" type="button">Draft the English with AI</button><button class="btn ghost mini" id="bgTr" type="button">Translate English into FR, ES, PT</button><span class="panel-m">Drafts land in the boxes; nothing is saved until you press Save.</span></div>` : ""}
     <div class="row-btn" style="flex-wrap:wrap">
       ${!locked ? `<button class="btn" id="bgSave" type="button">${isNew?"Save draft":"Save"}</button>` : ""}
       ${!isNew ? `<button class="btn ghost" id="bgPreview" type="button">Preview the page</button>` : ""}
@@ -1821,6 +1855,21 @@ async function editBlog(p, me, plans){
     return p.id;
   };
   $$("#bgSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const id = await save(); say("Saved.", true); setTimeout(() => reopen(id), 400); } catch (err) { say(/duplicate|unique/i.test(err.message) ? "That web address is already used by another post." : err.message); btn.disabled = false; } });
+  $$("#bgAI")?.addEventListener("click", async (e) => { const btn = e.currentTarget;
+    const plan_id = $$("#bgPlan").value; if (!plan_id) return say("Pick the plan first; the post is written from the month's theme.");
+    busy(btn, true, "Writing… about a minute");
+    try { const r = await aiCall({ kind:"blog", plan_id, lang:"en", title: $$("#bgTitle-en").value.trim() || undefined });
+      $$("#bgTitle-en").value = r.title || ""; $$("#bgEx-en").value = r.excerpt || ""; $$("#bgBody-en").value = r.body || ""; $$("#bgTitle-en").dispatchEvent(new Event("input")); $$("#bgEx-en").dispatchEvent(new Event("input"));
+      dr.querySelectorAll(".bg-tab").forEach(t => t.classList.toggle("on", t.dataset.l === "en")); dr.querySelectorAll(".bg-pane").forEach(pn => pn.hidden = pn.dataset.l !== "en");
+      say("English draft in place. Read it as the author would, edit, then Save. Then translate.", true); }
+    catch (err) { say(err.message); } busy(btn, false); });
+  $$("#bgTr")?.addEventListener("click", async (e) => { const btn = e.currentTarget;
+    const plan_id = $$("#bgPlan").value; const source = { title: $$("#bgTitle-en").value.trim(), excerpt: $$("#bgEx-en").value.trim(), body: $$("#bgBody-en").value.trim() };
+    if (!plan_id) return say("Pick the plan first."); if (!source.title || !source.body) return say("Write or draft the English first.");
+    busy(btn, true, "Translating… about two minutes");
+    try { for (const l of ["fr","es","pt"]) { const r = await aiCall({ kind:"blog", plan_id, lang:l, source }); $$(`#bgTitle-${l}`).value = r.title || ""; $$(`#bgEx-${l}`).value = r.excerpt || ""; $$(`#bgBody-${l}`).value = r.body || ""; $$(`#bgEx-${l}`).dispatchEvent(new Event("input")); }
+      say("French, Spanish and Portuguese are in their tabs. Have a native reader check them, then Save.", true); }
+    catch (err) { say(err.message); } busy(btn, false); });
   $$("#bgPreview")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { if (!locked) await save(); const j = await blogCall("preview", p.id); const win = window.open("", "_blank"); win.document.open(); win.document.write(j.html); win.document.close(); if (j.missing?.length) say(`Preview open. Still missing before publish: ${j.missing.join(", ")}.`); } catch (err) { say(err.message); } btn.disabled = false; });
   $$("#bgReview")?.addEventListener("click", async () => { try { const b = collect(); if (!blogComplete(b)) throw new Error(`All four languages are needed before review (${blogLangs(b)}/4 ready).`); await save({ status:"review" }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
   $$("#bgDraft")?.addEventListener("click", async () => { try { await save({ status:"draft", approved_by:null, approved_at:null }); setTimeout(() => reopen(p.id), 300); } catch (err) { say(err.message); } });
@@ -1961,6 +2010,7 @@ async function loadSocial(me, campaigns, plans){
     <div class="eyebrow" style="margin-top:6px">Social media</div>
     <p class="lede">${rows.length ? `${pub30.length} post${pub30.length===1?"":"s"} published in the last 30 days${pub30.length?` (${SOC_ORDER.filter(p=>byPlat[p]).map(p=>`${SOC[p].name} ${byPlat[p]}`).join(", ")})`:""}. ${due.length} due this week${late.length?`, <b style="color:var(--rust)">${late.length} overdue</b>`:""}.` : "No social posts yet. Write the first one below."}</p>
     <div class="row-btn" style="margin:14px 0"><button class="btn" id="socNew" type="button"${canWrite?"":" disabled"}>New social post</button>
+      ${canWrite && (plans||[]).length ? `<button class="btn ghost" id="socMonth" type="button">Draft a month with AI</button>` : ""}
       ${SOC_ORDER.map(p => `<button class="btn ghost soc-page" type="button" data-plat="${p}">${SOC[p].name} page</button>`).join("")}</div>
     <div class="search-row"><input class="search" id="socSearch" type="search" placeholder="Search platform, text, campaign or status" autocomplete="off"><span class="search-n" id="socCount"></span></div>
     <div class="tblwrap"><table class="tbl"><caption>Soonest first. Click a post to work on it.</caption>
@@ -1976,13 +2026,57 @@ async function loadSocial(me, campaigns, plans){
         : `<tr><td colspan="5">Nothing yet.</td></tr>`}</tbody></table></div>
     ${nPaused ? `<p class="panel-m" style="margin-top:10px">${nPaused} post${nPaused===1?"":"s"} on paused platforms (${SOC_PAUSED.map(k=>SOC[k].name).join(", ")}) ${nPaused===1?"is":"are"} kept but hidden.</p>` : ""}
     <p class="panel-m" style="margin-top:14px">Write once, make a version for each platform, approve, schedule. On the day: open the post, press Copy, open the page, paste and publish, then record the live link here so the calendar and the campaign show what went out.</p>
+    <div id="socPerf"></div>
     <div id="socBrand"></div>`;
   brandKit().then(k => { const el = $("socBrand"); if (el) el.innerHTML = brandPanelHtml(k); });
+  socialPerformance(rows, plans).catch(()=>{});
+  $("socMonth")?.addEventListener("click", () => draftMonth(me, plans));
   wireSearch("socSearch","socBody","socCount");
   $("socNew").addEventListener("click", () => editSocial(null, me, campaigns, plans));
   wrap.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", async () => { const [p] = await q(`social_posts?select=*&id=eq.${tr.dataset.soc}&limit=1`); if (p) editSocial(p, me, campaigns, plans); }));
   const pages = await socialPages();
   wrap.querySelectorAll(".soc-page").forEach(b => { const u = pages[b.dataset.plat]; if (!u) { b.disabled = true; b.title = "No page on record yet"; } else b.addEventListener("click", () => window.open(u, "_blank", "noopener")); });
+}
+
+/* Performance by month: the numbers the team typed on published posts, plus leads that arrived in the engine that month. */
+async function socialPerformance(rows, plans){
+  const el = $("socPerf"); if (!el) return;
+  const pub = rows.filter(r => r.status === "published");
+  if (!pub.length) { el.innerHTML = `<div class="panel" style="margin-top:14px"><div class="panel-h"><span class="panel-t">Performance</span><span class="panel-m">appears once posts are marked as published</span></div><p class="panel-m">On each published post, type the platform's numbers (impressions, reactions, comments, shares, link clicks) and press Save numbers. This panel adds them up by month and sets them beside the leads that came in.</p></div>`; return; }
+  const leads = await q("leads?select=created_at&order=created_at.desc&limit=1000").catch(()=>[]);
+  const months = {};
+  pub.forEach(r => { const k = (r.published_at||r.scheduled_for||r.created_at).slice(0,7); const m = months[k] = months[k] || { posts:0, measured:0, impressions:0, reactions:0, comments:0, shares:0, clicks:0, leads:0, plan:null };
+    m.posts++; if (r.metrics_at) m.measured++; ["impressions","reactions","comments","shares","clicks"].forEach(f => m[f] += Number(r[f]||0)); m.plan = m.plan || (plans||[]).find(p => p.id === r.plan_id)?.headline || null; });
+  leads.forEach(l => { const k = (l.created_at||"").slice(0,7); if (months[k]) months[k].leads++; });
+  const keys = Object.keys(months).sort().reverse();
+  const n = (v) => v ? v.toLocaleString() : "—";
+  el.innerHTML = `<div class="panel" style="margin-top:14px"><div class="panel-h"><span class="panel-t">Performance by month</span><span class="panel-m">numbers typed on published posts · leads arriving in the engine that month</span></div>
+    <div class="tblwrap"><table class="tbl"><thead><tr><th>Month</th><th>Posts</th><th class="num">Impressions</th><th class="num">Reactions</th><th class="num">Comments</th><th class="num">Shares</th><th class="num">Link clicks</th><th class="num">Engagement</th><th class="num">Leads</th></tr></thead>
+    <tbody>${keys.map(k => { const m = months[k]; const eng = m.impressions ? ((m.reactions+m.comments+m.shares)/m.impressions*100).toFixed(1)+"%" : "—";
+      return `<tr><td><b>${esc(k)}</b>${m.plan?`<br><span class="panel-m">${esc(m.plan)}</span>`:""}</td><td>${m.posts}${m.measured<m.posts?` <span class="panel-m">(${m.posts-m.measured} without numbers)</span>`:""}</td><td class="num">${n(m.impressions)}</td><td class="num">${n(m.reactions)}</td><td class="num">${n(m.comments)}</td><td class="num">${n(m.shares)}</td><td class="num">${n(m.clicks)}</td><td class="num">${eng}</td><td class="num">${n(m.leads)}</td></tr>`; }).join("")}</tbody></table></div>
+    <p class="panel-m" style="margin-top:8px">Engagement = reactions, comments and shares as a share of impressions. When BCA's pages are connected for direct publishing, these numbers fill in by themselves.</p></div>`;
+}
+/* Draft a whole month: eight posts, Tuesday and Thursday 08:00 UTC through the plan's period, as drafts. */
+async function draftMonth(me, plans){
+  const dr = drawer("Draft a month with AI", "Eight posts written from the month's theme, saved as drafts for the team to edit and approve.", `
+    <label class="fld"><span>Six-month plan (the month)</span><select id="dmPlan">${(plans||[]).map(x=>`<option value="${esc(x.id)}"${inPeriod(x)?" selected":""}>${esc(x.title)}</option>`).join("")}</select></label>
+    <div class="grid2"><label class="fld"><span>Platform</span><select id="dmPlat">${SOC_ORDER.map(k=>`<option value="${k}">${SOC[k].name}</option>`).join("")}</select></label>
+    <label class="fld"><span>How many</span><select id="dmN"><option value="8" selected>8 (two a week)</option><option value="4">4 (one a week)</option><option value="12">12 (three a week)</option></select></label></div>
+    <p class="panel-m">Posts land on Tuesdays and Thursdays at 08:00 UTC starting from the first week of the plan's period, as drafts. Nothing is approved or scheduled by this.</p>
+    <div class="row-btn"><button class="btn" id="dmGo" type="button">Draft the month</button></div><p class="note" id="dmMsg" hidden></p>`);
+  const $$ = (q_) => dr.querySelector(q_);
+  $$("#dmGo").addEventListener("click", async (e) => { const btn = e.currentTarget; busy(btn, true, "Writing… this takes about a minute");
+    try {
+      const plan = (plans||[]).find(x => x.id === $$("#dmPlan").value); if (!plan) throw new Error("Pick the plan.");
+      const platform = $$("#dmPlat").value, count = Number($$("#dmN").value);
+      const r = await aiCall({ kind:"social", plan_id: plan.id, platform, count });
+      const posts = r.posts || []; if (!posts.length) throw new Error("No drafts came back.");
+      const slots = []; const d = new Date(plan.period_start + "T08:00:00Z"); const days = count >= 12 ? [1,3,4] : count <= 4 ? [2] : [2,4];
+      while (slots.length < posts.length && d < new Date(plan.period_end + "T23:59:59Z")) { if (days.includes(d.getUTCDay())) slots.push(d.toISOString()); d.setUTCDate(d.getUTCDate()+1); }
+      await w("POST", "social_posts", posts.map((x, i) => ({ tenant_id: TENANT, created_by: me?.person_id||null, platform, plan_id: plan.id, body: (x.body||"") + ((x.hashtags||[]).length ? "\n\n" + x.hashtags.join(" ") : ""), link_url: x.link || null, media_note: x.media_note || null, scheduled_for: slots[i] || null, status: "draft" })));
+      note($$("#dmMsg"), `${posts.length} drafts saved under ${plan.title}. Open each one, read it, edit, approve.`, true);
+      await loadCampaigns(); setTimeout(closeDrawer, 1500);
+    } catch (err) { note($$("#dmMsg"), err.message); busy(btn, false); } });
 }
 
 async function editSocial(p, me, campaigns, plans){
@@ -2000,13 +2094,19 @@ async function editSocial(p, me, campaigns, plans){
     <label class="fld"><span>Email campaign (optional)</span><select id="spCamp" ${locked?"disabled":""}><option value="">—</option>${(campaigns||[]).map(c=>`<option value="${esc(c.id)}"${c.id===p.campaign_id?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
     <p class="panel-m" id="spTip" style="margin:-6px 0 12px"></p>
     <label class="fld" id="spTitleWrap"><span>Title <span class="panel-m" id="spTitleN"></span></span><input id="spTitle" value="${esc(p.title||"")}" ${locked?"disabled":""} placeholder="YouTube title"></label>
-    <label class="fld"><span>Text <span class="panel-m" id="spBodyN"></span></span><textarea id="spBody" rows="8" ${locked?"disabled":""} placeholder="Write the post as it will appear">${esc(p.body||"")}</textarea></label>
+    <label class="fld"><span>Text <span class="panel-m" id="spBodyN"></span>${!locked ? `<button class="btn ghost mini" id="spAI" type="button" style="float:right;margin-top:-4px">Draft with AI</button>` : ""}</span><textarea id="spBody" rows="8" ${locked?"disabled":""} placeholder="Write the post as it will appear">${esc(p.body||"")}</textarea></label>
     <div class="grid2">
       <label class="fld"><span>Link (optional)</span><input id="spLink" value="${esc(p.link_url||"")}" ${locked?"disabled":""} placeholder="https://bcaleadership.com/…"></label>
       <label class="fld"><span>Image or video</span><input id="spMedia" value="${esc(p.media_note||"")}" ${locked?"disabled":""} placeholder="Which creative, e.g. MLC banner v2 in the vault"></label>
     </div>
     <label class="fld"><span>Publish on (your local time)</span><input id="spWhen" type="datetime-local" value="${localDT(p.scheduled_for)}" ${locked?"disabled":""}></label>
-    ${p.status === "published" ? `<p class="panel-m">Published ${esc(when(p.published_at))}${p.posted_by?` by ${esc(staffNameOf(p.posted_by)||"")}`:""}.</p>` : ""}
+    ${p.status === "published" ? `<p class="panel-m">Published ${esc(when(p.published_at))}${p.posted_by?` by ${esc(staffNameOf(p.posted_by)||"")}`:""}.</p>
+    <div class="panel" style="margin:8px 0 12px"><div class="panel-h"><span class="panel-t">Performance</span><span class="panel-m">${p.metrics_at ? `numbers as of ${esc(when(p.metrics_at))}` : "type the numbers from the platform's post insights"}</span></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px">
+        ${[["impressions","Impressions"],["reactions","Reactions"],["comments","Comments"],["shares","Shares"],["clicks","Link clicks"]].map(([k,n])=>`<label class="fld"><span>${n}</span><input id="pm-${k}" type="number" min="0" value="${p[k]??""}" ${canWrite?"":"disabled"}></label>`).join("")}
+      </div>
+      <label class="fld"><span>Note (optional)</span><input id="pm-note" value="${esc(p.metrics_note||"")}" ${canWrite?"":"disabled"} placeholder="e.g. boosted for 3 days; best comment from a Lagos CEO"></label>
+      ${canWrite ? `<div class="row-btn"><button class="btn ghost" id="pmSave" type="button">Save numbers</button></div>` : ""}</div>` : ""}
     <div class="row-btn" style="flex-wrap:wrap">
       ${!locked ? `<button class="btn" id="spSave" type="button">${isNew?"Save draft":"Save"}</button>` : ""}
       ${!isNew ? `<button class="btn ghost" id="spCopy" type="button">Copy text</button><button class="btn ghost" id="spCard" type="button">Branded image</button><button class="btn ghost" id="spCardWide" type="button">Wide image</button>` : ""}
@@ -2048,6 +2148,16 @@ async function editSocial(p, me, campaigns, plans){
     return p.id;
   };
   $$("#spSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const id = await save(); say("Saved.", true); setTimeout(() => reopen(id), 400); } catch (err) { say(err.message); btn.disabled = false; } });
+  $$("#pmSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true;
+    try { const m = {}; ["impressions","reactions","comments","shares","clicks"].forEach(k => { const v = $$("#pm-"+k).value; m[k] = v === "" ? null : Number(v); }); m.metrics_note = $$("#pm-note").value.trim() || null; m.metrics_at = new Date().toISOString();
+      await w("PATCH", `social_posts?id=eq.${p.id}`, m); say("Numbers saved.", true); setTimeout(() => reopen(p.id), 400); } catch (err) { say(err.message); btn.disabled = false; } });
+  $$("#spAI")?.addEventListener("click", async (e) => { const btn = e.currentTarget;
+    const plan_id = $$("#spPlan").value; if (!plan_id) return say("Pick the six-month plan first; the draft is written from its theme.");
+    busy(btn, true, "Drafting…");
+    try { const r = await aiCall({ kind:"social", plan_id, platform: $$("#spPlat").value, count: 1 }); const d = (r.posts||[])[0]; if (!d) throw new Error("No draft came back.");
+      $$("#spBody").value = d.body || ""; if (d.link && !$$("#spLink").value) $$("#spLink").value = d.link; if (d.media_note && !$$("#spMedia").value) $$("#spMedia").value = d.media_note; refresh();
+      say("Draft in place. Read it, edit it, then Save. Hashtags are added when you Copy.", true); }
+    catch (err) { say(err.message); } busy(btn, false); });
   $$("#spCopy")?.addEventListener("click", async () => {
     const k = await brandKit(); const plat = $$("#spPlat").value; const body = $$("#spBody").value;
     const hasTags = /#\w+/.test(body);
@@ -2167,6 +2277,7 @@ async function editCampaign(c, me){
       <div id="cpPickRes"></div>`}
       <div id="cpPickList" style="margin-top:8px"></div>
     </div>
+    ${!locked ? `<div class="row-btn" style="margin:-2px 0 10px;align-items:center"><select id="cpAIPlan" class="mini" style="max-width:300px"><option value="">Draft with AI from a month's theme…</option>${(PLANS_CACHE||[]).map(x=>`<option value="${esc(x.id)}"${inPeriod(x)?" selected":""}>${esc(x.title)}</option>`).join("")}</select><button class="btn ghost mini" id="cpAI" type="button">Draft with AI</button></div>` : ""}
     <label class="fld"><span>Subject</span><input id="cpSubject" value="${esc(c.subject||"")}" ${locked?"disabled":""}></label>
     <label class="fld"><span>Preview line (shows after the subject in the inbox)</span><input id="cpPre" value="${esc(c.preheader||"")}" ${locked?"disabled":""}></label>
     <label class="fld"><span>Message · {first} becomes the first name · blank line between paragraphs</span><textarea id="cpBody" style="min-height:180px" ${locked?"disabled":""}>${esc(c.body||"")}</textarea></label>
@@ -2252,6 +2363,13 @@ async function editCampaign(c, me){
   drawTargets();
   const setStatus = async (status, extra={}) => { await w("PATCH", `campaigns?id=eq.${c.id}`, { status, ...extra }); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); };
   $$("#cpSave")?.addEventListener("click", async (e) => { e.currentTarget.disabled = true; try { await save(); say(isNew?"Draft saved.":"Saved.", true); await loadCampaigns(); setTimeout(()=>openCampaign(c.id, me), 400); } catch (err) { say(err.message); e.currentTarget.disabled = false; } });
+  $$("#cpAI")?.addEventListener("click", async (e) => { const btn = e.currentTarget;
+    const plan_id = $$("#cpAIPlan").value; if (!plan_id) return say("Pick the month's plan in the box on the left.");
+    busy(btn, true, "Drafting…");
+    try { const r = await aiCall({ kind:"email", plan_id, audience: CAMP_AUD[$$("#cpAud").value] || $$("#cpAud").value });
+      $$("#cpSubject").value = r.subject || ""; $$("#cpPre").value = r.preheader || ""; $$("#cpBody").value = r.body || ""; if (r.button && !$$("#cpCta").value) $$("#cpCta").value = r.button; if (r.link && !$$("#cpUrl").value) $$("#cpUrl").value = r.link;
+      say("Draft in place. Read it, edit, Save, then Preview.", true); }
+    catch (err) { say(err.message); } busy(btn, false); });
   $$("#cpPreview")?.addEventListener("click", async (e) => {
     e.currentTarget.disabled = true; say("Building the preview…");
     try { if (!locked) await save(); const r = await campaignCall("preview", c.id); const win = window.open("", "_blank"); if (!win) throw new Error("Allow pop-ups to see the preview."); win.document.open(); win.document.write(r.html); win.document.close(); say("Preview opened in a new tab.", true); }

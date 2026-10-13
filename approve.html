@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Your approval · BCA Leadership</title>
+<link rel="icon" href="https://bcaleadership.com/favicon.ico">
+<style>
+:root{--night:#24170C;--espresso:#452C23;--gold:#F7A61C;--green:#058D52;--clay:#C14027;--olive:#ABBB61;--cream:#FAF6EE;--ink:#242424;--line:rgba(36,23,12,.14);--mute:#6F665E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);font-family:Georgia,'Times New Roman',serif;font-size:16.5px;line-height:1.6}
+.strip{height:8px;background:repeating-linear-gradient(90deg,var(--green) 0 40px,var(--gold) 40px 54px,var(--clay) 54px 68px,var(--olive) 68px 82px)}
+.wrap{max-width:720px;margin:0 auto;padding:36px 22px 70px}
+.logo{height:46px;display:block;margin-bottom:22px}
+.eyebrow,.m{font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--clay);font-weight:600;margin:0 0 8px}
+.m{color:var(--mute);font-weight:400}
+h1{font-weight:400;font-size:clamp(28px,4.5vw,38px);line-height:1.15;margin:0 0 10px;color:var(--night)}
+.from{color:var(--mute);font-family:Helvetica,Arial,sans-serif;font-size:14px;margin-bottom:18px}
+.card{background:#fff;border:1px solid var(--line);padding:24px 26px;margin:18px 0}
+.card p{margin:0 0 12px}
+.msg{border-left:4px solid var(--gold);padding-left:14px;color:var(--espresso);margin:0 0 18px}
+label{display:block;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--espresso);margin:16px 0 6px}
+textarea{width:100%;min-height:110px;padding:12px;border:1px solid var(--line);background:#fff;font-family:Georgia,serif;font-size:16px;line-height:1.5}
+.btn{display:inline-block;border:1px solid var(--night);background:#fff;color:var(--night);font-family:Helvetica,Arial,sans-serif;font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:13px 20px;cursor:pointer;margin:8px 10px 0 0}
+.btn.go{background:var(--green);border-color:var(--green);color:#FAF6EE}
+.btn[disabled]{opacity:.5;cursor:default}
+.done{background:#fff;border:1px solid var(--line);padding:26px;text-align:center}
+.done .ok{width:64px;height:64px;border-radius:50%;background:var(--green);color:#fff;font-size:30px;line-height:64px;margin:0 auto 14px}
+.err{color:var(--clay);font-family:Helvetica,Arial,sans-serif;font-size:14px;margin-top:10px}
+footer{color:var(--mute);font-family:Helvetica,Arial,sans-serif;font-size:12.5px;margin-top:40px}
+</style>
+</head>
+<body>
+<div class="strip"></div>
+<div class="wrap">
+  <img class="logo" src="https://bcaleadership.com/assets/logo-dark.png" alt="BCA Leadership" onerror="this.style.display='none'">
+  <div id="app"><p class="m">Loading…</p></div>
+  <footer>BCA Leadership · Coaching Engine · This page is personal to the person it was sent to.</footer>
+</div>
+<script>
+(function(){
+  var API = "https://uojsxmdnpwskxeueftgp.supabase.co/functions/v1/bca-approve";
+  var KEY = "sb_publishable_Z2DVEpLgOb2PkH4ng-Yh5Q__VuY7cKB";
+  var q = new URLSearchParams(location.search), t = q.get("t") || "", pre = q.get("d") || "";
+  var app = document.getElementById("app");
+  var esc = function(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+  function call(body){ return fetch(API, { method:"POST", headers:{ "Content-Type":"application/json", apikey: KEY }, body: JSON.stringify(body) }).then(function(r){ return r.json().then(function(j){ j._status = r.status; return j; }); }); }
+  function fail(msg){ app.innerHTML = '<div class="card"><p class="eyebrow">Approval</p><p>' + esc(msg) + '</p><p class="m">If you expected to approve something, ask the BCA team to send the link again.</p></div>'; }
+  if (!/^[a-f0-9]{64}$/.test(t)) return fail("This link is not complete. Open it from the email you received.");
+  call({ action:"show", token:t }).then(function(j){
+    if (!j.ok) return fail(j.error === "not_found" ? "This approval link does not exist any more." : "Something went wrong loading this request.");
+    if (j.decided) return app.innerHTML = '<div class="done"><div class="ok">✓</div><h1>Already recorded</h1><p>You ' + (j.decision === "approved" ? "approved" : "asked for changes on") + ' <b>' + esc(j.title) + '</b>' + (j.note ? ': <i>' + esc(j.note) + '</i>' : "") + '.</p><p class="m">Nothing more to do.</p></div>';
+    if (j.expired) return fail("This link has expired. Ask the BCA team to send it again.");
+    app.innerHTML =
+      '<p class="eyebrow">' + esc(j.kind) + ' · for your approval</p>' +
+      '<h1>' + esc(j.title) + '</h1>' +
+      '<p class="from">Sent by ' + esc(j.sender) + ' · ' + esc(new Date(j.sent_at).toUTCString().slice(0,16)) + '</p>' +
+      (j.message ? '<p class="msg">' + esc(j.message) + '</p>' : "") +
+      '<div class="card">' + j.html + '</div>' +
+      '<label for="note">A note (required if you ask for changes)</label><textarea id="note" placeholder="What should change, or anything you want the team to know"></textarea>' +
+      '<div><button class="btn go" id="ok">Approve</button><button class="btn" id="ch">Request changes</button></div><p class="err" id="err"></p>';
+    var note = document.getElementById("note"), err = document.getElementById("err");
+    if (pre === "changes") note.focus();
+    function decide(d){
+      var n = note.value.trim(); if (d === "changes" && !n) { err.textContent = "Write what should change first."; note.focus(); return; }
+      document.getElementById("ok").disabled = document.getElementById("ch").disabled = true; err.textContent = "";
+      call({ action:"decide", token:t, decision:d, note:n }).then(function(r){
+        if (!r.ok) { document.getElementById("ok").disabled = document.getElementById("ch").disabled = false; err.textContent = r.error === "already" ? "Already recorded." : r.error === "expired" ? "This link has expired." : "Could not record that. Try again."; return; }
+        app.innerHTML = '<div class="done"><div class="ok">✓</div><h1>' + (d === "approved" ? "Approved" : "Changes requested") + '</h1><p>Thank you. The team has been told' + (n ? ' and has your note' : '') + '.</p><p class="m">You can close this page.</p></div>';
+      });
+    }
+    document.getElementById("ok").addEventListener("click", function(){ decide("approved"); });
+    document.getElementById("ch").addEventListener("click", function(){ decide("changes"); });
+    if (pre === "approved") { /* one click from the email: still show the page so a note can be added; approve stays one more click away on purpose */ }
+  }).catch(function(){ fail("Could not reach the engine. Check your connection and open the link again."); });
+})();
+</script>
+</body>
+</html>
