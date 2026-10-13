@@ -2726,17 +2726,354 @@ async function loadSessions(){
 }
 
 /* ───────── board room ───────── */
+/* ───────── Board Room ─────────
+   Directors, meetings, agendas, attendance, minutes, resolutions and votes, actions, declarations.
+   Read: owner, admin, board role, and any director with a login. Write: owner, admin, and the board's
+   officers (chair, vice-chair, secretary). Directors cast their own votes and answer their own RSVP.
+   Notices go out through bca-board (notice, reminder, minutes, resolution, actions). */
+const BM_ROLE = { chair:"Board Chair", vice_chair:"Board Vice-Chair", director:"Director", ceo:"Chief Executive", secretary:"Company Secretary", observer:"Observer" };
+const BM_KIND = { board:"Board meeting", agm:"Annual general meeting", committee:"Committee", special:"Special meeting" };
+const BM_PILL = { planned:"mut", notice_sent:"d30", held:"cur", cancelled:"mut", draft:"mut", open:"d30", passed:"cur", failed:"d60", withdrawn:"mut", none:"mut", circulated:"d30", approved:"cur", done:"cur", dropped:"mut" };
+let BR = { members:[], me:null, myMember:null, canWrite:false, tab:"overview" };
+const brName = (id) => BR.members.find(m => m.id === id)?.full_name || "—";
+const brVoting = () => BR.members.filter(m => m.status === "active" && m.role !== "observer" && m.role !== "secretary");
+const brQuorum = (m) => m?.quorum || Math.floor(brVoting().length / 2) + 1;
+const brCall = (body) => fnCall("bca-board", body);
+const brMemberOpts = (sel, blank="—") => `<option value="">${blank}</option>` + BR.members.filter(m=>m.status==="active").map(m => `<option value="${esc(m.id)}"${m.id===sel?" selected":""}>${esc(m.full_name)}</option>`).join("");
+
 async function loadBoard(){
-  const rows = await q("contracts?select=number,legal_name,company,amount_minor,currency,status,signed_at&order=created_at.desc&limit=50");
-  $("boardLede").textContent = rows.length ? `${rows.length} contract${rows.length===1?"":"s"} on record.` : "No contracts on record yet.";
-  $("boardWrap").innerHTML = rows.length
-    ? `<div class="tblwrap"><table class="tbl"><caption>Contracts</caption>
-       <thead><tr><th>Reference</th><th>Party</th><th>Company</th><th class="num">Value</th><th>Status</th><th>Signed</th></tr></thead><tbody>` +
-      rows.map(r=>`<tr><td class="num">${esc(r.number||"—")}</td><td class="wrap">${esc(r.legal_name||"—")}</td>
-        <td class="wrap">${esc(r.company||"—")}</td><td class="num">${money2(r.amount_minor,r.currency||"USD")}</td>
-        <td><span class="pill ${r.status==="signed"?"cur":"mut"}">${esc(r.status||"—")}</span></td>
-        <td>${esc((r.signed_at||"").slice(0,10)||"—")}</td></tr>`).join("") + `</tbody></table></div>`
-    : `<div class="empty"><b>No contracts on record</b><p class="panel-m">Signed agreements will appear here.</p></div>`;
+  const me = await myStaff(); const claims = claimsOf(session);
+  const members = await q("board_members?select=*&order=sort,full_name").catch(() => null);
+  const wrap = $("boardWrap");
+  if (members === null) { $("boardLede").textContent = "The Board Room is not switched on yet."; wrap.innerHTML = `<div class="empty"><b>Run 20261013_boardroom.sql</b><p class="panel-m">The board tables are missing. Run the migration in Supabase, then reload.</p></div>`; return; }
+  BR.members = members; BR.me = me;
+  // link directors to their logins by email, once
+  BR.myMember = members.find(m => m.person_id && m.person_id === me?.person_id) || members.find(m => m.email && claims?.email && m.email.toLowerCase() === claims.email.toLowerCase()) || null;
+  const isAdmin = ["owner","admin"].includes(me?.role) || claims?.platform_admin === true;
+  BR.canWrite = isAdmin || (BR.myMember && ["chair","vice_chair","secretary"].includes(BR.myMember.role));
+  if (isAdmin) for (const m of members.filter(x => x.email && !x.person_id)) { const [p] = await q(`people?select=id&email=ilike.${encodeURIComponent(m.email)}&limit=1`).catch(()=>[]); if (p) { await w("PATCH", `board_members?id=eq.${m.id}`, { person_id: p.id }).catch(()=>{}); m.person_id = p.id; } }
+
+  const [meetings, attendance, resolutions, votes, actions, decls, docs] = await Promise.all([
+    q("board_meetings?select=*&order=starts_at.desc&limit=100"),
+    q("board_attendance?select=*"),
+    q("board_resolutions?select=*&order=created_at.desc&limit=200"),
+    q("board_votes?select=*"),
+    q("board_actions?select=*&order=due_on.asc.nullslast,created_at.desc&limit=300"),
+    q("board_declarations?select=*&order=declared_on.desc&limit=100"),
+    q("documents?select=id,title,file_name,category,created_at&board_only=eq.true&order=created_at.desc&limit=100").catch(()=>[]),
+  ]);
+  BR.data = { meetings, attendance, resolutions, votes, actions, decls, docs };
+  const now = Date.now();
+  const upcoming = meetings.filter(m => ["planned","notice_sent"].includes(m.status) && new Date(m.starts_at) >= now - 3*3600e3).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at));
+  const next = upcoming[0];
+  const openRes = resolutions.filter(r => r.status === "open");
+  const myVotesDue = BR.myMember ? openRes.filter(r => !votes.some(v => v.resolution_id === r.id && v.member_id === BR.myMember.id)) : [];
+  const openActs = actions.filter(a => a.status === "open");
+  const myActs = BR.myMember ? openActs.filter(a => a.owner_id === BR.myMember.id) : [];
+  const myRsvp = BR.myMember && next ? attendance.find(a => a.meeting_id === next.id && a.member_id === BR.myMember.id) : null;
+  const held = meetings.filter(m => m.status === "held");
+  const attRate = (() => { const rows = attendance.filter(a => held.some(m => m.id === a.meeting_id) && a.attended !== null); return rows.length ? Math.round(rows.filter(a => a.attended).length / rows.length * 100) + "%" : "—"; })();
+
+  $("boardLede").textContent = `${brVoting().length} directors on the board. ${next ? `Next meeting ${when(next.starts_at)}: ${next.title}.` : "No meeting scheduled."} ${openRes.length ? `${openRes.length} resolution${openRes.length===1?"":"s"} open for vote.` : ""} ${openActs.length} open action${openActs.length===1?"":"s"}.`;
+  const tabs = [["overview","Overview"],["directors","Directors"],["meetings","Meetings"],["resolutions","Resolutions"],["actions","Actions"],["governance","Governance"]];
+  wrap.innerHTML = `
+    <div class="stats">
+      <div class="stat"><span class="stat-k">Directors</span><span class="stat-v">${brVoting().length}</span><span class="stat-n">quorum ${brQuorum(next)}</span></div>
+      <div class="stat ${next?"amber":""}"><span class="stat-k">Next meeting</span><span class="stat-v" style="font-size:20px">${next ? esc(day(next.starts_at.slice(0,10))) : "—"}</span><span class="stat-n">${next ? esc(next.title) : "none scheduled"}</span></div>
+      <div class="stat ${openRes.length?"amber":"sage"}"><span class="stat-k">Open for vote</span><span class="stat-v">${openRes.length}</span><span class="stat-n">${myVotesDue.length ? `${myVotesDue.length} waiting for you` : "resolutions"}</span></div>
+      <div class="stat"><span class="stat-k">Open actions</span><span class="stat-v">${openActs.length}</span><span class="stat-n">${myActs.length ? `${myActs.length} yours` : "across the board"}</span></div>
+      <div class="stat sage"><span class="stat-k">Attendance</span><span class="stat-v">${attRate}</span><span class="stat-n">${held.length} meeting${held.length===1?"":"s"} held</span></div>
+    </div>
+    <div class="row-btn" id="brTabs" style="margin:16px 0 6px">${tabs.map(([k,n]) => `<button class="btn ghost br-tab${BR.tab===k?" on":""}" type="button" data-tab="${k}">${n}</button>`).join("")}</div>
+    <div class="rule"></div>
+    <div id="brPane"></div>`;
+  wrap.querySelectorAll(".br-tab").forEach(b => b.addEventListener("click", () => { BR.tab = b.dataset.tab; wrap.querySelectorAll(".br-tab").forEach(x => x.classList.toggle("on", x === b)); brPane(); }));
+  const brPane = () => {
+    const el = $("brPane"); const d = BR.data;
+    if (BR.tab === "overview") el.innerHTML = brOverview(next, myRsvp, myVotesDue, myActs, upcoming);
+    if (BR.tab === "directors") el.innerHTML = brDirectors();
+    if (BR.tab === "meetings") el.innerHTML = brMeetings();
+    if (BR.tab === "resolutions") el.innerHTML = brResolutions();
+    if (BR.tab === "actions") el.innerHTML = brActions();
+    if (BR.tab === "governance") el.innerHTML = brGovernance();
+    el.querySelectorAll("[data-bm]").forEach(x => x.addEventListener("click", () => editMember(BR.members.find(m => m.id === x.dataset.bm))));
+    el.querySelectorAll("[data-mtg]").forEach(x => x.addEventListener("click", () => editMeeting(d.meetings.find(m => m.id === x.dataset.mtg))));
+    el.querySelectorAll("[data-res]").forEach(x => x.addEventListener("click", () => editResolution(d.resolutions.find(r => r.id === x.dataset.res))));
+    el.querySelectorAll("[data-act]").forEach(x => x.addEventListener("click", () => editAction(d.actions.find(a => a.id === x.dataset.act))));
+    el.querySelector("#bmNew")?.addEventListener("click", () => editMember(null));
+    el.querySelector("#mtgNew")?.addEventListener("click", () => editMeeting(null));
+    el.querySelector("#resNew")?.addEventListener("click", () => editResolution(null));
+    el.querySelector("#actNew")?.addEventListener("click", () => editAction(null));
+    el.querySelector("#actRemind")?.addEventListener("click", async (e) => { const b = e.currentTarget; busy(b, true, "Sending…"); try { const r = await brCall({ action:"actions" }); note($("brMsg"), r.email_off ? "Email sending is off." : `Reminders sent to ${r.sent} director${r.sent===1?"":"s"} with open actions.`, true); } catch (err) { note($("brMsg"), err.message); } busy(b, false); });
+    el.querySelector("#declNew")?.addEventListener("click", () => editDeclaration());
+    el.querySelectorAll("[data-rsvp]").forEach(b => b.addEventListener("click", async () => { try { await w("PATCH", `board_attendance?meeting_id=eq.${b.dataset.mtgid}&member_id=eq.${BR.myMember.id}`, { rsvp: b.dataset.rsvp }); await loadBoard(); } catch (err) { note($("brMsg"), err.message); } }));
+    el.querySelectorAll("[data-myvote]").forEach(b => b.addEventListener("click", async () => { try { await castVote(b.dataset.resid, BR.myMember.id, b.dataset.myvote, false); await loadBoard(); } catch (err) { note($("brMsg"), err.message); } }));
+  };
+  brPane();
+}
+
+function brOverview(next, myRsvp, myVotesDue, myActs, upcoming){
+  const d = BR.data; const me = BR.myMember;
+  const todo = [];
+  if (me && next && (!myRsvp || myRsvp.rsvp === "pending")) todo.push(`<li><b>Confirm your attendance</b> at ${esc(next.title)}, ${esc(when(next.starts_at))}. <span class="row-btn" style="display:inline-flex;margin:0 0 0 8px">${["yes","no","maybe"].map(v => `<button class="btn ghost mini" type="button" data-rsvp="${v}" data-mtgid="${esc(next.id)}">${v==="yes"?"I will attend":v==="no"?"Apologies":"Maybe"}</button>`).join("")}</span></li>`);
+  myVotesDue.forEach(r => todo.push(`<li><b>Vote</b> on ${r.number ? esc(r.number) + " · " : ""}${esc(r.title)}${r.closes_at ? ` <span class="panel-m">closes ${esc(when(r.closes_at))}</span>` : ""} <span class="row-btn" style="display:inline-flex;margin:0 0 0 8px">${["for","against","abstain"].map(v => `<button class="btn ghost mini" type="button" data-myvote="${v}" data-resid="${esc(r.id)}">${label(v)}</button>`).join("")}</span></li>`));
+  myActs.forEach(a => todo.push(`<li class="click" data-act="${esc(a.id)}" style="cursor:pointer"><b>Action:</b> ${esc(a.title)}${a.due_on ? ` <span class="panel-m">due ${esc(day(a.due_on))}</span>` : ""}</li>`));
+  const minutesDue = d.meetings.filter(m => m.status === "held" && m.minutes_status !== "approved");
+  return `<p class="note" id="brMsg" hidden></p>
+    ${me ? `<div class="panel"><div class="panel-h"><span class="panel-t">Your to-dos, ${esc(me.full_name.split(" ")[0].replace(/^Dr\.?$/, me.full_name.split(" ")[1]||""))}</span><span class="panel-m">${esc(BM_ROLE[me.role]||me.role)}</span></div>${todo.length ? `<ul style="margin:0;padding-left:18px;line-height:1.9">${todo.join("")}</ul>` : `<p class="panel-m">Nothing waiting for you.</p>`}</div>` : `<div class="panel"><div class="panel-h"><span class="panel-t">You are not on the board</span></div><p class="panel-m">You can see the room as an administrator. Directors see their own RSVPs, votes and actions here once their login is linked to their director record (by email).</p></div>`}
+    <div class="grid2" style="margin-top:14px">
+      <div class="panel"><div class="panel-h"><span class="panel-t">Upcoming meetings</span>${BR.canWrite ? `<button class="btn ghost mini" id="mtgNew" type="button">New meeting</button>` : ""}</div>
+        ${upcoming.length ? `<table class="tbl"><tbody>${upcoming.slice(0,5).map(m => { const att = d.attendance.filter(a => a.meeting_id === m.id); const yes = att.filter(a => a.rsvp === "yes").length; return `<tr class="click" data-mtg="${esc(m.id)}"><td><b>${esc(day(m.starts_at.slice(0,10)))}</b><br><span class="panel-m">${esc(new Date(m.starts_at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"UTC"}))} GMT</span></td><td class="wrap">${esc(m.title)}<br><span class="panel-m">${esc(BM_KIND[m.kind]||m.kind)}${m.location?` · ${esc(m.location)}`:""}</span></td><td><span class="pill ${BM_PILL[m.status]}">${esc(label(m.status))}</span><br><span class="panel-m">${yes} confirmed · quorum ${brQuorum(m)}</span></td></tr>`; }).join("")}</tbody></table>` : `<p class="panel-m">No meeting scheduled.${BR.canWrite ? " Create one under Meetings." : ""}</p>`}</div>
+      <div class="panel"><div class="panel-h"><span class="panel-t">Needs attention</span></div>
+        <ul style="margin:0;padding-left:18px;line-height:1.8">
+          ${d.resolutions.filter(r => r.status === "open").map(r => `<li class="click" data-res="${esc(r.id)}" style="cursor:pointer">Open for vote: <b>${esc(r.title)}</b> · ${brTally(r).for} for, ${brTally(r).against} against, ${brTally(r).pending} not yet voted</li>`).join("")}
+          ${minutesDue.map(m => `<li class="click" data-mtg="${esc(m.id)}" style="cursor:pointer">Minutes of <b>${esc(m.title)}</b>: ${esc(label(m.minutes_status === "none" ? "not written" : m.minutes_status))}</li>`).join("")}
+          ${d.actions.filter(a => a.status === "open" && a.due_on && a.due_on < todayISO()).map(a => `<li class="click" data-act="${esc(a.id)}" style="cursor:pointer">Overdue action: <b>${esc(a.title)}</b> · ${esc(brName(a.owner_id))} · due ${esc(day(a.due_on))}</li>`).join("")}
+          ${BR.members.filter(m => m.status === "active" && m.term_end && m.term_end < new Date(Date.now()+90*864e5).toISOString().slice(0,10)).map(m => `<li class="click" data-bm="${esc(m.id)}" style="cursor:pointer">Term ends ${esc(day(m.term_end))}: <b>${esc(m.full_name)}</b></li>`).join("")}
+        </ul>
+        ${!d.resolutions.some(r=>r.status==="open") && !minutesDue.length ? `<p class="panel-m">All clear.</p>` : ""}</div>
+    </div>`;
+}
+
+function brDirectors(){
+  return `<p class="note" id="brMsg" hidden></p>
+    <div class="row-btn" style="margin-bottom:12px">${BR.canWrite ? `<button class="btn" id="bmNew" type="button">Add a director</button>` : ""}<a class="btn ghost" href="https://bcaleadership.com/governance" target="_blank" rel="noopener" style="text-decoration:none">As published on the site</a></div>
+    <div class="grid2">${BR.members.filter(m => m.status === "active").map(m => `<div class="panel click" data-bm="${esc(m.id)}" style="cursor:pointer">
+      <div class="panel-h"><span class="panel-t">${esc(m.full_name)}</span><span class="pill ${m.role==="chair"||m.role==="vice_chair"?"cur":"mut"}">${esc(BM_ROLE[m.role]||m.role)}</span></div>
+      <p class="panel-m">${esc(m.title_line||"")}${m.country?` · ${esc(m.country)}`:""}${m.person_id?"":` · <span style="color:var(--amber)">no login yet</span>`}</p>
+      ${m.committees?.length ? `<p style="font-size:13px;margin-top:6px"><b style="color:var(--parch)">Committees:</b> ${esc(m.committees.join(", "))}</p>` : ""}
+      ${m.responsibilities ? `<p style="font-size:13px;margin-top:4px"><b style="color:var(--parch)">Responsibilities:</b> ${esc(m.responsibilities)}</p>` : ""}
+      <p class="panel-m" style="margin-top:6px">${m.term_start||m.term_end ? `Term ${esc(day(m.term_start))} to ${esc(day(m.term_end))}` : "Term dates not set"}</p>
+    </div>`).join("")}</div>
+    ${BR.members.some(m => m.status === "past") ? `<div class="rule"></div><p class="panel-m">Past directors: ${BR.members.filter(m=>m.status==="past").map(m=>`<span class="click" data-bm="${esc(m.id)}" style="cursor:pointer;color:var(--gold-lt)">${esc(m.full_name)}</span>`).join(", ")}</p>` : ""}`;
+}
+
+function brMeetings(){
+  const d = BR.data;
+  return `<p class="note" id="brMsg" hidden></p>
+    <div class="row-btn" style="margin-bottom:12px">${BR.canWrite ? `<button class="btn" id="mtgNew" type="button">New meeting</button>` : ""}</div>
+    <div class="tblwrap"><table class="tbl"><caption>Latest first. Click a meeting for its agenda, attendance, pack, minutes and resolutions.</caption>
+      <thead><tr><th>When</th><th>Meeting</th><th>Status</th><th>Attendance</th><th>Minutes</th></tr></thead>
+      <tbody>${d.meetings.length ? d.meetings.map(m => { const att = d.attendance.filter(a => a.meeting_id === m.id); const yes = att.filter(a => a.rsvp === "yes").length, no = att.filter(a => a.rsvp === "no").length, went = att.filter(a => a.attended).length;
+        return `<tr class="click" data-mtg="${esc(m.id)}"><td><b>${esc(day(m.starts_at.slice(0,10)))}</b><br><span class="panel-m">${esc(new Date(m.starts_at).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit",timeZone:"UTC"}))} GMT</span></td><td class="wrap"><b>${esc(m.title)}</b><br><span class="panel-m">${esc(BM_KIND[m.kind]||m.kind)}${m.location?` · ${esc(m.location)}`:""}</span></td><td><span class="pill ${BM_PILL[m.status]}">${esc(label(m.status))}</span></td><td>${m.status==="held" ? `${went} of ${brVoting().length} present${went >= brQuorum(m) ? "" : ` <span style="color:var(--rust)">(no quorum)</span>`}` : `${yes} yes · ${no} no · ${att.length - yes - no} pending`}</td><td><span class="pill ${BM_PILL[m.minutes_status]}">${esc(m.minutes_status === "none" ? "none" : label(m.minutes_status))}</span></td></tr>`; }).join("") : `<tr><td colspan="5">No meetings yet.</td></tr>`}</tbody></table></div>`;
+}
+
+function brTally(r){
+  const votes = BR.data.votes.filter(v => v.resolution_id === r.id); const voters = brVoting();
+  const t = { for: votes.filter(v=>v.vote==="for").length, against: votes.filter(v=>v.vote==="against").length, abstain: votes.filter(v=>v.vote==="abstain").length, cast: votes.length, eligible: voters.length };
+  t.pending = Math.max(0, t.eligible - t.cast);
+  const need = r.threshold === "unanimous" ? t.eligible : r.threshold === "two_thirds" ? Math.ceil(t.eligible * 2 / 3) : Math.floor(t.eligible / 2) + 1;
+  t.need = need; t.passing = t.for >= need; t.failing = (t.eligible - t.against) < need;
+  return t;
+}
+function brResolutions(){
+  const d = BR.data;
+  return `<p class="note" id="brMsg" hidden></p>
+    <div class="row-btn" style="margin-bottom:12px">${BR.canWrite ? `<button class="btn" id="resNew" type="button">New resolution</button>` : ""}</div>
+    <div class="tblwrap"><table class="tbl"><caption>Resolutions of the Board. Open ones can be voted on by each director.</caption>
+      <thead><tr><th>Number</th><th>Resolution</th><th>Mode</th><th>Status</th><th>Votes</th><th>Decided</th></tr></thead>
+      <tbody>${d.resolutions.length ? d.resolutions.map(r => { const t = brTally(r); return `<tr class="click" data-res="${esc(r.id)}"><td class="num">${esc(r.number||"—")}</td><td class="wrap"><b>${esc(r.title)}</b>${r.meeting_id?`<br><span class="panel-m">${esc(d.meetings.find(m=>m.id===r.meeting_id)?.title||"")}</span>`:""}</td><td>${esc(label(r.mode))}${r.mode==="electronic"&&r.closes_at?`<br><span class="panel-m">closes ${esc(when(r.closes_at))}</span>`:""}</td><td><span class="pill ${BM_PILL[r.status]}">${esc(label(r.status))}</span></td><td>${t.for} for · ${t.against} against · ${t.abstain} abstain${r.status==="open"?` · ${t.pending} pending`:""}</td><td>${r.decided_at?esc(day(r.decided_at.slice(0,10))):"—"}</td></tr>`; }).join("") : `<tr><td colspan="6">No resolutions yet.</td></tr>`}</tbody></table></div>`;
+}
+function brActions(){
+  const d = BR.data; const open = d.actions.filter(a => a.status === "open"), closed = d.actions.filter(a => a.status !== "open");
+  const row = (a) => `<tr class="click" data-act="${esc(a.id)}"><td class="wrap"><b>${esc(a.title)}</b>${a.meeting_id?`<br><span class="panel-m">${esc(d.meetings.find(m=>m.id===a.meeting_id)?.title||"")}</span>`:""}</td><td>${esc(brName(a.owner_id))}</td><td style="${a.status==="open"&&a.due_on&&a.due_on<todayISO()?"color:var(--rust)":""}">${a.due_on?esc(day(a.due_on)):"—"}</td><td><span class="pill ${BM_PILL[a.status]||"d30"}">${esc(label(a.status))}</span></td></tr>`;
+  return `<p class="note" id="brMsg" hidden></p>
+    <div class="row-btn" style="margin-bottom:12px">${BR.canWrite ? `<button class="btn" id="actNew" type="button">New action</button><button class="btn ghost" id="actRemind" type="button">Remind owners by email</button>` : ""}</div>
+    <div class="tblwrap"><table class="tbl"><caption>Open actions, soonest due first.</caption><thead><tr><th>Action</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead><tbody>${open.length ? open.map(row).join("") : `<tr><td colspan="4">Nothing open.</td></tr>`}</tbody></table></div>
+    ${closed.length ? `<div class="rule"></div><div class="tblwrap"><table class="tbl"><caption>Closed</caption><tbody>${closed.slice(0,30).map(row).join("")}</tbody></table></div>` : ""}`;
+}
+function brGovernance(){
+  const d = BR.data; const held = d.meetings.filter(m => m.status === "held").sort((a,b)=>new Date(b.starts_at)-new Date(a.starts_at)).slice(0,8);
+  return `<p class="note" id="brMsg" hidden></p>
+    <div class="grid2">
+      <div class="panel"><div class="panel-h"><span class="panel-t">Board documents</span><span class="panel-m">from the vault, marked board only</span></div>
+        ${d.docs.length ? `<ul style="margin:0;padding-left:18px;line-height:1.8">${d.docs.map(x => `<li>${esc(x.title||x.file_name)} <span class="panel-m">· ${esc(label(x.category||""))} · ${esc(day((x.created_at||"").slice(0,10)))}</span></li>`).join("")}</ul>` : `<p class="panel-m">Nothing marked board only yet. Upload the charter, policies and board packs to the Document vault and tick "Board only".</p>`}
+        <p class="panel-m" style="margin-top:8px">Open them under Document vault. Packs are attached to each meeting from the same list.</p></div>
+      <div class="panel"><div class="panel-h"><span class="panel-t">Declarations of interest</span>${BR.myMember || BR.canWrite ? `<button class="btn ghost mini" id="declNew" type="button">Declare an interest</button>` : ""}</div>
+        ${d.decls.length ? `<table class="tbl"><tbody>${d.decls.map(x => `<tr><td>${esc(day(x.declared_on))}</td><td><b>${esc(brName(x.member_id))}</b></td><td class="wrap">${esc(x.description)}</td></tr>`).join("")}</tbody></table>` : `<p class="panel-m">No declarations on record.</p>`}</div>
+    </div>
+    <div class="rule"></div>
+    <div class="panel"><div class="panel-h"><span class="panel-t">Attendance record</span><span class="panel-m">meetings held, latest first</span></div>
+      ${held.length ? `<div class="tblwrap"><table class="tbl"><thead><tr><th>Director</th>${held.map(m => `<th>${esc(day(m.starts_at.slice(0,10)))}</th>`).join("")}<th class="num">Rate</th></tr></thead><tbody>${brVoting().map(mem => { const cells = held.map(m => { const a = d.attendance.find(x => x.meeting_id === m.id && x.member_id === mem.id); return a?.attended === true ? "●" : a?.attended === false ? `<span style="color:var(--rust)">○</span>` : `<span class="panel-m">·</span>`; }); const rows = held.map(m => d.attendance.find(x => x.meeting_id === m.id && x.member_id === mem.id)).filter(a => a && a.attended !== null); const rate = rows.length ? Math.round(rows.filter(a=>a.attended).length/rows.length*100)+"%" : "—"; return `<tr><td>${esc(mem.full_name)}</td>${cells.map(c=>`<td style="text-align:center">${c}</td>`).join("")}<td class="num">${rate}</td></tr>`; }).join("")}</tbody></table></div>` : `<p class="panel-m">Appears once a meeting has been marked as held and attendance recorded.</p>`}</div>
+    <div class="rule"></div>
+    <p class="panel-m">Rules in force: quorum is a majority of directors unless a meeting sets its own; resolutions pass by simple majority of directors unless set to two thirds or unanimous; minutes stay draft until approved by the Board at a later meeting; every vote is recorded with who cast it and when.</p>`;
+}
+
+/* ── directors ── */
+function editMember(m){
+  const isNew = !m; m = m || { role:"director", status:"active", committees:[], sort:100 };
+  const locked = !BR.canWrite;
+  const dr = drawer(isNew ? "Add a director" : m.full_name, isNew ? "Board of Directors" : `${BM_ROLE[m.role]||m.role}${m.country?` · ${m.country}`:""}${m.person_id?" · login linked":" · no login yet"}`, `
+    <div class="grid2"><label class="fld"><span>Full name</span><input id="bmName" value="${esc(m.full_name||"")}" ${locked?"disabled":""}></label><label class="fld"><span>Email (for notices and the login)</span><input id="bmEmail" type="email" value="${esc(m.email||"")}" ${locked?"disabled":""}></label></div>
+    <div class="grid2"><label class="fld"><span>Role</span><select id="bmRole" ${locked?"disabled":""}>${Object.entries(BM_ROLE).map(([k,n])=>`<option value="${k}"${k===m.role?" selected":""}>${n}</option>`).join("")}</select></label><label class="fld"><span>Title as shown</span><input id="bmTitle" value="${esc(m.title_line||"")}" ${locked?"disabled":""} placeholder="Board Member · CEO"></label></div>
+    <div class="grid2"><label class="fld"><span>Country</span><input id="bmCountry" value="${esc(m.country||"")}" ${locked?"disabled":""}></label><label class="fld"><span>LinkedIn</span><input id="bmLi" value="${esc(m.linkedin_url||"")}" ${locked?"disabled":""} placeholder="https://linkedin.com/in/…"></label></div>
+    <div class="grid2"><label class="fld"><span>Term start</span><input id="bmStart" type="date" value="${esc(m.term_start||"")}" ${locked?"disabled":""}></label><label class="fld"><span>Term end</span><input id="bmEnd" type="date" value="${esc(m.term_end||"")}" ${locked?"disabled":""}></label></div>
+    <label class="fld"><span>Committees (comma separated)</span><input id="bmComm" value="${esc((m.committees||[]).join(", "))}" ${locked?"disabled":""} placeholder="Finance and Audit, Nominations"></label>
+    <label class="fld"><span>Responsibilities</span><textarea id="bmResp" rows="3" ${locked?"disabled":""} placeholder="What this director is accountable for on the board">${esc(m.responsibilities||"")}</textarea></label>
+    <label class="fld"><span>Biography</span><textarea id="bmBio" rows="6" ${locked?"disabled":""}>${esc(m.bio||"")}</textarea></label>
+    <div class="grid2"><label class="fld"><span>Status</span><select id="bmStatus" ${locked?"disabled":""}><option value="active"${m.status==="active"?" selected":""}>Active</option><option value="past"${m.status==="past"?" selected":""}>Past director</option></select></label><label class="fld"><span>Order on the page</span><input id="bmSort" type="number" value="${m.sort??100}" ${locked?"disabled":""}></label></div>
+    ${!locked ? `<div class="row-btn"><button class="btn" id="bmSave" type="button">Save</button>${!isNew && !m.person_id && m.email ? `<span class="panel-m">To give them a login, add their email under Team access with the role "board"; it links here by email.</span>` : ""}</div>` : ""}
+    <p class="note" id="bmMsg" hidden></p>`);
+  const $$ = (s) => dr.querySelector(s);
+  $$("#bmSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true;
+    try { const b = { full_name: $$("#bmName").value.trim(), email: $$("#bmEmail").value.trim().toLowerCase() || null, role: $$("#bmRole").value, title_line: $$("#bmTitle").value.trim() || null, country: $$("#bmCountry").value.trim() || null, linkedin_url: $$("#bmLi").value.trim() || null, term_start: $$("#bmStart").value || null, term_end: $$("#bmEnd").value || null, committees: $$("#bmComm").value.split(",").map(s=>s.trim()).filter(Boolean), responsibilities: $$("#bmResp").value.trim() || null, bio: $$("#bmBio").value.trim() || null, status: $$("#bmStatus").value, sort: Number($$("#bmSort").value) || 100 };
+      if (!b.full_name) throw new Error("Give the director a name.");
+      if (isNew) await w("POST", "board_members", [{ tenant_id: TENANT, ...b }]); else await w("PATCH", `board_members?id=eq.${m.id}`, b);
+      await loadBoard(); closeDrawer(); } catch (err) { note($$("#bmMsg"), err.message); btn.disabled = false; } });
+}
+
+/* ── meetings ── */
+async function editMeeting(m){
+  const isNew = !m; const d = BR.data;
+  m = m || { title:"Board meeting", kind:"board", status:"planned", starts_at: new Date(Date.now()+14*864e5).toISOString().slice(0,10)+"T10:00:00Z", pack_document_ids:[], minutes_status:"none" };
+  const locked = !BR.canWrite; const past = m.status === "held" || m.status === "cancelled";
+  const agenda = isNew ? [] : await q(`board_agenda_items?select=*&meeting_id=eq.${m.id}&order=sort`);
+  const att = isNew ? [] : d.attendance.filter(a => a.meeting_id === m.id);
+  const res = isNew ? [] : d.resolutions.filter(r => r.meeting_id === m.id);
+  const acts = isNew ? [] : d.actions.filter(a => a.meeting_id === m.id);
+  const myAtt = BR.myMember ? att.find(a => a.member_id === BR.myMember.id) : null;
+  const present = att.filter(a => a.attended).length;
+  const dr = drawer(isNew ? "New meeting" : m.title, isNew ? "Board of Directors" : `${BM_KIND[m.kind]||m.kind} · ${when(m.starts_at)} · ${label(m.status)}${m.status==="held"?` · ${present} present, quorum ${brQuorum(m)}`:""}`, `
+    <div class="grid2"><label class="fld"><span>Title</span><input id="mtTitle" value="${esc(m.title||"")}" ${locked?"disabled":""}></label><label class="fld"><span>Kind</span><select id="mtKind" ${locked?"disabled":""}>${Object.entries(BM_KIND).map(([k,n])=>`<option value="${k}"${k===m.kind?" selected":""}>${n}</option>`).join("")}</select></label></div>
+    <div class="grid2"><label class="fld"><span>Starts (your local time)</span><input id="mtStart" type="datetime-local" value="${toLocalInput(m.starts_at)}" ${locked?"disabled":""}></label><label class="fld"><span>Ends</span><input id="mtEnd" type="datetime-local" value="${toLocalInput(m.ends_at)}" ${locked?"disabled":""}></label></div>
+    <div class="grid2"><label class="fld"><span>Place</span><input id="mtLoc" value="${esc(m.location||"")}" ${locked?"disabled":""} placeholder="Grand Baie office, or Online"></label><label class="fld"><span>Video link</span><input id="mtVideo" value="${esc(m.video_url||"")}" ${locked?"disabled":""} placeholder="https://…"></label></div>
+    <div class="grid2"><label class="fld"><span>Chairing</span><select id="mtChair" ${locked?"disabled":""}>${brMemberOpts(m.chair_id || BR.members.find(x=>x.role==="chair")?.id)}</select></label><label class="fld"><span>Quorum (blank = majority, ${Math.floor(brVoting().length/2)+1})</span><input id="mtQuorum" type="number" min="1" value="${m.quorum??""}" ${locked?"disabled":""}></label></div>
+    <label class="fld"><span>Board pack (documents marked board only in the vault)</span><select id="mtPack" multiple size="4" ${locked?"disabled":""}>${d.docs.map(x => `<option value="${esc(x.id)}"${(m.pack_document_ids||[]).includes(x.id)?" selected":""}>${esc(x.title||x.file_name)}</option>`).join("")}</select></label>
+    ${!locked ? `<div class="row-btn"><button class="btn" id="mtSave" type="button">${isNew?"Create meeting":"Save"}</button>
+      ${!isNew && !past ? `<button class="btn ghost" id="mtNotice" type="button">${m.notice_sent_at?"Send the notice again":"Send notice to directors"}</button><button class="btn ghost" id="mtRemind" type="button">Send reminder</button><button class="btn ghost" id="mtHeld" type="button">Mark as held</button><button class="btn ghost" id="mtCancel" type="button" style="margin-left:auto">Cancel meeting</button>` : ""}</div>` : ""}
+    <p class="note" id="mtMsg" hidden></p>
+    ${isNew ? "" : `
+    <div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Agenda</b> · ${agenda.length} item${agenda.length===1?"":"s"}${agenda.reduce((t,a)=>t+(a.minutes_planned||0),0)?` · ${agenda.reduce((t,a)=>t+(a.minutes_planned||0),0)} minutes planned`:""}</p>
+    <table class="tbl" id="mtAgenda"><tbody>${agenda.map((a,i) => `<tr><td class="num">${i+1}</td><td class="wrap"><b>${esc(a.title)}</b> <span class="pill mut">${esc(a.kind)}</span>${a.notes?`<br><span class="panel-m">${esc(a.notes)}</span>`:""}</td><td>${esc(brName(a.presenter_id))}</td><td class="num">${a.minutes_planned?a.minutes_planned+" min":""}</td><td>${!locked&&!past?`<button class="btn ghost mini" type="button" data-agdel="${esc(a.id)}">Remove</button>`:""}</td></tr>`).join("") || `<tr><td colspan="5" class="panel-m">No items yet.</td></tr>`}</tbody></table>
+    ${!locked && !past ? `<div class="grid2" style="margin-top:10px"><label class="fld"><span>Add an item</span><input id="agTitle" placeholder="e.g. CEO report"></label><label class="fld"><span>Kind</span><select id="agKind"><option value="information">Information</option><option value="discussion" selected>Discussion</option><option value="decision">Decision</option><option value="approval">Approval</option></select></label></div>
+      <div class="grid2"><label class="fld"><span>Presenter</span><select id="agWho">${brMemberOpts(null)}</select></label><label class="fld"><span>Minutes</span><input id="agMin" type="number" min="0" placeholder="15"></label></div>
+      <label class="fld"><span>Note (optional)</span><input id="agNote" placeholder="What the board is asked to do"></label>
+      <div class="row-btn"><button class="btn ghost" id="agAdd" type="button">Add to agenda</button></div>` : ""}
+
+    <div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Attendance</b> · ${att.filter(a=>a.rsvp==="yes").length} confirmed, ${att.filter(a=>a.rsvp==="no").length} apologies${m.status==="held"?` · ${present} present`:""}</p>
+    ${myAtt && !past ? `<div class="row-btn" style="margin-bottom:10px"><span class="panel-m">Your answer:</span>${["yes","no","maybe"].map(v => `<button class="btn ghost mini${myAtt.rsvp===v?" on":""}" type="button" data-myrsvp="${v}">${v==="yes"?"I will attend":v==="no"?"Apologies":"Maybe"}</button>`).join("")}</div>` : ""}
+    <table class="tbl"><tbody>${brVoting().concat(BR.members.filter(x=>x.status==="active"&&(x.role==="observer"||x.role==="secretary"))).map(mem => { const a = att.find(x => x.member_id === mem.id); return `<tr><td class="wrap"><b>${esc(mem.full_name)}</b><br><span class="panel-m">${esc(BM_ROLE[mem.role]||mem.role)}</span></td>
+      <td>${locked ? `<span class="pill ${a?.rsvp==="yes"?"cur":a?.rsvp==="no"?"d60":"mut"}">${esc(label(a?.rsvp||"pending"))}</span>` : `<select class="mini" data-rsvp-for="${esc(mem.id)}"><option value="pending"${!a||a.rsvp==="pending"?" selected":""}>Pending</option><option value="yes"${a?.rsvp==="yes"?" selected":""}>Yes</option><option value="no"${a?.rsvp==="no"?" selected":""}>No</option><option value="maybe"${a?.rsvp==="maybe"?" selected":""}>Maybe</option></select>`}</td>
+      <td>${locked ? (a?.attended===true?"Present":a?.attended===false?"Absent":"—") : `<select class="mini" data-att-for="${esc(mem.id)}"><option value=""${a?.attended==null?" selected":""}>—</option><option value="true"${a?.attended===true?" selected":""}>Present</option><option value="false"${a?.attended===false?" selected":""}>Absent</option></select>`}</td>
+      <td class="wrap">${locked ? esc(a?.apologies||"") : `<input class="mini" data-apol-for="${esc(mem.id)}" value="${esc(a?.apologies||"")}" placeholder="apologies / note" style="font-size:12.5px;padding:4px 7px;border:1px solid var(--line);background:transparent;color:var(--parch);width:100%">`}</td></tr>`; }).join("")}</tbody></table>
+    ${!locked ? `<div class="row-btn" style="margin-top:8px"><button class="btn ghost" id="attSave" type="button">Save attendance</button></div>` : ""}
+
+    <div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Resolutions at this meeting</b></p>
+    ${res.length ? `<ul style="margin:0 0 8px;padding-left:18px;line-height:1.8">${res.map(r => `<li class="click" data-res2="${esc(r.id)}" style="cursor:pointer">${r.number?esc(r.number)+" · ":""}<b>${esc(r.title)}</b> <span class="pill ${BM_PILL[r.status]}">${esc(label(r.status))}</span></li>`).join("")}</ul>` : `<p class="panel-m">None yet.</p>`}
+    ${!locked ? `<div class="row-btn"><button class="btn ghost" id="mtRes" type="button">New resolution for this meeting</button></div>` : ""}
+
+    <div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Actions from this meeting</b></p>
+    ${acts.length ? `<ul style="margin:0 0 8px;padding-left:18px;line-height:1.8">${acts.map(a => `<li class="click" data-act2="${esc(a.id)}" style="cursor:pointer"><b>${esc(a.title)}</b> · ${esc(brName(a.owner_id))}${a.due_on?` · due ${esc(day(a.due_on))}`:""} <span class="pill ${BM_PILL[a.status]||"d30"}">${esc(label(a.status))}</span></li>`).join("")}</ul>` : `<p class="panel-m">None yet.</p>`}
+    ${!locked ? `<div class="row-btn"><button class="btn ghost" id="mtAct" type="button">New action</button></div>` : ""}
+
+    <div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Minutes</b> · <span class="pill ${BM_PILL[m.minutes_status]}">${esc(m.minutes_status==="none"?"not written":label(m.minutes_status))}</span>${m.minutes_circulated_at?` · circulated ${esc(when(m.minutes_circulated_at))}`:""}${m.minutes_approved_at?` · approved ${esc(when(m.minutes_approved_at))} by ${esc(brName(m.minutes_approved_by))}`:""}</p>
+    <textarea id="mtMinutes" rows="12" ${locked||m.minutes_status==="approved"?"disabled":""} placeholder="Present, apologies, quorum. Then one heading per agenda item (a line starting '## '), what was discussed, what was decided, who does what by when." style="font-size:14px;line-height:1.55">${esc(m.minutes||"")}</textarea>
+    ${!locked && m.minutes_status !== "approved" ? `<div class="row-btn" style="margin-top:8px"><button class="btn ghost" id="minSave" type="button">Save draft</button><button class="btn ghost" id="minCirc" type="button">Circulate for approval</button><button class="btn" id="minApprove" type="button">Record as approved by the Board</button></div>` : ""}
+    `}`);
+  const $$ = (s) => dr.querySelector(s); const say = (t, ok) => note($$("#mtMsg"), t, ok);
+  const collect = () => ({ title: $$("#mtTitle").value.trim(), kind: $$("#mtKind").value, starts_at: $$("#mtStart").value ? new Date($$("#mtStart").value).toISOString() : null, ends_at: $$("#mtEnd").value ? new Date($$("#mtEnd").value).toISOString() : null, location: $$("#mtLoc").value.trim() || null, video_url: $$("#mtVideo").value.trim() || null, chair_id: $$("#mtChair").value || null, quorum: Number($$("#mtQuorum").value) || null, pack_document_ids: [...$$("#mtPack").selectedOptions].map(o => o.value) });
+  const reopen = async (id) => { await loadBoard(); const [f] = await q(`board_meetings?select=*&id=eq.${id}&limit=1`); if (f) editMeeting(f); };
+  const save = async (extra={}) => { const b = { ...collect(), ...extra }; if (!b.title || !b.starts_at) throw new Error("Give the meeting a title and a start time."); if (isNew) { const [row] = await w("POST", "board_meetings", [{ tenant_id: TENANT, created_by: BR.me?.person_id||null, ...b }]); m.id = row.id; } else await w("PATCH", `board_meetings?id=eq.${m.id}`, b); return m.id; };
+  $$("#mtSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const id = await save(); if (isNew) { await w("POST", "board_attendance", brVoting().concat(BR.members.filter(x=>x.status==="active"&&(x.role==="observer"||x.role==="secretary"))).map(mem => ({ tenant_id: TENANT, meeting_id: id, member_id: mem.id }))).catch(()=>{}); } say("Saved.", true); setTimeout(() => reopen(id), 400); } catch (err) { say(err.message); btn.disabled = false; } });
+  const sendIt = async (btn, action, okText) => { busy(btn, true, "Sending…"); try { await save(); const r = await brCall({ action, meeting_id: m.id }); say(r.email_off ? "Email sending is off; nothing went out." : `${okText} ${r.sent} of ${r.total} directors${r.skipped?` (${r.skipped} without an email address)`:""}.`, true); setTimeout(() => reopen(m.id), 1200); } catch (err) { say(err.message); busy(btn, false); } };
+  $$("#mtNotice")?.addEventListener("click", (e) => sendIt(e.currentTarget, "notice", "Notice sent to"));
+  $$("#mtRemind")?.addEventListener("click", (e) => sendIt(e.currentTarget, "remind", "Reminder sent to"));
+  $$("#mtHeld")?.addEventListener("click", async () => { try { await save({ status:"held" }); setTimeout(() => reopen(m.id), 300); } catch (err) { say(err.message); } });
+  $$("#mtCancel")?.addEventListener("click", async (e) => { const b = e.currentTarget; if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again to cancel"; setTimeout(()=>{ b.dataset.armed=""; b.textContent="Cancel meeting"; }, 6000); return; } try { await save({ status:"cancelled" }); await loadBoard(); closeDrawer(); } catch (err) { say(err.message); } });
+  $$("#agAdd")?.addEventListener("click", async () => { const title = $$("#agTitle").value.trim(); if (!title) return say("Write the agenda item first."); try { await w("POST", "board_agenda_items", [{ tenant_id: TENANT, meeting_id: m.id, sort: (agenda.length+1)*10, title, kind: $$("#agKind").value, presenter_id: $$("#agWho").value || null, minutes_planned: Number($$("#agMin").value) || null, notes: $$("#agNote").value.trim() || null }]); reopen(m.id); } catch (err) { say(err.message); } });
+  dr.querySelectorAll("[data-agdel]").forEach(b => b.addEventListener("click", async () => { try { await w("DELETE", `board_agenda_items?id=eq.${b.dataset.agdel}`); reopen(m.id); } catch (err) { say(err.message); } }));
+  dr.querySelectorAll("[data-myrsvp]").forEach(b => b.addEventListener("click", async () => { try { await w("PATCH", `board_attendance?meeting_id=eq.${m.id}&member_id=eq.${BR.myMember.id}`, { rsvp: b.dataset.myrsvp }); reopen(m.id); } catch (err) { say(err.message); } }));
+  $$("#attSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try {
+      for (const sel of dr.querySelectorAll("[data-rsvp-for]")) { const id = sel.dataset.rsvpFor; const attended = dr.querySelector(`[data-att-for="${id}"]`).value; const row = { tenant_id: TENANT, meeting_id: m.id, member_id: id, rsvp: sel.value, attended: attended === "" ? null : attended === "true", apologies: dr.querySelector(`[data-apol-for="${id}"]`).value.trim() || null };
+        const existing = att.find(a => a.member_id === id); if (existing) await w("PATCH", `board_attendance?id=eq.${existing.id}`, row); else await w("POST", "board_attendance", [row]); }
+      say("Attendance saved.", true); setTimeout(() => reopen(m.id), 400); } catch (err) { say(err.message); btn.disabled = false; } });
+  dr.querySelectorAll("[data-res2]").forEach(x => x.addEventListener("click", () => editResolution(d.resolutions.find(r => r.id === x.dataset.res2))));
+  dr.querySelectorAll("[data-act2]").forEach(x => x.addEventListener("click", () => editAction(d.actions.find(a => a.id === x.dataset.act2))));
+  $$("#mtRes")?.addEventListener("click", () => editResolution(null, m.id));
+  $$("#mtAct")?.addEventListener("click", () => editAction(null, m.id));
+  $$("#minSave")?.addEventListener("click", async () => { try { await w("PATCH", `board_meetings?id=eq.${m.id}`, { minutes: $$("#mtMinutes").value, minutes_status: m.minutes_status === "none" ? "draft" : m.minutes_status }); say("Draft saved.", true); } catch (err) { say(err.message); } });
+  $$("#minCirc")?.addEventListener("click", async (e) => { const btn = e.currentTarget; busy(btn, true, "Sending…"); try { await w("PATCH", `board_meetings?id=eq.${m.id}`, { minutes: $$("#mtMinutes").value, minutes_status: "draft" }); const r = await brCall({ action:"minutes", meeting_id: m.id }); say(r.email_off ? "Email sending is off." : `Draft minutes sent to ${r.sent} directors for review.`, true); setTimeout(() => reopen(m.id), 1200); } catch (err) { say(err.message); busy(btn, false); } });
+  $$("#minApprove")?.addEventListener("click", async (e) => { const b = e.currentTarget; if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Press again: the Board approved these minutes"; setTimeout(()=>{ b.dataset.armed=""; b.textContent="Record as approved by the Board"; }, 6000); return; } try { await w("PATCH", `board_meetings?id=eq.${m.id}`, { minutes: $$("#mtMinutes").value, minutes_status: "approved", minutes_approved_at: new Date().toISOString(), minutes_approved_by: BR.myMember?.id || null }); setTimeout(() => reopen(m.id), 300); } catch (err) { say(err.message); } });
+}
+
+/* ── resolutions and votes ── */
+async function castVote(resolution_id, member_id, vote, recorded){
+  const existing = BR.data.votes.find(v => v.resolution_id === resolution_id && v.member_id === member_id);
+  const row = { tenant_id: TENANT, resolution_id, member_id, vote, recorded_by: recorded ? (BR.me?.person_id || null) : null, cast_at: new Date().toISOString() };
+  if (existing) await w("PATCH", `board_votes?id=eq.${existing.id}`, row); else await w("POST", "board_votes", [row]);
+}
+async function editResolution(r, meetingId){
+  const isNew = !r; const d = BR.data;
+  const year = new Date().getFullYear(); const nextNo = `${year}-${String(d.resolutions.filter(x => (x.number||"").startsWith(year+"-")).length + 1).padStart(2,"0")}`;
+  r = r || { title:"", text:"", mode: meetingId ? "meeting" : "electronic", status:"draft", threshold:"majority", meeting_id: meetingId || null, number: nextNo };
+  const locked = !BR.canWrite; const decided = ["passed","failed","withdrawn"].includes(r.status);
+  const t = isNew ? null : brTally(r); const myVote = BR.myMember && !isNew ? d.votes.find(v => v.resolution_id === r.id && v.member_id === BR.myMember.id) : null;
+  const dr = drawer(isNew ? "New resolution" : `${r.number?r.number+" · ":""}${r.title}`, isNew ? "Resolution of the Board" : `${label(r.mode)} · ${label(r.status)}${t?` · ${t.for} for, ${t.against} against, ${t.abstain} abstain of ${t.eligible}`:""}`, `
+    <div class="grid2"><label class="fld"><span>Number</span><input id="rsNo" value="${esc(r.number||"")}" ${locked||decided?"disabled":""}></label><label class="fld"><span>Meeting (blank for a written resolution between meetings)</span><select id="rsMtg" ${locked||decided?"disabled":""}><option value="">—</option>${d.meetings.filter(m=>m.status!=="cancelled").map(m=>`<option value="${esc(m.id)}"${m.id===r.meeting_id?" selected":""}>${esc(day(m.starts_at.slice(0,10)))} · ${esc(m.title)}</option>`).join("")}</select></label></div>
+    <label class="fld"><span>Title</span><input id="rsTitle" value="${esc(r.title||"")}" ${locked||decided?"disabled":""} placeholder="e.g. Approval of the 2027 budget"></label>
+    <label class="fld"><span>The motion, as it will be minuted</span><textarea id="rsText" rows="5" ${locked||decided?"disabled":""} placeholder="RESOLVED that …">${esc(r.text||"")}</textarea></label>
+    <div class="grid2"><label class="fld"><span>Moved by</span><select id="rsMoved" ${locked||decided?"disabled":""}>${brMemberOpts(r.moved_by)}</select></label><label class="fld"><span>Seconded by</span><select id="rsSec" ${locked||decided?"disabled":""}>${brMemberOpts(r.seconded_by)}</select></label></div>
+    <div class="grid2"><label class="fld"><span>How it is decided</span><select id="rsMode" ${locked||decided?"disabled":""}><option value="meeting"${r.mode==="meeting"?" selected":""}>In the meeting (secretary records the vote)</option><option value="electronic"${r.mode==="electronic"?" selected":""}>Written resolution, each director votes online</option></select></label><label class="fld"><span>Passes by</span><select id="rsThr" ${locked||decided?"disabled":""}><option value="majority"${r.threshold==="majority"?" selected":""}>Simple majority of directors</option><option value="two_thirds"${r.threshold==="two_thirds"?" selected":""}>Two thirds</option><option value="unanimous"${r.threshold==="unanimous"?" selected":""}>Unanimous</option></select></label></div>
+    <label class="fld"><span>Voting closes (written resolutions)</span><input id="rsCloses" type="datetime-local" value="${toLocalInput(r.closes_at)}" ${locked||decided?"disabled":""}></label>
+    ${!locked ? `<div class="row-btn"><button class="btn" id="rsSave" type="button">${isNew?"Save draft":"Save"}</button>
+      ${!isNew && r.status === "draft" ? `<button class="btn ghost" id="rsOpen" type="button">Open for vote</button>` : ""}
+      ${!isNew && r.status === "open" ? `<button class="btn ghost" id="rsNotify" type="button">Email directors to vote</button><button class="btn ghost" id="rsClose" type="button">Close and record the result</button>` : ""}
+      ${!isNew && !decided ? `<button class="btn ghost" id="rsWithdraw" type="button" style="margin-left:auto">Withdraw</button>` : ""}</div>` : ""}
+    <p class="note" id="rsMsg" hidden></p>
+    ${isNew ? "" : `<div class="rule"></div>
+    <p class="panel-m" style="margin-bottom:6px"><b style="color:var(--parch)">Votes</b> · ${t.for} for, ${t.against} against, ${t.abstain} abstain · ${t.pending} not voted · needs ${t.need} of ${t.eligible}${r.status==="open"?(t.passing?` · <span style="color:var(--sage)">passing</span>`:t.failing?` · <span style="color:var(--rust)">cannot pass</span>`:""):""}</p>
+    ${myVote || (BR.myMember && r.status === "open") ? `<div class="row-btn" style="margin-bottom:10px"><span class="panel-m">Your vote${myVote?` (cast ${esc(when(myVote.cast_at))})`:""}:</span>${r.status==="open" ? ["for","against","abstain"].map(v => `<button class="btn ghost mini${myVote?.vote===v?" on":""}" type="button" data-myvote2="${v}">${label(v)}</button>`).join("") : `<b>${esc(label(myVote?.vote||"not cast"))}</b>`}</div>` : ""}
+    <table class="tbl"><tbody>${brVoting().map(mem => { const v = d.votes.find(x => x.resolution_id === r.id && x.member_id === mem.id); return `<tr><td class="wrap"><b>${esc(mem.full_name)}</b><br><span class="panel-m">${esc(BM_ROLE[mem.role]||mem.role)}</span></td><td>${v ? `<span class="pill ${v.vote==="for"?"cur":v.vote==="against"?"d60":"mut"}">${esc(label(v.vote))}</span><br><span class="panel-m">${esc(when(v.cast_at))}${v.recorded_by?" · recorded by the secretary":" · cast online"}</span>` : `<span class="panel-m">not voted</span>`}</td><td>${!locked && r.status === "open" ? ["for","against","abstain"].map(x => `<button class="btn ghost mini" type="button" data-vote-for="${esc(mem.id)}" data-vote="${x}">${label(x)}</button>`).join(" ") : ""}</td></tr>`; }).join("")}</tbody></table>
+    ${r.result_note ? `<p class="panel-m" style="margin-top:8px"><b style="color:var(--parch)">Result:</b> ${esc(r.result_note)}</p>` : ""}`}`);
+  const $$ = (s) => dr.querySelector(s); const say = (t_, ok) => note($$("#rsMsg"), t_, ok);
+  const reopen = async (id) => { await loadBoard(); const [f] = await q(`board_resolutions?select=*&id=eq.${id}&limit=1`); if (f) editResolution(f); };
+  const collect = () => ({ number: $$("#rsNo").value.trim() || null, meeting_id: $$("#rsMtg").value || null, title: $$("#rsTitle").value.trim(), text: $$("#rsText").value.trim() || null, moved_by: $$("#rsMoved").value || null, seconded_by: $$("#rsSec").value || null, mode: $$("#rsMode").value, threshold: $$("#rsThr").value, closes_at: $$("#rsCloses").value ? new Date($$("#rsCloses").value).toISOString() : null });
+  const save = async (extra={}) => { const b = { ...(decided ? {} : collect()), ...extra }; if (!decided && !b.title) throw new Error("Give the resolution a title."); if (isNew) { const [row] = await w("POST", "board_resolutions", [{ tenant_id: TENANT, created_by: BR.me?.person_id||null, ...b }]); r.id = row.id; } else await w("PATCH", `board_resolutions?id=eq.${r.id}`, b); return r.id; };
+  $$("#rsSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const id = await save(); say("Saved.", true); setTimeout(() => reopen(id), 400); } catch (err) { say(err.message); btn.disabled = false; } });
+  $$("#rsOpen")?.addEventListener("click", async () => { try { await save({ status:"open", opens_at: new Date().toISOString() }); setTimeout(() => reopen(r.id), 300); } catch (err) { say(err.message); } });
+  $$("#rsNotify")?.addEventListener("click", async (e) => { const btn = e.currentTarget; busy(btn, true, "Sending…"); try { const res = await brCall({ action:"resolution", resolution_id: r.id }); say(res.email_off ? "Email sending is off." : `Sent to ${res.sent} directors.`, true); } catch (err) { say(err.message); } busy(btn, false); });
+  $$("#rsClose")?.addEventListener("click", async (e) => { const b = e.currentTarget; const tt = brTally(r); const outcome = tt.for >= tt.need ? "passed" : "failed";
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = `Press again to record it as ${outcome} (${tt.for} for, ${tt.against} against, ${tt.abstain} abstain)`; setTimeout(()=>{ b.dataset.armed=""; b.textContent="Close and record the result"; }, 8000); return; }
+    try { await w("PATCH", `board_resolutions?id=eq.${r.id}`, { status: outcome, decided_at: new Date().toISOString(), result_note: `${label(outcome)}: ${tt.for} for, ${tt.against} against, ${tt.abstain} abstain, ${tt.pending} did not vote; required ${tt.need} of ${tt.eligible} (${label(r.threshold)}).` }); setTimeout(() => reopen(r.id), 300); } catch (err) { say(err.message); } });
+  $$("#rsWithdraw")?.addEventListener("click", async () => { try { await w("PATCH", `board_resolutions?id=eq.${r.id}`, { status:"withdrawn", decided_at: new Date().toISOString() }); setTimeout(() => reopen(r.id), 300); } catch (err) { say(err.message); } });
+  dr.querySelectorAll("[data-myvote2]").forEach(b => b.addEventListener("click", async () => { try { await castVote(r.id, BR.myMember.id, b.dataset.myvote2, false); setTimeout(() => reopen(r.id), 200); } catch (err) { say(err.message); } }));
+  dr.querySelectorAll("[data-vote-for]").forEach(b => b.addEventListener("click", async () => { try { await castVote(r.id, b.dataset.voteFor, b.dataset.vote, b.dataset.voteFor !== BR.myMember?.id); setTimeout(() => reopen(r.id), 200); } catch (err) { say(err.message); } }));
+}
+
+/* ── actions ── */
+function editAction(a, meetingId){
+  const isNew = !a; const d = BR.data;
+  a = a || { title:"", status:"open", meeting_id: meetingId || null };
+  const mine = BR.myMember && a.owner_id === BR.myMember.id; const locked = !BR.canWrite && !mine;
+  const dr = drawer(isNew ? "New action" : a.title, isNew ? "Board action" : `${brName(a.owner_id)} · ${label(a.status)}`, `
+    <label class="fld"><span>Action</span><input id="acTitle" value="${esc(a.title||"")}" ${!BR.canWrite?"disabled":""}></label>
+    <div class="grid2"><label class="fld"><span>Owner</span><select id="acOwner" ${!BR.canWrite?"disabled":""}>${brMemberOpts(a.owner_id)}</select></label><label class="fld"><span>Due</span><input id="acDue" type="date" value="${esc(a.due_on||"")}" ${!BR.canWrite?"disabled":""}></label></div>
+    <label class="fld"><span>From meeting</span><select id="acMtg" ${!BR.canWrite?"disabled":""}><option value="">—</option>${d.meetings.map(m=>`<option value="${esc(m.id)}"${m.id===a.meeting_id?" selected":""}>${esc(day(m.starts_at.slice(0,10)))} · ${esc(m.title)}</option>`).join("")}</select></label>
+    <label class="fld"><span>Notes</span><textarea id="acNotes" rows="3" ${locked?"disabled":""}>${esc(a.notes||"")}</textarea></label>
+    ${!locked ? `<div class="row-btn"><button class="btn" id="acSave" type="button">Save</button>${!isNew && a.status === "open" ? `<button class="btn ghost" id="acDone" type="button">Mark done</button>` : ""}${!isNew && BR.canWrite && a.status === "open" ? `<button class="btn ghost" id="acDrop" type="button" style="margin-left:auto">Drop</button>` : ""}${!isNew && a.status !== "open" && BR.canWrite ? `<button class="btn ghost" id="acReopen" type="button">Reopen</button>` : ""}</div>` : ""}
+    <p class="note" id="acMsg" hidden></p>`);
+  const $$ = (s) => dr.querySelector(s); const say = (t, ok) => note($$("#acMsg"), t, ok);
+  const collect = () => BR.canWrite ? { title: $$("#acTitle").value.trim(), owner_id: $$("#acOwner").value || null, due_on: $$("#acDue").value || null, meeting_id: $$("#acMtg").value || null, notes: $$("#acNotes").value.trim() || null } : { notes: $$("#acNotes").value.trim() || null };
+  const save = async (extra={}) => { const b = { ...collect(), ...extra }; if (BR.canWrite && !b.title) throw new Error("Describe the action."); if (isNew) { const [row] = await w("POST", "board_actions", [{ tenant_id: TENANT, ...b }]); a.id = row.id; } else await w("PATCH", `board_actions?id=eq.${a.id}`, b); };
+  $$("#acSave")?.addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { await save(); await loadBoard(); closeDrawer(); } catch (err) { say(err.message); btn.disabled = false; } });
+  $$("#acDone")?.addEventListener("click", async () => { try { await save({ status:"done", done_on: todayISO() }); await loadBoard(); closeDrawer(); } catch (err) { say(err.message); } });
+  $$("#acDrop")?.addEventListener("click", async () => { try { await save({ status:"dropped" }); await loadBoard(); closeDrawer(); } catch (err) { say(err.message); } });
+  $$("#acReopen")?.addEventListener("click", async () => { try { await save({ status:"open", done_on: null }); await loadBoard(); closeDrawer(); } catch (err) { say(err.message); } });
+}
+
+/* ── declarations of interest ── */
+function editDeclaration(){
+  const dr = drawer("Declare an interest", "Recorded in the governance register", `
+    <label class="fld"><span>Director</span><select id="dcWho" ${BR.canWrite?"":"disabled"}>${brMemberOpts(BR.myMember?.id, "")}</select></label>
+    <label class="fld"><span>Interest</span><textarea id="dcText" rows="4" placeholder="e.g. Director of a company bidding for BCA's audit; will not take part in the decision."></textarea></label>
+    <label class="fld"><span>Date</span><input id="dcOn" type="date" value="${todayISO()}"></label>
+    <div class="row-btn"><button class="btn" id="dcSave" type="button">Record</button></div><p class="note" id="dcMsg" hidden></p>`);
+  dr.querySelector("#dcSave").addEventListener("click", async (e) => { const btn = e.currentTarget; btn.disabled = true; try { const member_id = dr.querySelector("#dcWho").value, description = dr.querySelector("#dcText").value.trim(); if (!member_id || !description) throw new Error("Pick the director and describe the interest."); await w("POST", "board_declarations", [{ tenant_id: TENANT, member_id, description, declared_on: dr.querySelector("#dcOn").value || todayISO() }]); await loadBoard(); closeDrawer(); } catch (err) { note(dr.querySelector("#dcMsg"), err.message); btn.disabled = false; } });
 }
 
 /* ───────── website traffic ───────── */
