@@ -1636,7 +1636,7 @@ async function loadPlans(me){
     <p class="lede">${current ? `Current campaign: <b style="color:var(--parch)">${esc(current.title)}</b>${current.headline?` · “${esc(current.headline)}”`:""} · ${esc(label(current.status))}.` : "No plan covers today. Every six months the team sets the headline and the pillars; posts and blogs then hang off it."}</p>
     <div class="row-btn" style="margin:14px 0;flex-wrap:wrap"><button class="btn" id="planNew" type="button"${canWrite?"":" disabled"}>New plan</button>
       ${canWrite && STRATEGY.some(m => !plans.some(p => p.title === m.title)) ? `<button class="btn ghost" id="planLoad" type="button">Load the Nov 2026 to Apr 2027 strategy</button>` : ""}
-      <a class="btn ghost" href="https://claude.ai/code/artifact/8e837c4b-411f-40ca-abf4-5f7737436c32" target="_blank" rel="noopener" style="text-decoration:none">Read the strategy</a></div>
+      <a class="btn ghost" href="strategy.html" target="_blank" rel="noopener" style="text-decoration:none">Read the strategy</a></div>
     <p class="note" id="planMsg" hidden></p>
     <div class="tblwrap"><table class="tbl"><caption>Latest first. Click a plan to work on it.</caption>
       <thead><tr><th>Plan</th><th>Period</th><th>Status</th><th class="num">Social</th><th class="num">Blog</th><th>Approved</th></tr></thead>
