@@ -10,29 +10,6 @@
 -- Jacques, 12 Oct 2026: the Chair (Wilben Short) keeps the room; admins help.
 -- ============================================================================
 
--- Who is the signed-in person on the board, if anyone
-create or replace function app.my_board_member_id()
-returns uuid language sql stable security definer set search_path = public as $$
-  select bm.id from public.board_members bm
-  join public.people p on p.id = bm.person_id
-  where bm.tenant_id = app.current_tenant_id() and p.user_id = auth.uid() and bm.status = 'active'
-  limit 1
-$$;
-create or replace function app.is_board_officer()
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.board_members bm join public.people p on p.id = bm.person_id
-    where bm.tenant_id = app.current_tenant_id() and p.user_id = auth.uid() and bm.status = 'active'
-      and bm.role in ('chair','vice_chair','secretary'))
-$$;
-create or replace function app.board_can_read()
-returns boolean language sql stable security definer set search_path = public as $$
-  select app.is_platform_admin() or app.has_tenant_role(array['owner','admin','board']) or app.my_board_member_id() is not null
-$$;
-create or replace function app.board_can_write()
-returns boolean language sql stable security definer set search_path = public as $$
-  select app.is_platform_admin() or app.has_tenant_role(array['owner','admin']) or app.is_board_officer()
-$$;
-
 -- ── Directors
 create table if not exists public.board_members (
   id              uuid primary key default gen_random_uuid(),
@@ -174,6 +151,30 @@ create table if not exists public.board_declarations (
   declared_on     date not null default current_date,
   created_at      timestamptz not null default now()
 );
+
+-- ── Helpers (after the tables they read)
+-- Who is the signed-in person on the board, if anyone
+create or replace function app.my_board_member_id()
+returns uuid language sql stable security definer set search_path = public as $$
+  select bm.id from public.board_members bm
+  join public.people p on p.id = bm.person_id
+  where bm.tenant_id = app.current_tenant_id() and p.user_id = auth.uid() and bm.status = 'active'
+  limit 1
+$$;
+create or replace function app.is_board_officer()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.board_members bm join public.people p on p.id = bm.person_id
+    where bm.tenant_id = app.current_tenant_id() and p.user_id = auth.uid() and bm.status = 'active'
+      and bm.role in ('chair','vice_chair','secretary'))
+$$;
+create or replace function app.board_can_read()
+returns boolean language sql stable security definer set search_path = public as $$
+  select app.is_platform_admin() or app.has_tenant_role(array['owner','admin','board']) or app.my_board_member_id() is not null
+$$;
+create or replace function app.board_can_write()
+returns boolean language sql stable security definer set search_path = public as $$
+  select app.is_platform_admin() or app.has_tenant_role(array['owner','admin']) or app.is_board_officer()
+$$;
 
 -- ── Security
 do $$ declare t text; begin
