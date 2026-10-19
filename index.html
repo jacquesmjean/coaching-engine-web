@@ -100,6 +100,11 @@ h2.sec{font-size:22px;margin-bottom:13px}
 .stat-v{font-family:var(--disp);font-size:29px;line-height:1.05;font-variant-numeric:tabular-nums}
 .stat-n{font-size:13px;color:var(--mute)}
 .stat.sage{--acc:var(--sage)} .stat.rust{--acc:var(--rust)} .stat.amber{--acc:var(--amber)}
+.stat.pick{cursor:pointer;transition:border-color .15s,background .15s;text-align:left;font:inherit;color:inherit;width:auto}
+.stat.pick:hover{border-color:var(--mute)}
+.stat.pick.on{background:var(--ink);border-color:var(--acc,var(--gold));box-shadow:inset 0 0 0 1px var(--acc,var(--gold))}
+.stat.pick:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.sub{font-size:12px;color:var(--mute);margin-top:2px}
 
 .panel{background:var(--navy);border:1px solid var(--line-soft);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
 .panel-h{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;justify-content:space-between}
@@ -299,8 +304,9 @@ table#prLines{width:100%;min-width:0;table-layout:fixed;font-size:13px}#prLines 
       <div class="rule"></div>
       <div class="stats" id="memStats"></div>
       <div class="rule"></div>
+      <div class="search-row"><input class="search" id="memSearch" type="search" placeholder="Search member, organisation, tier, status or country" autocomplete="off"><span class="search-n" id="memCount"></span><button class="btn ghost" id="memClear" type="button" style="margin-left:auto;white-space:nowrap" hidden>Show all memberships</button></div>
       <div class="tblwrap"><table class="tbl" id="memTbl">
-        <caption data-t="memCap">Every membership on record</caption>
+        <caption id="memCap">Every membership on record</caption>
         <thead><tr>
           <th data-t="cName">Member</th><th data-t="cOrg">Organisation</th>
           <th data-t="cTier">Tier</th><th data-t="cStatus">Status</th>
@@ -900,26 +906,55 @@ async function loadBilling(){
       <p class="panel-m">${activeMem} memberships are active. The rest are lapsed and appear in Members with their renewal dates.</p></div>`;
 }
 
-/* ───────── members ───────── */
-async function loadMembers(){
-  const rows = await q("memberships?select=status,renews_on,billing,products(name),people(first_name,last_name,country),organizations(name)&limit=500");
-  const by = {}; rows.forEach(r => by[r.status||"unknown"] = (by[r.status||"unknown"]||0)+1);
+/* ───────── members ─────────
+   The status tiles are filters: click Active, Lapsed, Renewing in 60 days (or any other status) to see
+   exactly those members in the table; click again, or "Show all memberships", to clear. Search narrows further. */
+let MEM_ROWS = [], MEM_FILTER = "";
+const MEM_LABEL = { active:"Active", lapsed:"Lapsed", cancelled:"Cancelled", pending:"Pending", renewing:"Renewing in 60 days" };
+function memMatches(r, f){
   const today = todayISO(), in60 = new Date(Date.now()+60*864e5).toISOString().slice(0,10);
-  const renewing = rows.filter(r=>r.status==="active" && r.renews_on>today && r.renews_on<=in60).length;
-  $("memLede").textContent = `${rows.length} memberships on record.`;
-  const cls = { active:"sage", lapsed:"rust", cancelled:"rust", pending:"amber" };
-  $("memStats").innerHTML =
-    Object.keys(by).sort((a,b)=>by[b]-by[a]).map(k=>
-      `<div class="stat ${cls[k]||""}"><span class="stat-k">${esc(k)}</span><span class="stat-v">${by[k]}</span><span class="stat-n">${Math.round(by[k]/rows.length*100)}% of ${rows.length}</span></div>`).join("") +
-    `<div class="stat amber"><span class="stat-k">Renewing in 60 days</span><span class="stat-v">${renewing}</span><span class="stat-n">active memberships due</span></div>`;
+  if (!f) return true;
+  if (f === "renewing") return r.status==="active" && r.renews_on>today && r.renews_on<=in60;
+  return (r.status||"unknown") === f;
+}
+function memFilter(f){
+  MEM_FILTER = (f === MEM_FILTER) ? "" : f;
+  document.querySelectorAll("#memStats .stat.pick").forEach(b => { const on = b.dataset.f === MEM_FILTER; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+  renderMembers();
+}
+function renderMembers(){
+  const rows = MEM_ROWS.filter(r => memMatches(r, MEM_FILTER))
+    .sort((a,b) => (a.renews_on||"9999") < (b.renews_on||"9999") ? -1 : 1);
+  const today = todayISO();
+  $("memCap").textContent = MEM_FILTER ? `${MEM_LABEL[MEM_FILTER]||MEM_FILTER}: ${rows.length} of ${MEM_ROWS.length} memberships` : "Every membership on record";
+  $("memClear").hidden = !MEM_FILTER;
   $("memBody").innerHTML = rows.length ? rows.map(r=>{
     const who = [r.people?.first_name,r.people?.last_name].filter(Boolean).join(" ") || r.organizations?.name || "—";
     const st = r.status||"—";
-    return `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(who))}</span>${esc(who)}</td>
+    const due = st==="active" && r.renews_on && r.renews_on<=new Date(Date.now()+60*864e5).toISOString().slice(0,10);
+    return `<tr data-search="${searchKey(who, r.organizations?.name, r.products?.name, st, r.people?.country, r.people?.email, r.renews_on)}">
+      <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(who))}</span>${esc(who)}${r.people?.email?`<div class="sub">${esc(r.people.email)}</div>`:""}</td>
       <td class="wrap">${esc(r.organizations?.name||"—")}</td><td>${esc(r.products?.name||"—")}</td>
       <td><span class="pill ${st==="active"?"cur":st==="lapsed"?"d60":"mut"}">${esc(st)}</span></td>
-      <td>${day(r.renews_on)}</td><td>${esc(r.people?.country||"—")}</td></tr>`;
-  }).join("") : `<tr><td colspan="6">No memberships yet.</td></tr>`;
+      <td>${day(r.renews_on)}${due?` <span class="pill d30">${r.renews_on<today?"overdue":"due"}</span>`:""}</td><td>${esc(r.people?.country||"—")}</td></tr>`;
+  }).join("") : `<tr><td colspan="6">${MEM_FILTER ? `No ${(MEM_LABEL[MEM_FILTER]||MEM_FILTER).toLowerCase()} memberships.` : "No memberships yet."}</td></tr>`;
+  const s = $("memSearch"); if (s && s.runSearch) s.runSearch();
+}
+async function loadMembers(){
+  MEM_ROWS = await q("memberships?select=status,renews_on,started_on,billing,products(name),people(first_name,last_name,email,country),organizations(name)&limit=1000");
+  const rows = MEM_ROWS;
+  const by = {}; rows.forEach(r => by[r.status||"unknown"] = (by[r.status||"unknown"]||0)+1);
+  const renewing = rows.filter(r => memMatches(r, "renewing")).length;
+  $("memLede").textContent = `${rows.length} memberships on record. Click a tile to see those members.`;
+  const cls = { active:"sage", lapsed:"rust", cancelled:"rust", pending:"amber" };
+  const tile = (k, label, v, note, extra) => `<button type="button" class="stat pick ${extra||""}" data-f="${k}" aria-pressed="false"><span class="stat-k">${esc(label)}</span><span class="stat-v">${v}</span><span class="stat-n">${esc(note)}</span></button>`;
+  $("memStats").innerHTML =
+    Object.keys(by).sort((a,b)=>by[b]-by[a]).map(k => tile(k, MEM_LABEL[k]||k, by[k], `${Math.round(by[k]/rows.length*100)}% of ${rows.length}`, cls[k])).join("") +
+    tile("renewing", "Renewing in 60 days", renewing, "active memberships due", "amber");
+  document.querySelectorAll("#memStats .stat.pick").forEach(b => b.addEventListener("click", () => memFilter(b.dataset.f)));
+  $("memClear").onclick = () => memFilter(MEM_FILTER);
+  wireSearch("memSearch","memBody","memCount");
+  renderMembers();
 }
 
 /* ───────── leads ───────── */
@@ -2697,20 +2732,59 @@ function newLead(){
   }, async () => {});
 }
 
-/* ───────── bench ───────── */
+/* ───────── bench ─────────
+   The roster published on bcaleadership.com/the-bench (imported 19 Oct 2026). Tiles filter by type or region;
+   search covers name, country, languages and disciplines. */
+let BENCH_ROWS = [], BENCH_FILTER = "";
+const REGION_LABEL = { west:"West Africa", east:"East Africa", north:"North Africa", southern:"Southern Africa", central:"Central Africa", diaspora:"Diaspora" };
+const BENCH_TYPE_LABEL = { coach:"Coaches", consultant:"Consultants", trainer:"Trainers", facilitator:"Facilitators" };
+function benchMatches(r, f){
+  if (!f) return true;
+  if (f === "consultant") return (r.disciplines||[]).includes("consulting");
+  if (BENCH_TYPE_LABEL[f]) return r.bench_type === f;
+  return r.region === f;
+}
+function benchFilter(f){
+  BENCH_FILTER = (f === BENCH_FILTER) ? "" : f;
+  document.querySelectorAll("#benchStats .stat.pick").forEach(b => { const on = b.dataset.f === BENCH_FILTER; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on ? "true" : "false"); });
+  renderBench();
+}
+function renderBench(){
+  const rows = BENCH_ROWS.filter(r => benchMatches(r, BENCH_FILTER));
+  const label = BENCH_TYPE_LABEL[BENCH_FILTER] || REGION_LABEL[BENCH_FILTER];
+  $("benchCap").textContent = BENCH_FILTER ? `${label}: ${rows.length} of ${BENCH_ROWS.length}` : "Coaches, consultants, trainers and facilitators";
+  $("benchClear").hidden = !BENCH_FILTER;
+  $("benchBody").innerHTML = rows.length ? rows.map(r=>{
+    const n=[r.first_name,r.last_name].filter(Boolean).join(" "), full = (r.credentials==="Dr." ? "Dr. " : "") + n;
+    return `<tr data-search="${searchKey(full, r.bench_type, (r.disciplines||[]).join(" "), REGION_LABEL[r.region], r.region, r.country, (r.languages||[]).join(" "), r.email)}">
+      <td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(n))}</span>${esc(full)}${r.email?`<div class="sub">${esc(r.email)}</div>`:""}</td>
+      <td>${esc(r.bench_type||"—")}${(r.disciplines||[]).includes("consulting")?` <span class="pill mut">consultant</span>`:""}</td>
+      <td class="wrap">${esc((r.languages||[]).join(", ")||"—")}</td>
+      <td>${esc(REGION_LABEL[r.region]||r.region||"—")}</td><td>${esc(r.country||"—")}</td></tr>`;}).join("")
+    : `<tr><td colspan="5">Nobody matches.</td></tr>`;
+  const si = $("benchSearch"); if (si && si.runSearch) si.runSearch();
+}
 async function loadBench(){
-  const rows = await q("people?select=first_name,last_name,bench_type,disciplines,region,country&bench_type=not.is.null&limit=200");
-  $("benchLede").textContent = rows.length ? `${rows.length} on the bench.` : "No coaches or trainers are recorded yet.";
-  $("benchWrap").innerHTML = rows.length
-    ? `<div class="tblwrap"><table class="tbl"><caption>Coaches, consultants, trainers and facilitators</caption>
-       <thead><tr><th>Name</th><th>Type</th><th>Disciplines</th><th>Region</th><th>Country</th></tr></thead><tbody>` +
-      rows.map(r=>{ const n=[r.first_name,r.last_name].filter(Boolean).join(" ");
-      return `<tr><td class="wrap"><span class="ini" aria-hidden="true">${esc(initials(n))}</span>${esc(n)}</td>
-        <td>${esc(r.bench_type||"—")}</td><td class="wrap">${esc((r.disciplines||[]).join(", ")||"—")}</td>
-        <td>${esc(r.region||"—")}</td><td>${esc(r.country||"—")}</td></tr>`;}).join("") + `</tbody></table></div>`
-    : `<div class="empty"><b>The roster has not been imported yet</b>
-       <p class="panel-m">The website describes a bench of coaches and trainers across five regions. None exist as records here yet, so coach matching and scheduling have nothing to run on.</p>
-       <p class="panel-m">Send TechFides the roster with each person's disciplines, languages and region and it will appear here.</p></div>`;
+  BENCH_ROWS = await q("people?select=id,first_name,last_name,email,bench_type,disciplines,languages,region,country,credentials&bench_type=not.is.null&order=last_name&limit=300");
+  const rows = BENCH_ROWS;
+  $("benchLede").textContent = rows.length ? `${rows.length} on the bench, as published on bcaleadership.com/the-bench. Click a tile to filter.` : "No coaches or trainers are recorded yet.";
+  if (!rows.length){ $("benchWrap").innerHTML = `<div class="empty"><b>The roster has not been imported yet</b><p class="panel-m">Send TechFides the roster with each person's disciplines, languages and region and it will appear here.</p></div>`; return; }
+  const count = f => rows.filter(r => benchMatches(r, f)).length;
+  const tile = (k, label, note, cls) => `<button type="button" class="stat pick ${cls||""}" data-f="${k}" aria-pressed="false"><span class="stat-k">${esc(label)}</span><span class="stat-v">${count(k)}</span><span class="stat-n">${esc(note)}</span></button>`;
+  const regions = Object.keys(REGION_LABEL).filter(k => count(k));
+  $("benchWrap").innerHTML = `
+    <div class="stats" id="benchStats">
+      ${tile("coach","Coaches","executive coaching","sage")}${tile("consultant","Consultants","also consult","sage")}${tile("trainer","Trainers","training","amber")}${tile("facilitator","Facilitators","facilitation","amber")}
+      ${regions.map(k => tile(k, REGION_LABEL[k], "region", "")).join("")}
+    </div>
+    <div class="rule"></div>
+    <div class="search-row"><input class="search" id="benchSearch" type="search" placeholder="Search name, country, language, region or type" autocomplete="off"><span class="search-n" id="benchCount"></span><button class="btn ghost" id="benchClear" type="button" style="margin-left:auto;white-space:nowrap" hidden>Show the whole bench</button></div>
+    <div class="tblwrap"><table class="tbl"><caption id="benchCap">Coaches, consultants, trainers and facilitators</caption>
+      <thead><tr><th>Name</th><th>Type</th><th>Languages</th><th>Region</th><th>Country</th></tr></thead><tbody id="benchBody"></tbody></table></div>`;
+  document.querySelectorAll("#benchStats .stat.pick").forEach(b => b.addEventListener("click", () => benchFilter(b.dataset.f)));
+  $("benchClear").onclick = () => benchFilter(BENCH_FILTER);
+  wireSearch("benchSearch","benchBody","benchCount");
+  renderBench();
 }
 
 /* ───────── sessions ───────── */
